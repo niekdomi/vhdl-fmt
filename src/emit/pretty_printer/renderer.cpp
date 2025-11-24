@@ -23,7 +23,7 @@ auto Renderer::render(const DocPtr &doc) -> std::string
 
     renderDoc(0, Mode::BREAK, doc);
 
-    return output_;
+    return std::move(output_);
 }
 
 void Renderer::renderDoc(int indent, Mode mode, const DocPtr &doc)
