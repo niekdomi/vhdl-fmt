@@ -7,7 +7,6 @@
 
 TEST_CASE("withTrivia: Empty/No trivia", "[pretty_printer][trivia]")
 {
-    // No change needed here
     const ast::GenericParam param{ .names = { "WIDTH" }, .type_name = "integer", .is_last = true };
 
     const auto result = emit::test::render(param);
@@ -18,7 +17,6 @@ TEST_CASE("withTrivia: Single leading comment", "[pretty_printer][trivia]")
 {
     ast::GenericParam param{ .names = { "WIDTH" }, .type_name = "integer", .is_last = true };
 
-    // MUCH CLEANER: No make_unique, no initializer lists
     param.addLeading(ast::Comment{ "-- a leading comment" });
 
     const auto result = emit::test::render(param);

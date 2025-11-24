@@ -19,8 +19,8 @@ TEST_CASE("Entity captures top-level leading comments", "[design_units][trivia]"
                                            "-- Entity declaration for a simple counter\n"
                                            "entity MyEntity is end MyEntity;";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *entity = std::get_if<ast::Entity>(design.units.data());
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *entity = std::get_if<ast::Entity>(design.units.data());
 
     REQUIRE(entity != nullptr);
     REQUIRE(entity->hasTrivia());
@@ -42,8 +42,8 @@ TEST_CASE("Generic captures both leading and inline comments", "[design_units][t
         "    );\n"
         "end Example;";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *entity = std::get_if<ast::Entity>(design.units.data());
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *entity = std::get_if<ast::Entity>(design.units.data());
     REQUIRE(entity != nullptr);
     REQUIRE(entity->generic_clause.generics.size() == 1);
 
@@ -73,8 +73,8 @@ TEST_CASE("Ports capture leading, trailing and inline comments", "[design_units]
                                            "    );\n"
                                            "end Example;";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *entity = std::get_if<ast::Entity>(design.units.data());
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *entity = std::get_if<ast::Entity>(design.units.data());
     REQUIRE(entity != nullptr);
     REQUIRE(entity->port_clause.ports.size() == 2);
 
@@ -113,8 +113,8 @@ TEST_CASE("Generic captures paragraph breaks (1 blank line)", "[design_units][tr
                                            "    );\n"
                                            "end ExampleEntity;";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *entity = std::get_if<ast::Entity>(design.units.data());
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *entity = std::get_if<ast::Entity>(design.units.data());
     REQUIRE(entity != nullptr);
 
     const auto &one = entity->generic_clause.generics[0];
@@ -217,8 +217,8 @@ TEST_CASE("Trivia: EOF Inline Comment (No Newline)", "[trivia][edge_case]")
     // Scenario: Comment at the very end of the file with no trailing newline
     constexpr std::string_view VHDL = "entity E is end E; -- EOF";
 
-    auto design = builder::buildFromString(VHDL);
-    auto *entity = std::get_if<ast::Entity>(design.units.data());
+    const auto design = builder::buildFromString(VHDL);
+    const auto *entity = std::get_if<ast::Entity>(design.units.data());
     REQUIRE(entity != nullptr);
 
     // Should be detected as Inline because it's on the same line as the semicolon
@@ -233,8 +233,8 @@ TEST_CASE("Trivia: EOF Trailing Comment", "[trivia][edge_case]")
     constexpr std::string_view VHDL = "entity E is end E;\n"
                                       "-- EOF Trailing";
 
-    auto design = builder::buildFromString(VHDL);
-    auto *entity = std::get_if<ast::Entity>(design.units.data());
+    const auto design = builder::buildFromString(VHDL);
+    const auto *entity = std::get_if<ast::Entity>(design.units.data());
     REQUIRE(entity != nullptr);
 
     // Should NOT be inline
@@ -258,8 +258,8 @@ TEST_CASE("Trivia: Mixed Inline and Trailing on same node", "[trivia][edge_case]
                                       "    );\n"
                                       "end E;";
 
-    auto design = builder::buildFromString(VHDL);
-    auto *entity = std::get_if<ast::Entity>(design.units.data());
+    const auto design = builder::buildFromString(VHDL);
+    const auto *entity = std::get_if<ast::Entity>(design.units.data());
     REQUIRE(entity != nullptr);
 
     const auto &p1 = entity->port_clause.ports[0];
@@ -286,8 +286,8 @@ TEST_CASE("Trivia: Ownership of Gap Comments", "[trivia][behavior]")
                                       "    );\n"
                                       "end E;";
 
-    auto design = builder::buildFromString(VHDL);
-    auto *entity = std::get_if<ast::Entity>(design.units.data());
+    const auto design = builder::buildFromString(VHDL);
+    const auto *entity = std::get_if<ast::Entity>(design.units.data());
 
     const auto &g1 = entity->generic_clause.generics[0];
     const auto &g2 = entity->generic_clause.generics[1];

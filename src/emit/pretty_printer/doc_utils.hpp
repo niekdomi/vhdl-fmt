@@ -16,7 +16,7 @@ namespace emit {
 /// @param with_trailing Whether to include the separator after the last element.
 /// @return Combined Doc.
 template<std::ranges::input_range Range, typename Transform>
-auto joinMap(Range &&items, const Doc &sep, Transform transform, bool with_trailing) -> Doc
+auto joinMap(Range &&items, const Doc &sep, Transform transform, const bool with_trailing) -> Doc
 {
     const auto result = std::ranges::fold_left(
       std::forward<Range>(items), Doc::empty(), [&](const Doc &acc, const auto &item) {

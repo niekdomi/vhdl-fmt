@@ -13,7 +13,7 @@ namespace emit {
 namespace {
 
 /// @brief Predicate to filter out Break trivia if suppressing newlines.
-constexpr auto shouldKeep(bool suppress_newlines)
+auto shouldKeep(const bool suppress_newlines)
 {
     return [suppress_newlines](const ast::Trivia &t) -> bool {
         return !(suppress_newlines && std::holds_alternative<ast::Break>(t));
@@ -48,9 +48,9 @@ auto formatLastTrailing(const ast::Trivia &t) -> Doc
 /// @tparam Formatter Function to handle the very last item in the list.
 template<typename Formatter>
 auto buildTrivia(std::span<const ast::Trivia> trivia,
-                 bool suppress,
+                 const bool suppress,
                  Doc prefix,
-                 Formatter format_last) -> Doc
+                 const Formatter format_last) -> Doc
 {
     auto view = trivia | std::views::filter(shouldKeep(suppress));
 
@@ -75,7 +75,7 @@ auto buildTrivia(std::span<const ast::Trivia> trivia,
 
 } // namespace
 
-auto PrettyPrinter::withTrivia(const ast::NodeBase &node, Doc core, bool suppress) -> Doc
+auto PrettyPrinter::withTrivia(const ast::NodeBase &node, Doc core, const bool suppress) -> Doc
 {
     if (!node.hasTrivia()) {
         return core;
@@ -90,8 +90,8 @@ auto PrettyPrinter::withTrivia(const ast::NodeBase &node, Doc core, bool suppres
     result += core;
 
     // 3. Inline Comment
-    if (auto txt = node.getInlineComment()) {
-        result += Doc::text(" ") + Doc::text(*txt) + Doc::hardlines(0);
+    if (auto comment = node.getInlineComment()) {
+        result += Doc::text(" ") + Doc::text(*comment) + Doc::hardlines(0);
     }
 
     // 4. Trailing Trivia
