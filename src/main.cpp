@@ -1,14 +1,12 @@
-#include "ast/nodes/design_file.hpp"
 #include "builder/ast_builder.hpp"
+#include "builder/verifier.hpp"
 #include "cli/argument_parser.hpp"
 #include "cli/config_reader.hpp"
 #include "emit/pretty_printer.hpp"
 
-#include <cstddef>
 #include <cstdlib>
-#include <exception>
+#include <fstream>
 #include <iostream>
-#include <span>
 
 auto main(int argc, char *argv[]) -> int
 {
@@ -18,22 +16,43 @@ auto main(int argc, char *argv[]) -> int
         };
 
         cli::ConfigReader config_reader{ argparser.getConfigPath() };
-        const auto config_result = config_reader.readConfigFile();
-        const auto &config = config_result.value();
+        const auto config = config_reader.readConfigFile().value();
 
-        // Build AST from input file
-        const ast::DesignFile root = builder::buildFromFile(argparser.getInputPath());
+        // 1. Create Context (keeps tokens alive)
+        auto ctx_orig = builder::createContext(argparser.getInputPath());
 
-        // Pretty print the AST
+        // 2. Build AST
+        const auto root = builder::build(ctx_orig);
+
+        // 3. Format
         const emit::PrettyPrinter printer{};
         const auto doc = printer.visit(root);
-        std::cout << doc.render(config);
+        const std::string formatted_code = doc.render(config);
+
+        // 4. Verify Safety
+        auto ctx_fmt = builder::createContext(std::string_view{ formatted_code });
+
+        try {
+            builder::verify::ensureSafety(*ctx_orig.tokens, *ctx_fmt.tokens);
+        } catch (const std::exception &e) {
+            std::cerr
+              << "FATAL ERROR: Formatter corrupted the code semantics.\n"
+              << e.what()
+              << "\n"
+              << "Aborting write to prevent data loss.\n";
+            return EXIT_FAILURE;
+        }
+
+        // 5. Output
+        if (argparser.isFlagSet(cli::ArgumentFlag::WRITE)) {
+            std::ofstream out_file(argparser.getInputPath());
+            out_file << formatted_code;
+        } else {
+            std::cout << formatted_code;
+        }
 
     } catch (const std::exception &e) {
         std::cerr << "Error: " << e.what() << '\n';
-        return EXIT_FAILURE;
-    } catch (...) {
-        std::cerr << "Unknown error occurred." << '\n';
         return EXIT_FAILURE;
     }
 
