@@ -14,9 +14,8 @@ auto PrettyPrinter::operator()(const ast::DesignFile &node) const -> Doc
         return Doc::empty();
     }
 
-    const auto unit_docs
-      = toDocVector(node.units, [this](const auto &unit) { return visit(unit); });
-    const auto result = joinDocs(unit_docs, Doc::line(), false);
+    const auto result
+      = joinMap(node.units, Doc::line(), [this](const auto &u) { return visit(u); }, false);
 
     return result + Doc::line(); // Trailing newline
 }

@@ -6,63 +6,65 @@
 #include "ast/node.hpp"
 #include "builder/trivia/utils.hpp"
 
+#include <algorithm>
 #include <cstddef>
+#include <memory>
 #include <optional>
 #include <ranges>
 #include <span>
+#include <utility>
 #include <vector>
 
 namespace builder {
 
-TriviaBinder::TriviaBinder(antlr4::CommonTokenStream &ts) : tokens_(ts), used_(ts.size()) {}
+TriviaBinder::TriviaBinder(antlr4::CommonTokenStream &ts) : tokens_(ts), used_(ts.size(), false) {}
 
-void TriviaBinder::collect(std::vector<ast::Trivia> &dst, std::span<antlr4::Token *const> tokens)
+auto TriviaBinder::extractTrivia(std::span<antlr4::Token *const> range) -> std::vector<ast::Trivia>
 {
-    unsigned int linebreaks{ 0 };
+    constexpr unsigned BREAK_BREAKOFF = 2; // Minimum newlines to register a Break trivia
 
-    auto process_linebreaks = [&dst, &linebreaks] -> void {
-        if (linebreaks >= 2) {
-            dst.emplace_back(ast::ParagraphBreak{ .blank_lines = linebreaks - 1 });
-        }
-        linebreaks = 0; // Reset after processing
-    };
+    std::vector<ast::Trivia> result{};
 
-    for (const auto *token : tokens) {
-        const auto index = token->getTokenIndex();
+    unsigned int pending_newlines{ 0 };
 
-        if (used_[index]) {
-            continue;
-        }
-        used_[index] = true;
+    for (auto *token : range | std::views::filter([this](auto *t) { return !isUsed(t); })) {
+        markAsUsed(token);
 
         if (isNewline(token)) {
-            ++linebreaks;
+            ++pending_newlines;
             continue;
         }
 
         if (isComment(token)) {
-            process_linebreaks();
-            dst.emplace_back(ast::Comment{ token->getText() });
+            if (pending_newlines >= BREAK_BREAKOFF) {
+                result.emplace_back(ast::Break{ .blank_lines = pending_newlines - 1 });
+            }
+            pending_newlines = 0;
+
+            result.emplace_back(ast::Comment{ token->getText() });
         }
     }
 
-    // Process any remaining linebreaks at the end
-    process_linebreaks();
+    if (pending_newlines >= BREAK_BREAKOFF) {
+        result.emplace_back(ast::Break{ .blank_lines = pending_newlines - 1 });
+    }
+
+    return result;
 }
 
-void TriviaBinder::collectInline(std::optional<ast::Comment> &dst, const std::size_t index)
+auto TriviaBinder::findContextEnd(const antlr4::ParserRuleContext *ctx) const -> std::size_t
 {
-    if (used_[index]) {
-        return;
-    }
+    const auto stop = ctx->getStop()->getTokenIndex();
+    const auto line = tokens_.get(stop)->getLine();
 
-    const auto &token = tokens_.get(index);
+    const auto indices = std::views::iota(stop + 1, tokens_.size());
 
-    if (isComment(token)) {
-        used_[index] = true;
-        dst.emplace(ast::Comment{ token->getText() });
-        return; // only one inline comment per node
-    }
+    const auto it = std::ranges::find_if(indices, [this, line](std::size_t i) -> bool {
+        auto *token = tokens_.get(i);
+        return !isDefault(token) || (token->getLine() != line);
+    });
+
+    return (it != indices.end()) ? (*it - 1) : stop;
 }
 
 void TriviaBinder::bind(ast::NodeBase &node, const antlr4::ParserRuleContext *ctx)
@@ -71,40 +73,38 @@ void TriviaBinder::bind(ast::NodeBase &node, const antlr4::ParserRuleContext *ct
         return;
     }
 
-    auto &trivia = node.trivia.emplace();
+    const auto start_idx = ctx->getStart()->getTokenIndex();
+    const auto stop_idx = findContextEnd(ctx);
 
-    const auto start_index = ctx->getStart()->getTokenIndex();
-    const auto stop_index = findLastDefault(ctx->getStop()->getTokenIndex());
+    // Extract Inline (Immediate Right of stop)
+    std::optional<ast::Comment> inline_comment{};
+    if (stop_idx + 1 < tokens_.size()) {
+        if (const auto *token = tokens_.get(stop_idx + 1); isComment(token) && !isUsed(token)) {
+            inline_comment = ast::Comment{ token->getText() };
+            markAsUsed(token);
+        }
+    }
 
-    collect(trivia.leading, tokens_.getHiddenTokensToLeft(start_index));
-    collectInline(trivia.inline_comment, stop_index + 1);
-    collect(trivia.trailing, tokens_.getHiddenTokensToRight(stop_index));
+    auto leading = extractTrivia(tokens_.getHiddenTokensToLeft(start_idx));
+    auto trailing = extractTrivia(tokens_.getHiddenTokensToRight(stop_idx));
+
+    // Commit to Node
+    if (!leading.empty() || !trailing.empty() || inline_comment.has_value()) {
+        node.trivia = std::make_unique<ast::NodeTrivia>(
+          ast::NodeTrivia{ .leading = std::move(leading),
+                           .trailing = std::move(trailing),
+                           .inline_comment = std::move(inline_comment) });
+    }
 }
 
-auto TriviaBinder::findLastDefault(const std::size_t start_index) const noexcept -> std::size_t
+auto TriviaBinder::isUsed(const antlr4::Token *token) const -> bool
 {
-    const auto *start_token = tokens_.get(start_index);
-    if (start_token == nullptr || !isDefault(start_token)) {
-        return start_index;
-    }
+    return used_[token->getTokenIndex()];
+}
 
-    const auto line = start_token->getLine();
-
-    std::size_t result = start_index;
-
-    for (const auto i : std::views::iota(start_index + 1)) {
-        const auto *token = tokens_.get(i);
-
-        if (token == nullptr || token->getLine() != line) {
-            break;
-        }
-
-        if (isDefault(token)) {
-            result = i;
-        }
-    }
-
-    return result;
+auto TriviaBinder::markAsUsed(const antlr4::Token *token) -> void
+{
+    used_[token->getTokenIndex()] = true;
 }
 
 } // namespace builder

@@ -2,14 +2,13 @@ add_executable(
     ast_tests
     #
     # Design Units
+    nodes/test_trivia.cpp
     nodes/design_units/test_architecture.cpp
-    nodes/design_units/test_comments.cpp
     nodes/design_units/test_configuration.cpp
     nodes/design_units/test_context.cpp
     nodes/design_units/test_entity.cpp
     nodes/design_units/test_entity_instantiation.cpp
     nodes/design_units/test_interface_package.cpp
-    nodes/design_units/test_newlines.cpp
     nodes/design_units/test_package.cpp
     nodes/design_units/test_package_body.cpp
     nodes/design_units/test_package_instantiation.cpp

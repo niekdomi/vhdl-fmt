@@ -91,12 +91,12 @@ auto Translator::makeForLoop(vhdlParser::Loop_statementContext *ctx) -> ast::For
                         // It's a name
                         auto tok = make<ast::TokenExpr>(range_decl);
                         tok.text = range_decl->getText();
-                        loop.range = tok;
+                        loop.range = std::move(tok);
                     }
                 } else if (auto *subtype = range->subtype_indication()) {
                     auto tok = make<ast::TokenExpr>(subtype);
                     tok.text = subtype->getText();
-                    loop.range = tok;
+                    loop.range = std::move(tok);
                 }
             }
         }
