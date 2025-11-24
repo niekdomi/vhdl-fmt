@@ -21,6 +21,8 @@ TriviaBinder::TriviaBinder(antlr4::CommonTokenStream &ts) : tokens_(ts), used_(t
 
 auto TriviaBinder::extractTrivia(std::span<antlr4::Token *const> range) -> std::vector<ast::Trivia>
 {
+    constexpr uint8_t BREAK_BREAKOFF = 2U; // Minimum newlines to register a Break trivia
+
     std::vector<ast::Trivia> result{};
 
     unsigned int pending_newlines{ 0 };
@@ -34,7 +36,7 @@ auto TriviaBinder::extractTrivia(std::span<antlr4::Token *const> range) -> std::
         }
 
         if (isComment(token)) {
-            if (pending_newlines >= 2) {
+            if (pending_newlines >= BREAK_BREAKOFF) {
                 result.emplace_back(ast::Break{ .blank_lines = pending_newlines - 1 });
             }
             pending_newlines = 0;
@@ -43,7 +45,7 @@ auto TriviaBinder::extractTrivia(std::span<antlr4::Token *const> range) -> std::
         }
     }
 
-    if (pending_newlines >= 2) {
+    if (pending_newlines >= BREAK_BREAKOFF) {
         result.emplace_back(ast::Break{ .blank_lines = pending_newlines - 1 });
     }
 
@@ -57,9 +59,9 @@ auto TriviaBinder::findContextEnd(const antlr4::ParserRuleContext *ctx) const ->
 
     const auto indices = std::views::iota(stop + 1, tokens_.size());
 
-    auto it = std::ranges::find_if(indices, [this, line](std::size_t i) -> bool {
+    const auto it = std::ranges::find_if(indices, [this, line](std::size_t i) -> bool {
         auto *token = tokens_.get(i);
-        return !isDefault(token) || token->getLine() != line;
+        return !isDefault(token) || (token->getLine() != line);
     });
 
     return (it != indices.end()) ? (*it - 1) : stop;
@@ -77,7 +79,7 @@ void TriviaBinder::bind(ast::NodeBase &node, const antlr4::ParserRuleContext *ct
     // Extract Inline (Immediate Right of stop)
     std::optional<ast::Comment> inline_comment{};
     if (stop_idx + 1 < tokens_.size()) {
-        if (auto *token = tokens_.get(stop_idx + 1); isComment(token) && !isUsed(token)) {
+        if (const auto *token = tokens_.get(stop_idx + 1); isComment(token) && !isUsed(token)) {
             inline_comment = ast::Comment{ token->getText() };
             markAsUsed(token);
         }
