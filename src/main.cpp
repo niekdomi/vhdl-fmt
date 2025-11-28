@@ -38,7 +38,7 @@ auto main(int argc, char *argv[]) -> int
         try {
             builder::verify::ensureSafety(*ctx_orig.tokens, *ctx_fmt.tokens);
         } catch (const std::exception &e) {
-            logger.critical("FATAL ERROR: Formatter corrupted the code semantics.");
+            logger.critical("Formatter corrupted the code semantics.");
             logger.critical("{}", e.what());
             logger.info("Aborting write to prevent data loss.");
             return EXIT_FAILURE;
