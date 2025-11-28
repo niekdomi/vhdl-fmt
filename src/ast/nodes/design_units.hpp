@@ -37,6 +37,7 @@ struct Entity : NodeBase
     std::vector<Declaration> decls;
     std::vector<ConcurrentStatement> stmts;
     std::optional<std::string> end_label;
+    bool has_end_entity_keyword = false;
 };
 
 struct Architecture : NodeBase
@@ -45,6 +46,8 @@ struct Architecture : NodeBase
     std::string entity_name;
     std::vector<Declaration> decls;
     std::vector<ConcurrentStatement> stmts;
+    std::optional<std::string> end_label;
+    bool has_end_architecture_keyword = false;
 };
 
 } // namespace ast

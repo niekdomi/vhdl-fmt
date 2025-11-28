@@ -31,10 +31,14 @@ auto PrettyPrinter::operator()(const ast::Entity &node) const -> Doc
           node.stmts, result, [this](auto acc, const auto &stmt) { return acc <<= visit(stmt); });
     }
 
-    // end [entity] [<name>];
-    const auto end_label = node.end_label.value_or(node.name);
-    const Doc end_line
-      = Doc::text("end") & Doc::text("entity") & Doc::text(end_label) + Doc::text(";");
+    Doc end_line = Doc::text("end");
+    if (node.has_end_entity_keyword) {
+        end_line &= Doc::text("entity");
+    }
+    if (node.end_label.has_value()) {
+        end_line &= Doc::text(*node.end_label);
+    }
+    end_line += Doc::text(";");
 
     return result / end_line;
 }
@@ -59,8 +63,14 @@ auto PrettyPrinter::operator()(const ast::Architecture &node) const -> Doc
       node.stmts, result, [this](auto acc, const auto &stmt) { return acc <<= visit(stmt); });
 
     // end [architecture] [<name>];
-    const Doc end_line
-      = Doc::text("end") & Doc::text("architecture") & Doc::text(node.name) + Doc::text(";");
+    Doc end_line = Doc::text("end");
+    if (node.has_end_architecture_keyword) {
+        end_line &= Doc::text("architecture");
+    }
+    if (node.end_label.has_value()) {
+        end_line &= Doc::text(*node.end_label);
+    }
+    end_line += Doc::text(";");
 
     return result / end_line;
 }
