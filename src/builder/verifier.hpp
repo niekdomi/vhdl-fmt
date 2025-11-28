@@ -52,24 +52,28 @@ inline void ensureSafety(antlr4::CommonTokenStream &original, antlr4::CommonToke
 
         // 1. Check Token Type match
         if (t_orig->getType() != t_fmt->getType()) {
-            throw std::runtime_error(std::format(
-                "Token Type Mismatch!\n"
-                "  Original:  '{}' (Type: {}, Line: {})\n"
-                "  Formatted: '{}' (Type: {}, Line: {})",
-                t_orig->getText(), t_orig->getType(), t_orig->getLine(),
-                t_fmt->getText(), t_fmt->getType(), t_fmt->getLine()));
+            throw std::runtime_error(std::format("Token Type Mismatch!\n"
+                                                 "  Original:  '{}' (Type: {}, Line: {})\n"
+                                                 "  Formatted: '{}' (Type: {}, Line: {})",
+                                                 t_orig->getText(),
+                                                 t_orig->getType(),
+                                                 t_orig->getLine(),
+                                                 t_fmt->getText(),
+                                                 t_fmt->getType(),
+                                                 t_fmt->getLine()));
         }
 
         // 2. Check Text Content match (Case-Insensitive)
         // We assume the formatter might change casing (e.g., entity -> ENTITY),
         // so we use case-insensitive comparison.
         if (!std::ranges::equal(t_orig->getText(), t_fmt->getText(), detail::charEquals)) {
-            throw std::runtime_error(std::format(
-                "Token Text Mismatch!\n"
-                "  Original:  '{}' (Line: {})\n"
-                "  Formatted: '{}' (Line: {})",
-                t_orig->getText(), t_orig->getLine(),
-                t_fmt->getText(), t_fmt->getLine()));
+            throw std::runtime_error(std::format("Token Text Mismatch!\n"
+                                                 "  Original:  '{}' (Line: {})\n"
+                                                 "  Formatted: '{}' (Line: {})",
+                                                 t_orig->getText(),
+                                                 t_orig->getLine(),
+                                                 t_fmt->getText(),
+                                                 t_fmt->getLine()));
         }
 
         ++it_orig;
@@ -79,14 +83,12 @@ inline void ensureSafety(antlr4::CommonTokenStream &original, antlr4::CommonToke
     // 3. Ensure both streams finished at the same time
     if (it_orig != end_orig) {
         throw std::runtime_error(std::format(
-            "Formatted output is truncated. Missing expected token: '{}'",
-            (*it_orig)->getText()));
+          "Formatted output is truncated. Missing expected token: '{}'", (*it_orig)->getText()));
     }
 
     if (it_fmt != end_fmt) {
         throw std::runtime_error(std::format(
-            "Formatted output has extra content. Unexpected token: '{}'",
-            (*it_fmt)->getText()));
+          "Formatted output has extra content. Unexpected token: '{}'", (*it_fmt)->getText()));
     }
 }
 

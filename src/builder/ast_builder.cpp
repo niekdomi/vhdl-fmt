@@ -89,7 +89,8 @@ auto build(Context &ctx) -> ast::DesignFile
     try {
         tree = ctx.parser->design_file();
     } catch (const antlr4::ParseCancellationException &) {
-        common::Logger::instance().trace("SLL parsing failed (ambiguity). Falling back to LL mode.");
+        common::Logger::instance().trace(
+          "SLL parsing failed (ambiguity). Falling back to LL mode.");
 
         // 2. Fallback to LL (Strong Mode)
         ctx.tokens->reset();
