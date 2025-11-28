@@ -104,7 +104,7 @@ fi
 if [[ -n "$sorted_rows" ]]; then
     while IFS='|' read -r pct filename funcs missed_funcs func_cover branches missed_branches branch_cover; do
         [[ -z "$filename" ]] && continue
-        echo "| \`$filename\` | $funcs | $missed_funcs | $func_cover | $branches | $missed_branches | $branch_cover |" \
+        echo "| $filename | $funcs | $missed_funcs | $func_cover | $branches | $missed_branches | $branch_cover |" \
             >>"$OUTPUT"
     done <<<"$sorted_rows"
 fi
@@ -113,7 +113,7 @@ fi
 if [[ -n "$total_entry" ]]; then
     IFS='|' read -r total_filename total_funcs total_missed_funcs total_func_cover total_branches_row total_missed_branches_row total_branch_cover <<<"$total_entry"
 
-    echo "| **\`$total_filename\`** | **$total_funcs** | **$total_missed_funcs** | **$total_func_cover** | **$total_branches_row** | **$total_missed_branches_row** | **$total_branch_cover** |" \
+    echo "| **$total_filename** | **$total_funcs** | **$total_missed_funcs** | **$total_func_cover** | **$total_branches_row** | **$total_missed_branches_row** | **$total_branch_cover** |" \
         >>"$OUTPUT"
 fi
 
