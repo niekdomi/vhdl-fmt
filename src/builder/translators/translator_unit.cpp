@@ -4,6 +4,9 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
+#include <utility>
+#include <vector>
+
 namespace builder {
 
 // ---------------------- Top-level ----------------------
@@ -156,34 +159,35 @@ auto Translator::makeAliasDecl(vhdlParser::Alias_declarationContext *ctx) -> ast
 
     auto alias_decl = make<ast::AliasDecl>(ctx);
 
-    // Get alias name
-    if (auto *designator = ctx->alias_designator()) {
+    auto *designator = ctx->alias_designator();
+    if (designator != nullptr) {
         if (auto *id = designator->identifier()) {
             alias_decl.name = id->getText();
         }
     }
 
-    // Get type indication if present
-    if (auto *indication = ctx->alias_indication()) {
-        if (auto *subtype_ind = indication->subtype_indication()) {
-            const auto &selected = subtype_ind->selected_name();
-            if (!selected.empty() && selected[0] != nullptr) {
-                alias_decl.type_name = selected[0]->getText();
-            }
+    auto *indication = ctx->alias_indication();
+    if (indication == nullptr) {
+        if (auto *name = ctx->name()) {
+            alias_decl.target = makeName(name);
         }
+        return alias_decl;
+    }
 
-        if (alias_decl.type_name.empty()) {
-            auto type_text = indication->getText();
-            const auto paren_pos = type_text.find_first_of("( ");
-            if (paren_pos != std::string::npos) {
-                alias_decl.type_name = type_text.substr(0, paren_pos);
-            } else {
-                alias_decl.type_name = std::move(type_text);
-            }
+    if (auto *subtype_ind = indication->subtype_indication()) {
+        const auto &selected = subtype_ind->selected_name();
+        if (!selected.empty() && selected[0] != nullptr) {
+            alias_decl.type_name = selected[0]->getText();
         }
     }
 
-    // Get the aliased target (the name after 'is')
+    if (alias_decl.type_name.empty()) {
+        auto type_text = indication->getText();
+        const auto paren_pos = type_text.find_first_of("( ");
+        alias_decl.type_name
+          = paren_pos != std::string::npos ? type_text.substr(0, paren_pos) : std::move(type_text);
+    }
+
     if (auto *name = ctx->name()) {
         alias_decl.target = makeName(name);
     }
@@ -207,8 +211,7 @@ auto Translator::makeTypeDecl(vhdlParser::Type_declarationContext *ctx) -> ast::
     // Get type definition - store as optional Expr for now
     // Could be enumeration, array, record, etc.
     if (auto *def = ctx->type_definition()) {
-        // For now, just store the text representation
-        // TODO(domi): Parse specific type definitions if needed
+        // TODO(someone): Parse specific type definitions
         type_decl.definition = makeToken(ctx, def->getText());
     }
 
@@ -255,7 +258,6 @@ auto Translator::makeContextClause(vhdlParser::Context_clauseContext *ctx)
         return items;
     }
 
-    // Iterate through all context items in the clause
     for (auto *item_ctx : ctx->context_item()) {
         if (item_ctx != nullptr) {
             items.push_back(makeContextItem(item_ctx));
@@ -291,7 +293,6 @@ auto Translator::makeLibraryClause(vhdlParser::Library_clauseContext *ctx) -> as
 
     auto clause = make<ast::LibraryClause>(ctx);
 
-    // Extract all library logical names
     for (auto *logical_name : ctx->logical_name_list()->logical_name()) {
         if (logical_name != nullptr) {
             clause.logical_names.push_back(logical_name->getText());
@@ -309,7 +310,6 @@ auto Translator::makeUseClause(vhdlParser::Use_clauseContext *ctx) -> ast::UseCl
 
     auto clause = make<ast::UseClause>(ctx);
 
-    // Extract all selected names
     for (auto *selected_name : ctx->selected_name()) {
         if (selected_name != nullptr) {
             clause.selected_names.push_back(selected_name->getText());

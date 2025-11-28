@@ -51,8 +51,7 @@ if(CCACHE_PROGRAM)
     file(MAKE_DIRECTORY ${CCACHE_TEMPDIR})
     message(STATUS "  ccache:   ${CCACHE_PROGRAM}")
     message(STATUS "  ccache dir: ${CCACHE_DIR}")
-    set(
-        CMAKE_CXX_COMPILER_LAUNCHER
+    set(CMAKE_CXX_COMPILER_LAUNCHER
         "${CMAKE_COMMAND};-E;env;CCACHE_DIR=${CCACHE_DIR};CCACHE_TEMPDIR=${CCACHE_TEMPDIR};${CCACHE_PROGRAM}"
     )
 endif()

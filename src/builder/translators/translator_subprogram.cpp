@@ -92,7 +92,7 @@ auto Translator::makeParameterList(vhdlParser::Formal_parameter_listContext *ctx
 
     const auto &elems = iface_list->interface_element();
     params = common::transformWithLast(elems,
-                                       [this](auto *elem, bool is_last) {
+                                       [this](auto *elem, const bool is_last) {
                                            return makeSubprogramParam(elem->interface_declaration(),
                                                                       is_last);
                                        })
@@ -159,6 +159,7 @@ auto Translator::makeProcedure(vhdlParser::Procedure_specificationContext *ctx)
     }
 
     proc.parameters = makeParameterList(ctx->formal_parameter_list());
+
     return proc;
 }
 
@@ -229,6 +230,7 @@ auto Translator::makeSubprogramBody(vhdlParser::Subprogram_bodyContext *ctx)
         auto proc = makeProcedure(proc_spec);
         proc.decls = std::move(declarative_part);
         proc.body = std::move(statements);
+
         return proc;
     }
 
@@ -236,6 +238,7 @@ auto Translator::makeSubprogramBody(vhdlParser::Subprogram_bodyContext *ctx)
         auto func = makeFunction(func_spec);
         func.decls = std::move(declarative_part);
         func.body = std::move(statements);
+
         return func;
     }
 

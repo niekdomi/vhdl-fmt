@@ -2,85 +2,9 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
-#include <algorithm>
-#include <optional>
 #include <ranges>
-#include <type_traits>
-#include <utility>
 
 namespace builder {
-
-namespace {
-
-auto cloneExpr(const ast::Expr &expr) -> ast::Expr
-{
-    const auto cloneTrivia
-      = [](const std::unique_ptr<ast::NodeTrivia> &src) -> std::unique_ptr<ast::NodeTrivia> {
-        if (!src) {
-            return nullptr;
-        }
-        return std::make_unique<ast::NodeTrivia>(*src);
-    };
-
-    return std::visit(
-      [&cloneTrivia](const auto &node) -> ast::Expr {
-          using T = std::decay_t<decltype(node)>;
-          if constexpr (std::is_same_v<T, ast::TokenExpr>) {
-              ast::TokenExpr copy{};
-              copy.trivia = cloneTrivia(node.trivia);
-              copy.text = node.text;
-              return copy;
-          } else if constexpr (std::is_same_v<T, ast::GroupExpr>) {
-              ast::GroupExpr copy{};
-              copy.trivia = cloneTrivia(node.trivia);
-              copy.children.reserve(node.children.size());
-              for (const auto &child : node.children) {
-                  copy.children.push_back(cloneExpr(child));
-              }
-              return copy;
-          } else if constexpr (std::is_same_v<T, ast::UnaryExpr>) {
-              ast::UnaryExpr copy{};
-              copy.trivia = cloneTrivia(node.trivia);
-              copy.op = node.op;
-              if (node.value != nullptr) {
-                  copy.value = std::make_unique<ast::Expr>(cloneExpr(*node.value));
-              }
-              return copy;
-          } else if constexpr (std::is_same_v<T, ast::BinaryExpr>) {
-              ast::BinaryExpr copy{};
-              copy.trivia = cloneTrivia(node.trivia);
-              copy.op = node.op;
-              if (node.left != nullptr) {
-                  copy.left = std::make_unique<ast::Expr>(cloneExpr(*node.left));
-              }
-              if (node.right != nullptr) {
-                  copy.right = std::make_unique<ast::Expr>(cloneExpr(*node.right));
-              }
-              return copy;
-          } else if constexpr (std::is_same_v<T, ast::ParenExpr>) {
-              ast::ParenExpr copy{};
-              copy.trivia = cloneTrivia(node.trivia);
-              if (node.inner != nullptr) {
-                  copy.inner = std::make_unique<ast::Expr>(cloneExpr(*node.inner));
-              }
-              return copy;
-          } else if constexpr (std::is_same_v<T, ast::CallExpr>) {
-              ast::CallExpr copy{};
-              copy.trivia = cloneTrivia(node.trivia);
-              if (node.callee != nullptr) {
-                  copy.callee = std::make_unique<ast::Expr>(cloneExpr(*node.callee));
-              }
-              if (node.args != nullptr) {
-                  copy.args = std::make_unique<ast::Expr>(cloneExpr(*node.args));
-              }
-              return copy;
-          }
-          return ast::Expr{};
-      },
-      expr);
-}
-
-} // namespace
 
 auto Translator::makeConcurrentAssign(
   vhdlParser::Concurrent_signal_assignment_statementContext *ctx) -> ast::ConcurrentAssign
@@ -109,15 +33,6 @@ auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignment
         return {};
     }
 
-    const auto extract_wave_expr
-      = [this](vhdlParser::WaveformContext &wave_ctx) -> std::optional<ast::Expr> {
-        const auto elems = wave_ctx.waveform_element();
-        if (elems.empty() || elems[0]->expression().empty()) {
-            return std::nullopt;
-        }
-        return makeExpr(elems[0]->expression(0));
-    };
-
     auto assign = make<ast::ConcurrentAssign>(ctx);
 
     if (auto *target_ctx = ctx->target()) {
@@ -126,8 +41,11 @@ auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignment
 
     auto *cond_wave = ctx->conditional_waveforms();
     if (cond_wave == nullptr) {
+        assign.value = makeToken(ctx, ctx->getText());
         return assign;
     }
+
+    bool value_set = false;
 
     for (auto *current = cond_wave; current != nullptr;
          current = current->conditional_waveforms()) {
@@ -136,13 +54,18 @@ auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignment
             continue;
         }
 
-        auto value = extract_wave_expr(*wave);
-        if (!value.has_value()) {
+        const auto elems = wave->waveform_element();
+        if (elems.empty() || elems[0]->expression().empty()) {
             continue;
         }
 
         ast::ConditionalWaveform waveform{};
-        waveform.value = std::move(*value);
+        waveform.value = makeExpr(elems[0]->expression(0));
+
+        if (!value_set) {
+            assign.value = makeExpr(elems[0]->expression(0));
+            value_set = true;
+        }
 
         if (auto *cond_ctx = current->condition()) {
             if (auto *expr_ctx = cond_ctx->expression()) {
@@ -153,8 +76,8 @@ auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignment
         assign.conditional_waveforms.push_back(std::move(waveform));
     }
 
-    if (!assign.conditional_waveforms.empty()) {
-        assign.value = cloneExpr(assign.conditional_waveforms.front().value);
+    if (!value_set) {
+        assign.value = makeToken(ctx, ctx->getText());
     }
 
     return assign;
@@ -166,15 +89,6 @@ auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContex
     if (ctx == nullptr) {
         return {};
     }
-
-    const auto extract_wave_expr
-      = [this](vhdlParser::WaveformContext &wave_ctx) -> std::optional<ast::Expr> {
-        const auto elems = wave_ctx.waveform_element();
-        if (elems.empty() || elems[0]->expression().empty()) {
-            return std::nullopt;
-        }
-        return makeExpr(elems[0]->expression(0));
-    };
 
     auto assign = make<ast::ConcurrentAssign>(ctx);
 
@@ -188,6 +102,7 @@ auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContex
 
     auto *sel_waves = ctx->selected_waveforms();
     if (sel_waves == nullptr) {
+        assign.value = makeToken(ctx, ctx->getText());
         return assign;
     }
 
@@ -195,14 +110,24 @@ auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContex
     const auto choices = sel_waves->choices();
     const auto count = std::min(waves.size(), choices.size());
 
+    bool value_set = false;
+
     for (std::size_t i = 0; i < count; ++i) {
-        auto value = extract_wave_expr(*waves[i]);
-        if (!value.has_value()) {
+        if (waves[i] == nullptr) {
+            continue;
+        }
+        const auto elems = waves[i]->waveform_element();
+        if (elems.empty() || elems[0]->expression().empty()) {
             continue;
         }
 
         ast::SelectedWaveform waveform{};
-        waveform.value = std::move(*value);
+        waveform.value = makeExpr(elems[0]->expression(0));
+
+        if (!value_set) {
+            assign.value = makeExpr(elems[0]->expression(0));
+            value_set = true;
+        }
 
         waveform.choices = choices[i]->choice()
                          | std::views::transform([this](auto *ch) { return makeChoice(ch); })
@@ -211,8 +136,8 @@ auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContex
         assign.selected_waveforms.push_back(std::move(waveform));
     }
 
-    if (!assign.selected_waveforms.empty()) {
-        assign.value = cloneExpr(assign.selected_waveforms.front().value);
+    if (!value_set) {
+        assign.value = makeToken(ctx, ctx->getText());
     }
 
     return assign;
