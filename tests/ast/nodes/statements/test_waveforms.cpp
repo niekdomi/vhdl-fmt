@@ -12,13 +12,14 @@ namespace {
 // Helper to access the first statement of the first process
 // (We use a process + sequential signal assignment to test waveforms easily)
 [[nodiscard]]
-auto getFirstSignalAssign(const ast::DesignFile& design) -> const ast::SignalAssign* {
-    const auto* arch = std::get_if<ast::Architecture>(&design.units[1]);
+auto getFirstSignalAssign(const ast::DesignFile &design) -> const ast::SignalAssign *
+{
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     if (arch == nullptr || arch->stmts.empty()) {
         return nullptr;
     }
 
-    const auto* proc = std::get_if<ast::Process>(arch->stmts.data());
+    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
     if (proc == nullptr || proc->body.empty()) {
         return nullptr;
     }
@@ -45,11 +46,11 @@ TEST_CASE("Waveform Parsing", "[builder][statements][waveforms]")
         )";
 
         const auto design = builder::buildFromString(VHDL);
-        const auto* assign = getFirstSignalAssign(design);
+        const auto *assign = getFirstSignalAssign(design);
         REQUIRE(assign != nullptr);
 
         REQUIRE(assign->waveform.elements.size() == 1);
-        const auto& elem = assign->waveform.elements[0];
+        const auto &elem = assign->waveform.elements[0];
 
         // Check Value ('1')
         CHECK(std::get<ast::TokenExpr>(elem.value).text == "'1'");
@@ -57,7 +58,7 @@ TEST_CASE("Waveform Parsing", "[builder][statements][waveforms]")
         // Check Delay (5 ns)
         REQUIRE(elem.after.has_value());
 
-        const auto* phys = std::get_if<ast::PhysicalLiteral>(&*elem.after);
+        const auto *phys = std::get_if<ast::PhysicalLiteral>(&*elem.after);
         REQUIRE(phys != nullptr);
         CHECK(phys->value == "5");
         CHECK(phys->unit == "ns");
@@ -78,7 +79,7 @@ TEST_CASE("Waveform Parsing", "[builder][statements][waveforms]")
         )";
 
         const auto design = builder::buildFromString(VHDL);
-        const auto* assign = getFirstSignalAssign(design);
+        const auto *assign = getFirstSignalAssign(design);
         REQUIRE(assign != nullptr);
 
         // Verify we captured BOTH elements
@@ -86,14 +87,14 @@ TEST_CASE("Waveform Parsing", "[builder][statements][waveforms]")
 
         // Element 0: '1' after 5 ns
         {
-            const auto& el = assign->waveform.elements[0];
+            const auto &el = assign->waveform.elements[0];
             CHECK(std::get<ast::TokenExpr>(el.value).text == "'1'");
             REQUIRE(el.after.has_value());
         }
 
         // Element 1: '0' after 10 ns
         {
-            const auto& el = assign->waveform.elements[1];
+            const auto &el = assign->waveform.elements[1];
             CHECK(std::get<ast::TokenExpr>(el.value).text == "'0'");
             REQUIRE(el.after.has_value());
         }
@@ -112,16 +113,17 @@ TEST_CASE("Waveform Parsing", "[builder][statements][waveforms]")
         )";
 
         const auto design = builder::buildFromString(VHDL);
-        const auto* arch = std::get_if<ast::Architecture>(&design.units[1]);
+        const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
         REQUIRE(arch != nullptr);
 
-        const auto* assign = std::get_if<ast::ConditionalConcurrentAssign>(arch->stmts.data());
+        const auto *assign = std::get_if<ast::ConditionalConcurrentAssign>(arch->stmts.data());
         REQUIRE(assign != nullptr);
         REQUIRE(assign->waveforms.size() == 2);
 
         // Waveform 1: '1' when ...
         CHECK_FALSE(assign->waveforms[0].waveform.is_unaffected);
-        CHECK(std::get<ast::TokenExpr>(assign->waveforms[0].waveform.elements[0].value).text == "'1'");
+        CHECK(std::get<ast::TokenExpr>(assign->waveforms[0].waveform.elements[0].value).text
+              == "'1'");
 
         // Waveform 2: else unaffected
         CHECK(assign->waveforms[1].waveform.is_unaffected);

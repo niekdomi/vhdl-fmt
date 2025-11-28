@@ -43,7 +43,8 @@ TEST_CASE("Concurrent Assignments", "[statements][concurrent_assign]")
 
         // New AST Access: waveform -> elements[0] -> value
         REQUIRE(assign->waveforms[0].waveform.elements.size() == 1);
-        CHECK(std::get<ast::TokenExpr>(assign->waveforms[0].waveform.elements[0].value).text == "'1'");
+        CHECK(std::get<ast::TokenExpr>(assign->waveforms[0].waveform.elements[0].value).text
+              == "'1'");
         CHECK_FALSE(assign->waveforms[0].condition.has_value());
     }
 
@@ -58,7 +59,7 @@ TEST_CASE("Concurrent Assignments", "[statements][concurrent_assign]")
 
         // Waveform 1: '1' when sel = '1'
         {
-            const auto& item = assign->waveforms[0];
+            const auto &item = assign->waveforms[0];
             REQUIRE(item.waveform.elements.size() == 1);
             CHECK(std::get<ast::TokenExpr>(item.waveform.elements[0].value).text == "'1'");
             REQUIRE(item.condition.has_value());
@@ -70,7 +71,7 @@ TEST_CASE("Concurrent Assignments", "[statements][concurrent_assign]")
 
         // Waveform 2: '0' (else)
         {
-            const auto& item = assign->waveforms[1];
+            const auto &item = assign->waveforms[1];
             REQUIRE(item.waveform.elements.size() == 1);
             CHECK(std::get<ast::TokenExpr>(item.waveform.elements[0].value).text == "'0'");
             CHECK_FALSE(item.condition.has_value());
@@ -89,7 +90,7 @@ TEST_CASE("Concurrent Assignments", "[statements][concurrent_assign]")
 
         // Selection 1: '1' when '0'
         {
-            const auto& sel = assign->selections[0];
+            const auto &sel = assign->selections[0];
             REQUIRE(sel.waveform.elements.size() == 1);
             CHECK(std::get<ast::TokenExpr>(sel.waveform.elements[0].value).text == "'1'");
             REQUIRE(sel.choices.size() == 1);
@@ -98,7 +99,7 @@ TEST_CASE("Concurrent Assignments", "[statements][concurrent_assign]")
 
         // Selection 2: '0' when others
         {
-            const auto& sel = assign->selections[1];
+            const auto &sel = assign->selections[1];
             REQUIRE(sel.waveform.elements.size() == 1);
             CHECK(std::get<ast::TokenExpr>(sel.waveform.elements[0].value).text == "'0'");
             REQUIRE(sel.choices.size() == 1);
