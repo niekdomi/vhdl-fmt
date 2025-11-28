@@ -14,14 +14,25 @@ namespace {
 
 auto cloneExpr(const ast::Expr &expr) -> ast::Expr
 {
+    const auto cloneTrivia
+      = [](const std::unique_ptr<ast::NodeTrivia> &src) -> std::unique_ptr<ast::NodeTrivia> {
+        if (!src) {
+            return nullptr;
+        }
+        return std::make_unique<ast::NodeTrivia>(*src);
+    };
+
     return std::visit(
-      [](const auto &node) -> ast::Expr {
+      [&cloneTrivia](const auto &node) -> ast::Expr {
           using T = std::decay_t<decltype(node)>;
           if constexpr (std::is_same_v<T, ast::TokenExpr>) {
-              return node;
+              ast::TokenExpr copy{};
+              copy.trivia = cloneTrivia(node.trivia);
+              copy.text = node.text;
+              return copy;
           } else if constexpr (std::is_same_v<T, ast::GroupExpr>) {
               ast::GroupExpr copy{};
-              copy.trivia = node.trivia;
+              copy.trivia = cloneTrivia(node.trivia);
               copy.children.reserve(node.children.size());
               for (const auto &child : node.children) {
                   copy.children.push_back(cloneExpr(child));
@@ -29,7 +40,7 @@ auto cloneExpr(const ast::Expr &expr) -> ast::Expr
               return copy;
           } else if constexpr (std::is_same_v<T, ast::UnaryExpr>) {
               ast::UnaryExpr copy{};
-              copy.trivia = node.trivia;
+              copy.trivia = cloneTrivia(node.trivia);
               copy.op = node.op;
               if (node.value != nullptr) {
                   copy.value = std::make_unique<ast::Expr>(cloneExpr(*node.value));
@@ -37,7 +48,7 @@ auto cloneExpr(const ast::Expr &expr) -> ast::Expr
               return copy;
           } else if constexpr (std::is_same_v<T, ast::BinaryExpr>) {
               ast::BinaryExpr copy{};
-              copy.trivia = node.trivia;
+              copy.trivia = cloneTrivia(node.trivia);
               copy.op = node.op;
               if (node.left != nullptr) {
                   copy.left = std::make_unique<ast::Expr>(cloneExpr(*node.left));
@@ -48,14 +59,14 @@ auto cloneExpr(const ast::Expr &expr) -> ast::Expr
               return copy;
           } else if constexpr (std::is_same_v<T, ast::ParenExpr>) {
               ast::ParenExpr copy{};
-              copy.trivia = node.trivia;
+              copy.trivia = cloneTrivia(node.trivia);
               if (node.inner != nullptr) {
                   copy.inner = std::make_unique<ast::Expr>(cloneExpr(*node.inner));
               }
               return copy;
           } else if constexpr (std::is_same_v<T, ast::CallExpr>) {
               ast::CallExpr copy{};
-              copy.trivia = node.trivia;
+              copy.trivia = cloneTrivia(node.trivia);
               if (node.callee != nullptr) {
                   copy.callee = std::make_unique<ast::Expr>(cloneExpr(*node.callee));
               }
