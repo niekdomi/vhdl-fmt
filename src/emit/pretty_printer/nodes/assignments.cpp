@@ -12,7 +12,7 @@ auto PrettyPrinter::operator()(const ast::Waveform &node) const -> Doc
     }
 
     // Helper to format "value [after time]"
-    const auto format_elem = [&](const ast::Waveform::Element &elem) {
+    const auto format_elem = [&](const ast::Waveform::Element &elem) -> Doc {
         Doc d = visit(elem.value);
         if (elem.after) {
             d += Doc::text(" after ") + visit(*elem.after);
