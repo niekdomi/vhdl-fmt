@@ -59,13 +59,8 @@ TEST_CASE("Waveform Rendering", "[pretty_printer][waveforms]")
             common::Config tight_config = emit::test::defaultConfig();
             tight_config.line_config.line_length = 20;
 
-            // Expected behavior:
-            // s <=
-            //   '1' after 5 ns,
-            //   '0' after 10 ns;
-            constexpr std::string_view EXPECTED = "s <=\n"
-                                                  "  '1' after 5 ns,\n"
-                                                  "  '0' after 10 ns;";
+            constexpr std::string_view EXPECTED = "s <= '1' after 5 ns,\n"
+                                                  "     '0' after 10 ns;";
 
             REQUIRE(emit::test::render(assign, tight_config) == EXPECTED);
         }

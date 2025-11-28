@@ -25,13 +25,13 @@ auto PrettyPrinter::operator()(const ast::Waveform &node) const -> Doc
     return joinMap(node.elements, Doc::text(",") + Doc::line(), format_elem, false);
 }
 
-// TODO(vedivad): This needs a hang combinator for better readability
+// Layout:
 // target <= val1 when cond1 else
 //           val2 when cond2 else
 //           val3;
 auto PrettyPrinter::operator()(const ast::ConditionalConcurrentAssign &node) const -> Doc
 {
-    const Doc result = visit(node.target) & Doc::text("<=");
+    const Doc target = visit(node.target) & Doc::text("<=");
 
     const auto make_cond_wave = [&](const auto &item) {
         Doc d = visit(item.waveform);
@@ -41,18 +41,18 @@ auto PrettyPrinter::operator()(const ast::ConditionalConcurrentAssign &node) con
         return d;
     };
 
-    // Join with "else" and a newline
+    // Join with "else" + SoftLine
+    // If it breaks, the next line starts at the hung indent level.
     const Doc waveforms
       = joinMap(node.waveforms, Doc::text(" else") + Doc::line(), make_cond_wave, false);
 
-    // Indent the waveforms relative to the target
-    return (result << waveforms) + Doc::text(";");
+    return Doc::group(target & Doc::hang(waveforms)) + Doc::text(";");
 }
 
-// TODO(vedivad): This needs a hang combinator for better readability
+// Layout:
 // with selector select
-//     target <= val1 when choice1,
-//               val2 when choice2;
+//   target <= val1 when choice1,
+//             val2 when choice2;
 auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign &node) const -> Doc
 {
     const Doc header = Doc::text("with") & visit(node.selector) & Doc::text("select");
@@ -64,24 +64,29 @@ auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign &node) const 
         return val & Doc::text("when") & choices;
     };
 
-    // Join selections with comma
+    // Join selections with comma + SoftLine
     const Doc selections = joinMap(node.selections, Doc::text(",") + Doc::line(), make_sel, false);
 
-    // Layout:
-    // Header
-    //   Target <= Selections;
-    return header / (target << selections) + Doc::text(";");
+    // For selected assignment, the target itself is nested under the header,
+    // and the selections hang off the target.
+    return Doc::group(header / (target & Doc::hang(selections)) + Doc::text(";"));
 }
 
+// Layout:
+// target <= val1,
+//           val2;
 auto PrettyPrinter::operator()(const ast::SignalAssign &node) const -> Doc
 {
     const Doc wave = visit(node.waveform);
-    return visit(node.target) & Doc::text("<=") & wave + Doc::text(";");
+
+    return Doc::group(visit(node.target) & Doc::text("<=") & Doc::hang(wave)) + Doc::text(";");
 }
 
 auto PrettyPrinter::operator()(const ast::VariableAssign &node) const -> Doc
 {
-    return visit(node.target) & Doc::text(":=") & visit(node.value) + Doc::text(";");
+    const Doc val = visit(node.value);
+
+    return Doc::group(visit(node.target) & Doc::text(":=") & Doc::hang(val)) + Doc::text(";");
 }
 
 } // namespace emit
