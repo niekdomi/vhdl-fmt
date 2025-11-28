@@ -3,64 +3,82 @@
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
 
-TEST_CASE("DisconnectSpec: Disconnect specification", "[declarations][disconnect]")
+TEST_CASE("Disconnect Specifications", "[declarations][disconnect]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-            disconnect signal_name : type_mark after time_expression;
-        begin
-        end A;
-    )";
+    // Common prelude for time units and std_logic
+    constexpr std::string_view PRELUDE =
+        "library ieee;\n"
+        "use ieee.std_logic_1164.all;\n";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    // TODO(someone): Check disconnect specification when implemented
-}
+    SECTION("Basic Disconnect Specification")
+    {
+        constexpr std::string_view VHDL_FILE =
+            "entity E is end E;\n"
+            "architecture A of E is\n"
+            "    signal s : integer;\n"
+            "    -- Syntax: disconnect <signal> : <type> after <time>;\n"
+            "    disconnect s : integer after 10 ns;\n"
+            "begin\n"
+            "end A;";
 
-TEST_CASE("DisconnectSpec: Disconnect with specific time", "[declarations][disconnect]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-            signal my_sig : std_logic;
-            disconnect my_sig : std_logic after 10 ns;
-        begin
-        end A;
-    )";
+        auto design = builder::buildFromString(VHDL_FILE);
+        // TODO(someone): Check disconnect specification node
+    }
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    // TODO(someone): Check disconnect with time when implemented
-}
+    SECTION("Disconnect for std_logic (Guarded Signals)")
+    {
+        // Note: Disconnect usually applies to guarded signals, but syntax allows it here.
+        constexpr std::string_view VHDL_FILE =
+            "library ieee;\n"
+            "use ieee.std_logic_1164.all;\n"
+            "entity E is end E;\n"
+            "architecture A of E is\n"
+            "    signal my_sig : std_logic;\n"
+            "    disconnect my_sig : std_logic after 10 ns;\n"
+            "begin\n"
+            "end A;";
 
-TEST_CASE("DisconnectSpec: Disconnect for multiple signals", "[declarations][disconnect]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-            signal sig1, sig2 : std_logic;
-            disconnect sig1, sig2 : std_logic after 5 ns;
-        begin
-        end A;
-    )";
+        auto design = builder::buildFromString(VHDL_FILE);
+        // TODO(someone): Check disconnect with time
+    }
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    // TODO(someone): Check disconnect for multiple signals when implemented
-}
+    SECTION("Disconnect for Multiple Signals")
+    {
+        constexpr std::string_view VHDL_FILE =
+            "library ieee;\n"
+            "use ieee.std_logic_1164.all;\n"
+            "entity E is end E;\n"
+            "architecture A of E is\n"
+            "    signal sig1, sig2 : std_logic;\n"
+            "    disconnect sig1, sig2 : std_logic after 5 ns;\n"
+            "begin\n"
+            "end A;";
 
-TEST_CASE("DisconnectSpec: Disconnect in guarded block", "[declarations][disconnect]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-        begin
-            block
-                signal int_sig : std_logic;
-            begin
-                disconnect int_sig : std_logic after 1 us;
-            end block;
-        end A;
-    )";
+        auto design = builder::buildFromString(VHDL_FILE);
+        // TODO(someone): Check disconnect list
+    }
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    // TODO(someone): Check disconnect in block when implemented
+    SECTION("Disconnect in Block Statement")
+    {
+        // Fixed:
+        // 1. Added label 'my_block' (mandatory for blocks).
+        // 2. Moved 'disconnect' to declarative part (before 'begin').
+        constexpr std::string_view VHDL_FILE =
+            "library ieee;\n"
+            "use ieee.std_logic_1164.all;\n"
+            "entity E is end E;\n"
+            "architecture A of E is\n"
+            "begin\n"
+            "    my_block : block\n"
+            "        signal int_sig : std_logic;\n"
+            "        -- Declarations go here:\n"
+            "        disconnect int_sig : std_logic after 1 us;\n"
+            "    begin\n"
+            "        -- Concurrent statements go here\n"
+            "    end block;\n"
+            "end A;";
+
+        auto design = builder::buildFromString(VHDL_FILE);
+        // TODO(someone): Check disconnect inside block
+    }
 }
