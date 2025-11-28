@@ -3,7 +3,6 @@
 add_executable(
     vhdl_benchmarks
     benchmarks.cpp
-    benchmark_utils.cpp
 )
 
 # 1. Link Dependencies
