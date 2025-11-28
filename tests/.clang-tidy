@@ -3,5 +3,6 @@ InheritParentConfig: true
 
 Checks: >
   -bugprone-unchecked-optional-access,
+  -readability-container-data-pointer,
   -readability-function-cognitive-complexity,
   -readability-magic-numbers,

@@ -1,53 +1,72 @@
+#include "ast/nodes/design_file.hpp"
 #include "ast/nodes/design_units.hpp"
 #include "builder/ast_builder.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
-#include <variant>
 
-TEST_CASE("Architecture: Basic architecture body", "[design_units][architecture]")
+TEST_CASE("Architecture: Simple empty architecture", "[design_units][architecture]")
 {
     constexpr std::string_view VHDL_FILE = R"(
-        architecture RTL of MyEntity is
+        entity E is end E;
+        architecture Empty of E is
+        begin
+        end Empty;
+    )";
+
+    const auto design = builder::buildFromString(VHDL_FILE);
+    REQUIRE(design.units.size() == 2);
+
+    const auto &arch = std::get<ast::Architecture>(design.units[1]);
+    REQUIRE(arch.name == "Empty");
+    REQUIRE(arch.entity_name == "E");
+    REQUIRE(arch.decls.empty());
+    REQUIRE(arch.stmts.empty());
+}
+
+TEST_CASE("Architecture: Architecture with declarations", "[design_units][architecture]")
+{
+    constexpr std::string_view VHDL_FILE = R"(
+        entity E is end E;
+        architecture RTL of E is
+            constant WIDTH : integer := 8;
             signal temp : std_logic;
         begin
-            temp <= '1';
         end RTL;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    REQUIRE(design.units.size() == 1);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    REQUIRE(design.units.size() == 2);
 
-    auto *arch = std::get_if<ast::Architecture>(design.units.data());
-    REQUIRE(arch != nullptr);
-    REQUIRE(arch->name == "RTL");
-    REQUIRE(arch->entity_name == "MyEntity");
-    REQUIRE_FALSE(arch->decls.empty());
-    REQUIRE_FALSE(arch->stmts.empty());
+    const auto &arch = std::get<ast::Architecture>(design.units[1]);
+    REQUIRE(arch.name == "RTL");
+    REQUIRE(arch.entity_name == "E");
+    REQUIRE(arch.decls.size() == 2);
+    REQUIRE(arch.stmts.empty());
 }
 
-TEST_CASE("Architecture: Multiple architectures for same entity", "[design_units][architecture]")
+TEST_CASE("Architecture: Architecture with concurrent statements", "[design_units][architecture]")
 {
     constexpr std::string_view VHDL_FILE = R"(
-        architecture RTL of Counter is
+        entity E is
+            port (a, b : in std_logic; y : out std_logic);
+        end E;
+        architecture Behavioral of E is
         begin
-        end RTL;
+            y <= a and b;
 
-        architecture Behavioral of Counter is
-        begin
+            process(a, b)
+            begin
+                y <= a or b;
+            end process;
         end Behavioral;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     REQUIRE(design.units.size() == 2);
 
-    auto *arch1 = std::get_if<ast::Architecture>(design.units.data());
-    REQUIRE(arch1 != nullptr);
-    REQUIRE(arch1->name == "RTL");
-    REQUIRE(arch1->entity_name == "Counter");
-
-    auto *arch2 = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch2 != nullptr);
-    REQUIRE(arch2->name == "Behavioral");
-    REQUIRE(arch2->entity_name == "Counter");
+    const auto &arch = std::get<ast::Architecture>(design.units[1]);
+    REQUIRE(arch.name == "Behavioral");
+    REQUIRE(arch.entity_name == "E");
+    REQUIRE(arch.stmts.size() == 2);
 }

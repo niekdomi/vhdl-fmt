@@ -107,7 +107,7 @@ auto ArgumentParser::parseArguments(std::span<const char *const> args) -> void
         c_args.reserve(args.size());
 
         // parse_args expects a c-style array
-        for (const auto *const arg : args) {
+        for (const auto *arg : args) {
             c_args.emplace_back(arg);
         }
 

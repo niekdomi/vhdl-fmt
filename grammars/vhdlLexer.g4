@@ -88,6 +88,10 @@ CONSTANT
     : 'CONSTANT'
     ;
 
+CONTEXT
+    : 'CONTEXT'
+    ;
+
 DISCONNECT
     : 'DISCONNECT'
     ;

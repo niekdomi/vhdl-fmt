@@ -343,6 +343,10 @@ context_item
     | use_clause
     ;
 
+context_declaration
+    : CONTEXT identifier IS context_clause END CONTEXT identifier SEMI
+    ;
+
 delay_mechanism
     : TRANSPORT
     | ( REJECT expression)? INERTIAL
@@ -919,6 +923,7 @@ primary_unit
     : entity_declaration
     | configuration_declaration
     | package_declaration
+    | context_declaration
     ;
 
 procedural_declarative_item

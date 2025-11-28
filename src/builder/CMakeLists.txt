@@ -8,6 +8,7 @@ add_library(
     translators/translator_expr_composites.cpp
     translators/translator_expr_names.cpp
     translators/translator_expr_operators.cpp
+    translators/translator_subprogram.cpp
     translators/translator_sequential.cpp
     translators/translator_unit.cpp
     trivia/trivia_binder.cpp

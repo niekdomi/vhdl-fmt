@@ -8,7 +8,6 @@
 #include <fstream>
 #include <optional>
 #include <span>
-#include <string>
 #include <string_view>
 #include <vector>
 
@@ -31,10 +30,8 @@ auto createArgs(const std::vector<std::string_view> &args) -> std::vector<char *
 
 TEST_CASE("ArgumentParser with valid arguments including all options", "[argument_parser]")
 {
-    const std::filesystem::path temp_input
-      = std::filesystem::temp_directory_path() / "test_input.vhd";
-    const std::filesystem::path temp_config
-      = std::filesystem::temp_directory_path() / "test_config.yaml";
+    const auto temp_input = std::filesystem::temp_directory_path() / "test_input.vhd";
+    const auto temp_config = std::filesystem::temp_directory_path() / "test_config.yaml";
 
     {
         // Create temporary files
@@ -46,8 +43,8 @@ TEST_CASE("ArgumentParser with valid arguments including all options", "[argumen
         temp_config_file << "line_length: 120";
     }
 
-    const std::string file_path_str = temp_input.string();
-    const std::string config_path_str = temp_config.string();
+    const auto file_path_str = temp_input.string();
+    const auto config_path_str = temp_config.string();
     const std::vector<std::string_view> args
       = { "vhdl-fmt", "--write", "--check", "--location", config_path_str, file_path_str };
 
@@ -69,8 +66,7 @@ TEST_CASE("ArgumentParser with valid arguments including all options", "[argumen
 
 TEST_CASE("ArgumentParser with valid arguments minimal options", "[argument_parser]")
 {
-    const std::filesystem::path temp_input
-      = std::filesystem::temp_directory_path() / "test_input.vhd";
+    const auto temp_input = std::filesystem::temp_directory_path() / "test_input.vhd";
 
     {
         // Create temporary file
@@ -78,7 +74,7 @@ TEST_CASE("ArgumentParser with valid arguments minimal options", "[argument_pars
         temp_input_file << "entity test is end entity;";
     }
 
-    const std::string file_path_str = temp_input.string();
+    const auto file_path_str = temp_input.string();
     const std::vector<std::string_view> args = { "vhdl-fmt", file_path_str };
 
     const auto c_args = createArgs(args);
@@ -97,10 +93,9 @@ TEST_CASE("ArgumentParser with valid arguments minimal options", "[argument_pars
 
 TEST_CASE("ArgumentParser with non-existent vhdl file path", "[argument_parser]")
 {
-    const std::filesystem::path non_existent
-      = std::filesystem::temp_directory_path() / "non_existent.vhd";
+    const auto non_existent = std::filesystem::temp_directory_path() / "non_existent.vhd";
 
-    const std::string file_path_str = non_existent.string();
+    const auto file_path_str = non_existent.string();
     const std::vector<std::string_view> args = { "vhdl-fmt", file_path_str };
 
     const auto c_args = createArgs(args);
@@ -111,10 +106,8 @@ TEST_CASE("ArgumentParser with non-existent vhdl file path", "[argument_parser]"
 
 TEST_CASE("ArgumentParser with non-existent config file path", "[argument_parser]")
 {
-    const std::filesystem::path temp_input
-      = std::filesystem::temp_directory_path() / "test_input.vhd";
-    const std::filesystem::path non_existent_config
-      = std::filesystem::temp_directory_path() / "non_existent.yaml";
+    const auto temp_input = std::filesystem::temp_directory_path() / "test_input.vhd";
+    const auto non_existent_config = std::filesystem::temp_directory_path() / "non_existent.yaml";
 
     {
         // Create temporary input file
@@ -122,8 +115,8 @@ TEST_CASE("ArgumentParser with non-existent config file path", "[argument_parser
         temp_input_file << "entity test is end entity;";
     }
 
-    const std::string file_path_str = temp_input.string();
-    const std::string config_path_str = non_existent_config.string();
+    const auto file_path_str = temp_input.string();
+    const auto config_path_str = non_existent_config.string();
     const std::vector<std::string_view> args
       = { "vhdl-fmt", file_path_str, "--location", config_path_str };
 
@@ -138,9 +131,8 @@ TEST_CASE("ArgumentParser with non-existent config file path", "[argument_parser
 
 TEST_CASE("ArgumentParser with config file path that is not a regular file", "[argument_parser]")
 {
-    const std::filesystem::path temp_input
-      = std::filesystem::temp_directory_path() / "test_input.vhd";
-    const std::filesystem::path temp_dir = std::filesystem::temp_directory_path() / "temp_dir";
+    const auto temp_input = std::filesystem::temp_directory_path() / "test_input.vhd";
+    const auto temp_dir = std::filesystem::temp_directory_path() / "temp_dir";
 
     std::filesystem::create_directories(temp_dir);
 
@@ -150,8 +142,8 @@ TEST_CASE("ArgumentParser with config file path that is not a regular file", "[a
         temp_input_file << "entity test is end entity;";
     }
 
-    const std::string file_path_str = temp_input.string();
-    const std::string config_path_str = temp_dir.string();
+    const auto file_path_str = temp_input.string();
+    const auto config_path_str = temp_dir.string();
     const std::vector<std::string_view> args
       = { "vhdl-fmt", file_path_str, "--location", config_path_str };
 
@@ -184,8 +176,7 @@ TEST_CASE("ArgumentParser with flags set correctly", "[argument_parser]")
         { { "--write", "--check" }, true,  true  }
     }));
 
-    const std::filesystem::path temp_input
-      = std::filesystem::temp_directory_path() / "test_input.vhd";
+    const auto temp_input = std::filesystem::temp_directory_path() / "test_input.vhd";
 
     {
         // Create temporary file
@@ -193,7 +184,7 @@ TEST_CASE("ArgumentParser with flags set correctly", "[argument_parser]")
         temp_input_file << "entity test is end entity;";
     }
 
-    const std::string file_path_str = temp_input.string();
+    const auto file_path_str = temp_input.string();
     std::vector<std::string_view> args = { "vhdl-fmt", file_path_str };
     args.insert(args.cend(), flags.cbegin(), flags.cend());
 

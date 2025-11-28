@@ -11,11 +11,15 @@ namespace builder {
 
 auto Translator::makeIfStatement(vhdlParser::If_statementContext *ctx) -> ast::IfStatement
 {
+    if (ctx == nullptr) {
+        return {};
+    }
+
     auto stmt = make<ast::IfStatement>(ctx);
 
     // Main if branch
-    auto conditions = ctx->condition();
-    auto sequences = ctx->sequence_of_statements();
+    const auto conditions = ctx->condition();
+    const auto sequences = ctx->sequence_of_statements();
 
     if (conditions.empty() || sequences.empty()) {
         return stmt;
@@ -46,6 +50,10 @@ auto Translator::makeIfStatement(vhdlParser::If_statementContext *ctx) -> ast::I
 
 auto Translator::makeCaseStatement(vhdlParser::Case_statementContext *ctx) -> ast::CaseStatement
 {
+    if (ctx == nullptr) {
+        return {};
+    }
+
     auto stmt = make<ast::CaseStatement>(ctx);
 
     if (auto *expr = ctx->expression()) {
@@ -73,37 +81,52 @@ auto Translator::makeCaseStatement(vhdlParser::Case_statementContext *ctx) -> as
 
 auto Translator::makeForLoop(vhdlParser::Loop_statementContext *ctx) -> ast::ForLoop
 {
-    auto loop = make<ast::ForLoop>(ctx);
-
-    // Check if it has a FOR iteration scheme
-    if (auto *iter = ctx->iteration_scheme()) {
-        if (auto *param = iter->parameter_specification()) {
-            if (auto *id = param->identifier()) {
-                loop.iterator = id->getText();
-            }
-
-            if (auto *range = param->discrete_range()) {
-                // discrete_range can be range_decl or subtype_indication
-                if (auto *range_decl = range->range_decl()) {
-                    if (auto *explicit_r = range_decl->explicit_range()) {
-                        loop.range = makeRange(explicit_r);
-                    } else {
-                        // It's a name
-                        auto tok = make<ast::TokenExpr>(range_decl);
-                        tok.text = range_decl->getText();
-                        loop.range = std::move(tok);
-                    }
-                } else if (auto *subtype = range->subtype_indication()) {
-                    auto tok = make<ast::TokenExpr>(subtype);
-                    tok.text = subtype->getText();
-                    loop.range = std::move(tok);
-                }
-            }
-        }
+    if (ctx == nullptr) {
+        return {};
     }
 
+    auto loop = make<ast::ForLoop>(ctx);
+
+    // Extract body
     if (auto *seq = ctx->sequence_of_statements()) {
         loop.body = makeSequenceOfStatements(seq);
+    }
+
+    // Extract iteration scheme
+    auto *iter = ctx->iteration_scheme();
+    if (iter == nullptr) {
+        return loop;
+    }
+
+    auto *param = iter->parameter_specification();
+    if (param == nullptr) {
+        return loop;
+    }
+
+    // Extract iterator name
+    if (auto *id = param->identifier()) {
+        loop.iterator = id->getText();
+    }
+
+    // Extract range
+    auto *discrete = param->discrete_range();
+    if (discrete == nullptr) {
+        return loop;
+    }
+
+    // Handle range_decl
+    if (auto *range_decl = discrete->range_decl()) {
+        if (auto *explicit_r = range_decl->explicit_range()) {
+            loop.range = makeRange(explicit_r);
+        } else {
+            loop.range = makeToken(range_decl, range_decl->getText());
+        }
+        return loop;
+    }
+
+    // Try subtype_indication
+    if (auto *subtype = discrete->subtype_indication()) {
+        loop.range = makeToken(subtype, subtype->getText());
     }
 
     return loop;
@@ -111,19 +134,29 @@ auto Translator::makeForLoop(vhdlParser::Loop_statementContext *ctx) -> ast::For
 
 auto Translator::makeWhileLoop(vhdlParser::Loop_statementContext *ctx) -> ast::WhileLoop
 {
-    auto loop = make<ast::WhileLoop>(ctx);
-
-    // Check if it has a WHILE iteration scheme
-    if (auto *iter = ctx->iteration_scheme()) {
-        if (auto *cond = iter->condition()) {
-            loop.condition = makeExpr(cond->expression());
-        }
+    if (ctx == nullptr) {
+        return {};
     }
 
+    auto loop = make<ast::WhileLoop>(ctx);
+
+    // Extract body
     if (auto *seq = ctx->sequence_of_statements()) {
         loop.body = makeSequenceOfStatements(seq);
     }
 
+    // Extract condition from iteration scheme
+    auto *iter = ctx->iteration_scheme();
+    if (iter == nullptr) {
+        return loop;
+    }
+
+    auto *cond = iter->condition();
+    if (cond == nullptr) {
+        return loop;
+    }
+
+    loop.condition = makeExpr(cond->expression());
     return loop;
 }
 

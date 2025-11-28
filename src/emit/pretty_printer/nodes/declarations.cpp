@@ -75,4 +75,63 @@ auto PrettyPrinter::operator()([[maybe_unused]] const ast::ConstantDecl &node) c
     return Doc::text("-- constant");
 }
 
+auto PrettyPrinter::operator()([[maybe_unused]] const ast::AliasDecl &node) const -> Doc
+{
+    // TODO(vedivad): Implement alias declaration printing
+    return Doc::text("-- alias");
+}
+
+auto PrettyPrinter::operator()([[maybe_unused]] const ast::TypeDecl &node) const -> Doc
+{
+    // TODO(vedivad): Implement type declaration printing
+    return Doc::text("-- type");
+}
+
+auto PrettyPrinter::operator()([[maybe_unused]] const ast::SubtypeDecl &node) const -> Doc
+{
+    // TODO(vedivad): Implement subtype declaration printing
+    return Doc::text("-- subtype");
+}
+
+auto PrettyPrinter::operator()(const ast::SubprogramParam &node) const -> Doc
+{
+    const std::string names = node.names
+                            | std::views::join_with(std::string_view{ ", " })
+                            | std::ranges::to<std::string>();
+
+    Doc result = Doc::text(names);
+
+    if (!node.mode.empty() || !node.type_name.empty()) {
+        result &= Doc::text(":");
+        if (!node.mode.empty()) {
+            result &= Doc::text(node.mode);
+        }
+        if (!node.type_name.empty()) {
+            result &= Doc::text(node.type_name);
+        }
+    }
+
+    if (node.default_expr) {
+        result &= Doc::text(":=") & visit(node.default_expr.value());
+    }
+
+    if (!node.is_last) {
+        result += Doc::text(";");
+    }
+
+    return result;
+}
+
+auto PrettyPrinter::operator()([[maybe_unused]] const ast::ProcedureDecl &node) const -> Doc
+{
+    // TODO(domi): Implement procedure declaration printing
+    return Doc::text("-- procedure " + node.name);
+}
+
+auto PrettyPrinter::operator()([[maybe_unused]] const ast::FunctionDecl &node) const -> Doc
+{
+    // TODO(domi): Implement function declaration printing
+    return Doc::text("-- function " + node.name);
+}
+
 } // namespace emit

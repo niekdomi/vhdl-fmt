@@ -65,4 +65,10 @@ auto PrettyPrinter::operator()(const ast::Architecture &node) const -> Doc
     return result / end_line;
 }
 
+auto PrettyPrinter::operator()([[maybe_unused]] const ast::ContextDeclaration &node) const -> Doc
+{
+    // TODO(vedivad): Implement context declaration printing
+    return Doc::text("-- context");
+}
+
 } // namespace emit

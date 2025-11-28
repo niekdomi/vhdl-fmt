@@ -12,6 +12,10 @@ namespace builder {
 
 auto Translator::makeGenericClause(vhdlParser::Generic_clauseContext *ctx) -> ast::GenericClause
 {
+    if (ctx == nullptr) {
+        return {};
+    }
+
     auto clause = make<ast::GenericClause>(ctx);
 
     auto *list = ctx->generic_list();
@@ -30,6 +34,10 @@ auto Translator::makeGenericClause(vhdlParser::Generic_clauseContext *ctx) -> as
 
 auto Translator::makePortClause(vhdlParser::Port_clauseContext *ctx) -> ast::PortClause
 {
+    if (ctx == nullptr) {
+        return {};
+    }
+
     auto clause = make<ast::PortClause>(ctx);
 
     auto *list = ctx->port_list();
@@ -56,6 +64,10 @@ auto Translator::makePortClause(vhdlParser::Port_clauseContext *ctx) -> ast::Por
 auto Translator::makeGenericParam(vhdlParser::Interface_constant_declarationContext *ctx,
                                   const bool is_last) -> ast::GenericParam
 {
+    if (ctx == nullptr) {
+        return {};
+    }
+
     auto param = make<ast::GenericParam>(ctx);
 
     param.names = ctx->identifier_list()->identifier()
@@ -80,6 +92,10 @@ auto Translator::makeGenericParam(vhdlParser::Interface_constant_declarationCont
 auto Translator::makeSignalPort(vhdlParser::Interface_port_declarationContext *ctx,
                                 const bool is_last) -> ast::Port
 {
+    if (ctx == nullptr) {
+        return {};
+    }
+
     auto port = make<ast::Port>(ctx);
 
     port.names = ctx->identifier_list()->identifier()
@@ -109,6 +125,10 @@ auto Translator::makeSignalPort(vhdlParser::Interface_port_declarationContext *c
 
 auto Translator::makeConstantDecl(vhdlParser::Constant_declarationContext *ctx) -> ast::ConstantDecl
 {
+    if (ctx == nullptr) {
+        return {};
+    }
+
     auto decl = make<ast::ConstantDecl>(ctx);
 
     decl.names = ctx->identifier_list()->identifier()
@@ -128,6 +148,10 @@ auto Translator::makeConstantDecl(vhdlParser::Constant_declarationContext *ctx) 
 
 auto Translator::makeSignalDecl(vhdlParser::Signal_declarationContext *ctx) -> ast::SignalDecl
 {
+    if (ctx == nullptr) {
+        return {};
+    }
+
     auto decl = make<ast::SignalDecl>(ctx);
 
     decl.names = ctx->identifier_list()->identifier()
