@@ -1,6 +1,7 @@
 #include "builder/ast_builder.hpp"
 
 #include "builder/translator.hpp"
+#include "common/logger.hpp"
 
 #include <antlr4-runtime/BailErrorStrategy.h>
 #include <antlr4-runtime/ConsoleErrorListener.h>
@@ -29,6 +30,25 @@ void initializeContext(Context &ctx, std::unique_ptr<antlr4::ANTLRInputStream> i
 
     ctx.parser = std::make_unique<vhdlParser>(ctx.tokens.get());
 }
+
+class ThrowingErrorListener : public antlr4::BaseErrorListener
+{
+  public:
+    void syntaxError(antlr4::Recognizer * /*recognizer*/,
+                     antlr4::Token * /*offendingSymbol*/,
+                     size_t line,
+                     size_t char_position_in_line,
+                     const std::string &msg,
+                     std::exception_ptr /*e*/) override
+    {
+        throw std::runtime_error("Parser error at line "
+                                 + std::to_string(line)
+                                 + ":"
+                                 + std::to_string(char_position_in_line)
+                                 + " - "
+                                 + msg);
+    }
+};
 
 } // namespace
 
@@ -69,11 +89,18 @@ auto build(Context &ctx) -> ast::DesignFile
     try {
         tree = ctx.parser->design_file();
     } catch (const antlr4::ParseCancellationException &) {
+        common::Logger::instance().trace("SLL parsing failed (ambiguity). Falling back to LL mode.");
+
         // 2. Fallback to LL (Strong Mode)
         ctx.tokens->reset();
         ctx.parser->reset();
 
-        ctx.parser->addErrorListener(&antlr4::ConsoleErrorListener::INSTANCE);
+        ctx.parser->removeErrorListeners();
+
+        // Add custom ThrowingListener (aborts immediately on error)
+        ThrowingErrorListener throwing_listener;
+        ctx.parser->addErrorListener(&throwing_listener);
+
         ctx.parser->setErrorHandler(std::make_shared<antlr4::DefaultErrorStrategy>());
         interpreter->setPredictionMode(antlr4::atn::PredictionMode::LL);
 

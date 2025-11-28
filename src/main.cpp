@@ -2,6 +2,7 @@
 #include "builder/verifier.hpp"
 #include "cli/argument_parser.hpp"
 #include "cli/config_reader.hpp"
+#include "common/logger.hpp"
 #include "emit/pretty_printer.hpp"
 
 #include <cstdlib>
@@ -10,6 +11,8 @@
 
 auto main(int argc, char *argv[]) -> int
 {
+    auto& logger = common::Logger::instance();
+
     try {
         const cli::ArgumentParser argparser{
             std::span<const char *const>{ argv, static_cast<std::size_t>(argc) }
@@ -35,11 +38,9 @@ auto main(int argc, char *argv[]) -> int
         try {
             builder::verify::ensureSafety(*ctx_orig.tokens, *ctx_fmt.tokens);
         } catch (const std::exception &e) {
-            std::cerr
-              << "FATAL ERROR: Formatter corrupted the code semantics.\n"
-              << e.what()
-              << "\n"
-              << "Aborting write to prevent data loss.\n";
+            logger.critical("FATAL ERROR: Formatter corrupted the code semantics.");
+            logger.critical("{}", e.what());
+            logger.info("Aborting write to prevent data loss.");
             return EXIT_FAILURE;
         }
 
@@ -52,7 +53,7 @@ auto main(int argc, char *argv[]) -> int
         }
 
     } catch (const std::exception &e) {
-        std::cerr << "Error: " << e.what() << '\n';
+        logger.error("Error: {}", e.what());
         return EXIT_FAILURE;
     }
 
