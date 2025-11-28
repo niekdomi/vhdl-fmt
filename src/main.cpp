@@ -11,7 +11,7 @@
 
 auto main(int argc, char *argv[]) -> int
 {
-    auto& logger = common::Logger::instance();
+    auto &logger = common::Logger::instance();
 
     try {
         const cli::ArgumentParser argparser{
