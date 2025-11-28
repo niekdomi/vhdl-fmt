@@ -54,14 +54,13 @@ TEST_CASE("Conditional Expressions (VHDL-2008)", "[expressions][conditional]")
     {
         // This specific case is valid in older VHDL (93/2002) because
         // it is a Concurrent Signal Assignment, not a variable assignment.
-        constexpr std::string_view VHDL_FILE =
-            "entity E is end E;\n"
-            "architecture A of E is\n"
-            "    signal output : std_logic;\n"
-            "    signal sel : std_logic := '0';\n"
-            "begin\n"
-            "    output <= '1' when sel = '1' else '0';\n"
-            "end A;";
+        constexpr std::string_view VHDL_FILE = "entity E is end E;\n"
+                                               "architecture A of E is\n"
+                                               "    signal output : std_logic;\n"
+                                               "    signal sel : std_logic := '0';\n"
+                                               "begin\n"
+                                               "    output <= '1' when sel = '1' else '0';\n"
+                                               "end A;";
 
         auto design = builder::buildFromString(VHDL_FILE);
         // TODO(someone): Check conditional in signal assignment

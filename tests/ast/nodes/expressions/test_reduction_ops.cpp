@@ -78,4 +78,3 @@ TEST_CASE("Reduction Operators (VHDL-2008)", "[expressions][reduction]")
     //     auto design = builder::buildFromString(VHDL_FILE);
     // }
 }
-

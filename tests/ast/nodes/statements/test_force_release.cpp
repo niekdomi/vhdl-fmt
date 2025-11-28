@@ -6,9 +6,8 @@
 TEST_CASE("Force and Release Statements (VHDL-2008)", "[statements][force_release]")
 {
     // Common prelude
-    constexpr std::string_view PRELUDE =
-        "library ieee;\n"
-        "use ieee.std_logic_1164.all;\n";
+    constexpr std::string_view PRELUDE = "library ieee;\n"
+                                         "use ieee.std_logic_1164.all;\n";
 
     // SECTION("Force Statement")
     // {

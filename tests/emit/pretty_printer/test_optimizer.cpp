@@ -57,10 +57,8 @@ TEST_CASE("Smart Constructor Optimization", "[pretty_printer][smart_ctor]")
     SECTION("Rule 3: HardLine Merging")
     {
         // (HardLines(2) + HardLine) + HardLines(3) -> HardLines(6)
-        const DocPtr res1 = makeConcat(
-            makeConcat(makeHardLines(2), makeHardLine()),
-            makeHardLines(3)
-        );
+        const DocPtr res1
+          = makeConcat(makeConcat(makeHardLines(2), makeHardLine()), makeHardLines(3));
 
         REQUIRE(emit::foldImpl(res1, 0, NODE_COUNTER) == 1);
 
@@ -84,9 +82,10 @@ TEST_CASE("Smart Constructor Optimization", "[pretty_printer][smart_ctor]")
         constexpr auto PARTS = std::to_array<std::string_view>(
           { "This", " ", "is", " ", "a", " ", "complex", " ", "merge." });
 
-        const DocPtr result = std::ranges::fold_left(PARTS, makeEmpty(), [](auto acc, const auto &str) {
-            return makeConcat(std::move(acc), makeText(str));
-        });
+        const DocPtr result
+          = std::ranges::fold_left(PARTS, makeEmpty(), [](auto acc, const auto &str) {
+                return makeConcat(std::move(acc), makeText(str));
+            });
 
         // Verification: The tree should be fully flattened into one Text node
         REQUIRE(emit::foldImpl(result, 0, NODE_COUNTER) == 1);

@@ -9,9 +9,8 @@ TEST_CASE("External Names (VHDL-2008)", "[expressions][external_name]")
     // It allows referencing items (signals, constants, variables)
     // anywhere in the design hierarchy.
 
-    constexpr std::string_view PRELUDE =
-        "library ieee;\n"
-        "use ieee.std_logic_1164.all;\n";
+    constexpr std::string_view PRELUDE = "library ieee;\n"
+                                         "use ieee.std_logic_1164.all;\n";
 
     // SECTION("External Signal Reference")
     // {
