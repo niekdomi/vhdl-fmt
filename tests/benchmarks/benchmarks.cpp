@@ -24,7 +24,7 @@ TEST_CASE("Toolchain Performance Breakdown", "[benchmark]")
     ast::DesignFile ast;
     {
         builder::Translator translator(*context.tokens);
-        translator.buildDesignFile(ast, *context.tree);
+        translator.buildDesignFile(ast, context.tree);
     }
 
     // 3. Pre-build Doc
@@ -56,7 +56,7 @@ TEST_CASE("Toolchain Performance Breakdown", "[benchmark]")
         ast::DesignFile root;
         builder::Translator translator(*context.tokens);
 
-        translator.buildDesignFile(root, *context.tree);
+        translator.buildDesignFile(root, context.tree);
         return root;
     };
 

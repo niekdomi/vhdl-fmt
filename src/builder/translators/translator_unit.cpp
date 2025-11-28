@@ -8,9 +8,13 @@ namespace builder {
 
 // ---------------------- Top-level ----------------------
 
-void Translator::buildDesignFile(ast::DesignFile &dest, vhdlParser::Design_fileContext &ctx)
+void Translator::buildDesignFile(ast::DesignFile &dest, vhdlParser::Design_fileContext *ctx)
 {
-    for (auto *unit_ctx : ctx.design_unit()) {
+    if (ctx == nullptr) {
+        return;
+    }
+
+    for (auto *unit_ctx : ctx->design_unit()) {
         if (auto *ctx_clause = unit_ctx->context_clause()) {
             auto context_clause = makeContextClause(ctx_clause);
         }

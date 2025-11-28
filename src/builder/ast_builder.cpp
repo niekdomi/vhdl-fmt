@@ -81,7 +81,7 @@ auto translateToAST(ParsingContext &ctx) -> ast::DesignFile
 {
     ast::DesignFile root{};
     Translator translator(*ctx.tokens);
-    translator.buildDesignFile(root, *ctx.tree);
+    translator.buildDesignFile(root, ctx.tree);
     return root;
 }
 
