@@ -57,7 +57,8 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     auto operator()(const ast::Process &node) const -> Doc;
 
     // Sequential Statements
-    auto operator()(const ast::SequentialAssign &node) const -> Doc;
+    auto operator()(const ast::SignalAssign &node) const -> Doc;
+    auto operator()(const ast::VariableAssign &node) const -> Doc;
     auto operator()(const ast::IfStatement &node) const -> Doc;
     auto operator()(const ast::CaseStatement &node) const -> Doc;
     auto operator()(const ast::ForLoop &node) const -> Doc;

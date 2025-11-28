@@ -74,11 +74,10 @@ class Translator final
     [[nodiscard]]
     auto makeTarget(vhdlParser::TargetContext *ctx) -> ast::Expr;
     [[nodiscard]]
-    auto makeSequentialAssign(vhdlParser::Signal_assignment_statementContext *ctx)
-      -> ast::SequentialAssign;
+    auto makeSignalAssign(vhdlParser::Signal_assignment_statementContext *ctx) -> ast::SignalAssign;
     [[nodiscard]]
     auto makeVariableAssign(vhdlParser::Variable_assignment_statementContext *ctx)
-      -> ast::SequentialAssign;
+      -> ast::VariableAssign;
     [[nodiscard]]
     auto makeIfStatement(vhdlParser::If_statementContext *ctx) -> ast::IfStatement;
     [[nodiscard]]
@@ -91,7 +90,7 @@ class Translator final
     auto makeWhileLoop(vhdlParser::Loop_statementContext *ctx) -> ast::WhileLoop;
     [[nodiscard]]
     auto makeSequentialStatement(vhdlParser::Sequential_statementContext *ctx)
-      -> ast::SequentialStatement;
+      -> std::optional<ast::SequentialStatement>;
     [[nodiscard]]
     auto makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext *ctx)
       -> std::vector<ast::SequentialStatement>;

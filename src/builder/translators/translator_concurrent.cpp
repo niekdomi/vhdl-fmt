@@ -87,10 +87,15 @@ auto Translator::makeProcess(vhdlParser::Process_statementContext *ctx) -> ast::
 
     // Extract sequential statements
     if (auto *stmt_part = ctx->process_statement_part()) {
-        proc.body
-          = stmt_part->sequential_statement()
-          | std::views::transform([this](auto *stmt) { return makeSequentialStatement(stmt); })
-          | std::ranges::to<std::vector>();
+        const auto &source_stmts = stmt_part->sequential_statement();
+
+        proc.body.reserve(source_stmts.size());
+
+        for (auto *stmt_ctx : source_stmts) {
+            if (auto stmt = makeSequentialStatement(stmt_ctx)) {
+                proc.body.emplace_back(std::move(*stmt));
+            }
+        }
     }
 
     return proc;
