@@ -2,6 +2,7 @@
 #define AST_NODES_STATEMENTS_HPP
 
 #include "ast/node.hpp"
+#include "ast/nodes/declarations.hpp"
 #include "ast/nodes/expressions.hpp"
 
 #include <optional>
@@ -12,7 +13,8 @@
 namespace ast {
 
 // Forward declarations
-struct ConcurrentAssign;
+struct ConditionalConcurrentAssign;
+struct SelectedConcurrentAssign;
 struct VariableAssign;
 struct SignalAssign;
 struct IfStatement;
@@ -22,17 +24,38 @@ struct ForLoop;
 struct WhileLoop;
 
 /// Variant type for concurrent statements (outside processes)
-using ConcurrentStatement = std::variant<ConcurrentAssign, Process>;
+using ConcurrentStatement
+  = std::variant<ConditionalConcurrentAssign, SelectedConcurrentAssign, Process>;
 
 /// Variant type for sequential statements (inside processes)
 using SequentialStatement
   = std::variant<VariableAssign, SignalAssign, IfStatement, CaseStatement, ForLoop, WhileLoop>;
 
-/// @brief Concurrent signal assignment: target <= value;
-struct ConcurrentAssign : NodeBase
+// Matches 'conditional_signal_assignment' rule
+// target <= val WHEN cond ELSE val;
+struct ConditionalConcurrentAssign : NodeBase
 {
     Expr target;
-    Expr value;
+    struct Waveform
+    {
+        Expr value;
+        std::optional<Expr> condition;
+    };
+    std::vector<Waveform> waveforms;
+};
+
+// Matches 'selected_signal_assignment' rule
+// WITH sel SELECT target <= val WHEN choice;
+struct SelectedConcurrentAssign : NodeBase
+{
+    Expr target;
+    Expr selector; // The "WITH expression" part
+    struct Selection
+    {
+        Expr value;
+        std::vector<Expr> choices;
+    };
+    std::vector<Selection> selections;
 };
 
 /// @brief Variable Assignment: target := expr;
@@ -42,15 +65,11 @@ struct VariableAssign : NodeBase
     Expr value;
 };
 
-/// @brief Signal Assignment: target <= waveform;
-/// (Currently simplified to single expr, but ready for expansion)
+/// @brief Signal Assignment: target <= expr;
 struct SignalAssign : NodeBase
 {
     Expr target;
     Expr value;
-    // Future expansion:
-    // std::vector<WaveformElement> waveform;
-    // std::optional<DelayMechanism> delay;
 };
 
 /// @brief If statement with optional elsif and else branches
@@ -74,31 +93,32 @@ struct CaseStatement : NodeBase
     struct WhenClause
     {
         std::optional<NodeTrivia> trivia;
-        std::vector<Expr> choices; // Can be multiple: when 1 | 2 | 3 =>
+        std::vector<Expr> choices;
         std::vector<SequentialStatement> body;
     };
 
-    Expr selector; // The expression being switched on
+    Expr selector;
     std::vector<WhenClause> when_clauses;
 };
 
-/// @brief Process statement (sensitivity list + sequential statements)
+/// @brief Process statement
 struct Process : NodeBase
 {
     std::optional<std::string> label;
     std::vector<std::string> sensitivity_list;
+    std::vector<Declaration> decls;
     std::vector<SequentialStatement> body;
 };
 
-/// @brief For loop: for i in range loop ... end loop;
+/// @brief For loop
 struct ForLoop : NodeBase
 {
-    std::string iterator; // Loop variable name
-    Expr range;           // Range expression (e.g., 0 to 10)
+    std::string iterator;
+    Expr range;
     std::vector<SequentialStatement> body;
 };
 
-/// @brief While loop: while condition loop ... end loop;
+/// @brief While loop
 struct WhileLoop : NodeBase
 {
     Expr condition;

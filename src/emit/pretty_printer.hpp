@@ -39,6 +39,7 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     // Declarations
     auto operator()(const ast::SignalDecl &node) const -> Doc;
     auto operator()(const ast::ConstantDecl &node) const -> Doc;
+    auto operator()(const ast::VariableDecl &node) const -> Doc;
 
     // Expressions
     auto operator()(const ast::TokenExpr &node) const -> Doc;
@@ -53,7 +54,8 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     auto operator()(const ast::RangeConstraint &node) const -> Doc;
 
     // Concurrent Statements
-    auto operator()(const ast::ConcurrentAssign &node) const -> Doc;
+    auto operator()(const ast::ConditionalConcurrentAssign &node) const -> Doc;
+    auto operator()(const ast::SelectedConcurrentAssign &node) const -> Doc;
     auto operator()(const ast::Process &node) const -> Doc;
 
     // Sequential Statements

@@ -68,6 +68,7 @@ add_executable(
     nodes/statements/test_concurrent_assign.cpp
     nodes/statements/test_concurrent_procedure_call.cpp
     nodes/statements/test_conditional_assign.cpp
+    nodes/statements/test_control_flow.cpp
     nodes/statements/test_exit.cpp
     nodes/statements/test_file_io.cpp
     nodes/statements/test_for_loop.cpp
@@ -75,7 +76,6 @@ add_executable(
     nodes/statements/test_generate.cpp
     nodes/statements/test_guarded_signal.cpp
     nodes/statements/test_if_generate_with_alternative.cpp
-    nodes/statements/test_if.cpp
     nodes/statements/test_loop_with_label.cpp
     nodes/statements/test_next.cpp
     nodes/statements/test_null.cpp
