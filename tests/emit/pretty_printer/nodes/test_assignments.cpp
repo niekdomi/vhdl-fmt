@@ -124,8 +124,8 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
 
         SECTION("Fits on line (Flat)")
         {
-            constexpr std::string_view EXPECTED =
-              "with sel select data_out <= '0' when \"00\", '1' when others;";
+            constexpr std::string_view EXPECTED
+              = "with sel select data_out <= '0' when \"00\", '1' when others;";
             REQUIRE(emit::test::render(assign) == EXPECTED);
         }
 
