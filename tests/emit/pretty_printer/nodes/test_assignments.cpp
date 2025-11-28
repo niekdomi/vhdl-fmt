@@ -46,6 +46,7 @@ TEST_CASE("Sequential Assignments", "[pretty_printer][assignments]")
         assign.target = token("cnt");
         assign.value = token("0");
 
+        // Short enough to fit on one line
         REQUIRE(emit::test::render(assign) == "cnt := 0;");
     }
 
@@ -53,7 +54,7 @@ TEST_CASE("Sequential Assignments", "[pretty_printer][assignments]")
     {
         ast::SignalAssign assign;
         assign.target = token("cnt");
-        // Update: use waveform
+        // Update: use waveform helper
         assign.waveform = makeWave(token("0"));
 
         REQUIRE(emit::test::render(assign) == "cnt <= 0;");
@@ -80,11 +81,26 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
         w2.condition = std::nullopt;
         assign.waveforms.push_back(std::move(w2));
 
-        const auto result = emit::test::render(assign);
-        constexpr std::string_view EXPECTED = "data_out <= '1' when en = '1' else\n"
-                                              "            '0';";
+        SECTION("Fits on line (Flat)")
+        {
+            // Default config width is 80, this string is ~45 chars.
+            constexpr std::string_view EXPECTED = "data_out <= '1' when en = '1' else '0';";
+            REQUIRE(emit::test::render(assign) == EXPECTED);
+        }
 
-        REQUIRE(result == EXPECTED);
+        SECTION("Forces Break (Hanging)")
+        {
+            // Constrain width to force the hanging behavior
+            auto config = emit::test::defaultConfig();
+            config.line_config.line_length = 20;
+
+            // "data_out <= " is 12 chars.
+            // The hang establishes indentation at column 12 for subsequent lines.
+            constexpr std::string_view EXPECTED = "data_out <= '1' when en = '1' else\n"
+                                                  "            '0';";
+
+            REQUIRE(emit::test::render(assign, config) == EXPECTED);
+        }
     }
 
     SECTION("Selected Assignment (With/Select)")
@@ -106,11 +122,25 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
         sel2.choices.emplace_back(token("others"));
         assign.selections.emplace_back(std::move(sel2));
 
-        const auto result = emit::test::render(assign);
-        constexpr std::string_view EXPECTED = "with sel select\n"
-                                              "  data_out <= '0' when \"00\",\n"
-                                              "              '1' when others;";
+        SECTION("Fits on line (Flat)")
+        {
+            constexpr std::string_view EXPECTED =
+              "with sel select data_out <= '0' when \"00\", '1' when others;";
+            REQUIRE(emit::test::render(assign) == EXPECTED);
+        }
 
-        REQUIRE(result == EXPECTED);
+        SECTION("Forces Break (Hanging)")
+        {
+            auto config = emit::test::defaultConfig();
+            config.line_config.line_length = 30;
+
+            // The header "with sel select" and target likely force a break.
+            // "data_out <= " sets the hang anchor.
+            constexpr std::string_view EXPECTED = "with sel select\n"
+                                                  "data_out <= '0' when \"00\",\n"
+                                                  "            '1' when others;";
+
+            REQUIRE(emit::test::render(assign, config) == EXPECTED);
+        }
     }
 }
