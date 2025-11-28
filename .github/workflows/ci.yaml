@@ -271,43 +271,9 @@ jobs:
       - name: Build and run tests with coverage
         run: make coverage-report
 
-      - name: Convert coverage to Markdown
+      - name: Generate coverage markdown
         if: github.event_name == 'pull_request'
-        run: |
-          INPUT="build/Debug/coverage/coverage.txt"
-          OUTPUT="coverage.md"
-
-          if [[ ! -f "$INPUT" ]]; then
-            echo "Warning: Coverage file not found at $INPUT" >&2
-            exit 0
-          fi
-
-          echo "### 📊 Test Coverage Report" > "$OUTPUT"
-          echo "" >> "$OUTPUT"
-          echo '```' >> "$OUTPUT"
-          cat "$INPUT" >> "$OUTPUT"
-          echo '```' >> "$OUTPUT"
-          echo "" >> "$OUTPUT"
-
-          # Extract total coverage percentage
-          TOTAL_LINE=$(grep -i "TOTAL" "$INPUT" || echo "")
-          if [[ -n "$TOTAL_LINE" ]]; then
-            PERCENT=$(echo "$TOTAL_LINE" | grep -oP '\d+\.\d+%' | tail -1 || echo "N/A")
-            echo "> **Overall Coverage**: $PERCENT" >> "$OUTPUT"
-          fi
-
-          echo "" >> "$OUTPUT"
-          echo "_Generated on $(date -u '+%Y-%m-%d %H:%M:%S UTC')_" >> "$OUTPUT"
-
-          echo "" >> "$OUTPUT"
-          echo "<details>" >> "$OUTPUT"
-          echo "<summary>📝 How to view locally</summary>" >> "$OUTPUT"
-          echo "" >> "$OUTPUT"
-          echo '```bash' >> "$OUTPUT"
-          echo "make coverage" >> "$OUTPUT"
-          echo "make coverage-show" >> "$OUTPUT"
-          echo '```' >> "$OUTPUT"
-          echo "</details>" >> "$OUTPUT"
+        run: bash .github/scripts/generate-coverage-md.sh
 
       - name: Post coverage comment
         if: github.event_name == 'pull_request'
