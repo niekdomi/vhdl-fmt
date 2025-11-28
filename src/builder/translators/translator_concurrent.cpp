@@ -7,7 +7,7 @@
 namespace builder {
 
 auto Translator::makeConcurrentAssign(
-  vhdlParser::Concurrent_signal_assignment_statementContext *ctx) -> ast::ConcurrentAssign
+  vhdlParser::Concurrent_signal_assignment_statementContext *ctx) -> ast::ConcurrentStatement
 {
     // Dispatch based on concrete assignment type
     if (auto *cond = ctx->conditional_signal_assignment()) {
@@ -17,50 +17,85 @@ auto Translator::makeConcurrentAssign(
         return makeSelectedAssign(sel);
     }
 
-    // Fallback for unhandled cases
-    return make<ast::ConcurrentAssign>(ctx);
+    // Should be unreachable if grammar is correct
+    throw std::runtime_error("Unknown concurrent assignment type");
 }
 
 auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext *ctx)
-  -> ast::ConcurrentAssign
+  -> ast::ConditionalConcurrentAssign
 {
-    auto assign = make<ast::ConcurrentAssign>(ctx);
+    auto assign = make<ast::ConditionalConcurrentAssign>(ctx);
 
     if (auto *target_ctx = ctx->target()) {
         assign.target = makeTarget(target_ctx);
     }
 
-    // Get the waveform - for now we'll take the first waveform element's expression
-    if (auto *cond_wave = ctx->conditional_waveforms()) {
-        if (auto *wave = cond_wave->waveform()) {
-            auto wave_elems = wave->waveform_element();
-            if (!wave_elems.empty() && !wave_elems[0]->expression().empty()) {
-                assign.value = makeExpr(wave_elems[0]->expression(0));
+    // Flatten the recursive conditional waveforms:
+    // val1 when cond1 else val2 when cond2 else val3
+    auto *current_wave = ctx->conditional_waveforms();
+    while (current_wave != nullptr) {
+        ast::ConditionalConcurrentAssign::Waveform wave_item;
+
+        // 1. Value (Waveform)
+        // TODO(vedivad): Simplified to first element for now
+        if (auto *w = current_wave->waveform()) {
+            if (!w->waveform_element().empty()) {
+                wave_item.value = makeExpr(w->waveform_element(0)->expression(0));
             }
         }
+
+        // 2. Condition (WHEN ...)
+        if (auto *cond = current_wave->condition()) {
+            wave_item.condition = makeExpr(cond->expression());
+        }
+
+        assign.waveforms.push_back(std::move(wave_item));
+
+        // 3. Recurse (ELSE ...)
+        // The grammar defines recursive structure for 'else'
+        current_wave = current_wave->conditional_waveforms();
     }
 
     return assign;
 }
 
 auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext *ctx)
-  -> ast::ConcurrentAssign
+  -> ast::SelectedConcurrentAssign
 {
-    auto assign = make<ast::ConcurrentAssign>(ctx);
+    auto assign = make<ast::SelectedConcurrentAssign>(ctx);
+
+    // WITH expression ...
+    if (auto *expr = ctx->expression()) {
+        assign.selector = makeExpr(expr);
+    }
 
     if (auto *target_ctx = ctx->target()) {
         assign.target = makeTarget(target_ctx);
     }
 
-    // For selected assignments (with...select), we'll take the first waveform
-    // TODO(someone): Handle full selected waveforms structure
+    // ... SELECT target <= opts waveforms
     if (auto *sel_waves = ctx->selected_waveforms()) {
-        auto waves = sel_waves->waveform();
-        if (!waves.empty()) {
-            auto wave_elems = waves[0]->waveform_element();
-            if (!wave_elems.empty() && !wave_elems[0]->expression().empty()) {
-                assign.value = makeExpr(wave_elems[0]->expression(0));
+        const auto waves = sel_waves->waveform();
+        const auto choices = sel_waves->choices();
+
+        for (size_t i = 0; i < waves.size(); ++i) {
+            ast::SelectedConcurrentAssign::Selection selection{};
+
+            // Value
+            if (!waves[i]->waveform_element().empty()) {
+                selection.value = makeExpr(waves[i]->waveform_element(0)->expression(0));
             }
+
+            // Choices (1 | 2 | others)
+            if (i < choices.size()) {
+                if (auto *ch_ctx = choices[i]) {
+                    for (auto *c : ch_ctx->choice()) {
+                        selection.choices.push_back(makeChoice(c));
+                    }
+                }
+            }
+
+            assign.selections.push_back(std::move(selection));
         }
     }
 
@@ -83,6 +118,21 @@ auto Translator::makeProcess(vhdlParser::Process_statementContext *ctx) -> ast::
         proc.sensitivity_list = sens_list->name()
                               | std::views::transform([](auto *name) { return name->getText(); })
                               | std::ranges::to<std::vector>();
+    }
+
+    // 3. Declarations
+    if (auto *decl_part = ctx->process_declarative_part()) {
+        for (auto *item : decl_part->process_declarative_item()) {
+            // Check for Variable
+            if (auto *var_ctx = item->variable_declaration()) {
+                proc.decls.emplace_back(makeVariableDecl(var_ctx));
+            }
+            // Check for Constant
+            else if (auto *const_ctx = item->constant_declaration()) {
+                proc.decls.emplace_back(makeConstantDecl(const_ctx));
+            }
+            // TODO(vedivad): Add Types, Files, Aliases here as you support them
+        }
     }
 
     // Extract sequential statements

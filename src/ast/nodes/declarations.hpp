@@ -14,11 +14,12 @@ namespace ast {
 // Forward declarations
 struct ConstantDecl;
 struct SignalDecl;
+struct VariableDecl;
 struct GenericParam;
 struct Port;
 
 /// Variant type for all declarations
-using Declaration = std::variant<ConstantDecl, SignalDecl, GenericParam, Port>;
+using Declaration = std::variant<ConstantDecl, SignalDecl, VariableDecl, GenericParam, Port>;
 
 // Constant declaration: constant WIDTH : integer := 8;
 struct ConstantDecl : NodeBase
@@ -34,6 +35,17 @@ struct SignalDecl : NodeBase
     std::vector<std::string> names;
     std::string type_name;
     bool has_bus_kw{ false };
+    std::optional<Constraint> constraint;
+    std::optional<Expr> init_expr;
+};
+
+// Variable declaration: shared variable v : integer := 0;
+// (Used inside Processes and Subprograms)
+struct VariableDecl : NodeBase
+{
+    bool shared{ false };
+    std::vector<std::string> names;
+    std::string type_name;
     std::optional<Constraint> constraint;
     std::optional<Expr> init_expr;
 };

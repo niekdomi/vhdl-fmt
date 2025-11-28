@@ -108,4 +108,29 @@ auto PrettyPrinter::operator()(const ast::ConstantDecl &node) const -> Doc
     return result + Doc::text(";");
 }
 
+auto PrettyPrinter::operator()(const ast::VariableDecl &node) const -> Doc
+{
+    const std::string names = node.names
+                            | std::views::join_with(std::string_view{ ", " })
+                            | std::ranges::to<std::string>();
+
+    // "variable x, y : integer"
+    Doc result = Doc::text(node.shared ? "shared variable" : "variable")
+               & Doc::alignText(names, AlignmentLevel::NAME)
+               & Doc::text(":")
+               & Doc::alignText(node.type_name, AlignmentLevel::TYPE);
+
+    // Constraint (e.g., (7 downto 0) or range 0 to 255)
+    if (node.constraint) {
+        result += visit(node.constraint.value());
+    }
+
+    // ":= 0"
+    if (node.init_expr) {
+        result &= Doc::text(":=") & visit(node.init_expr.value());
+    }
+
+    return result + Doc::text(";");
+}
+
 } // namespace emit

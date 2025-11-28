@@ -60,17 +60,19 @@ class Translator final
     auto makeConstantDecl(vhdlParser::Constant_declarationContext *ctx) -> ast::ConstantDecl;
     [[nodiscard]]
     auto makeSignalDecl(vhdlParser::Signal_declarationContext *ctx) -> ast::SignalDecl;
+    [[nodiscard]]
+    auto makeVariableDecl(vhdlParser::Variable_declarationContext *ctx) -> ast::VariableDecl;
 
     // Statements - return by value
     [[nodiscard]]
     auto makeConcurrentAssign(vhdlParser::Concurrent_signal_assignment_statementContext *ctx)
-      -> ast::ConcurrentAssign;
+      -> ast::ConcurrentStatement;
     [[nodiscard]]
     auto makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext *ctx)
-      -> ast::ConcurrentAssign;
+      -> ast::ConditionalConcurrentAssign;
     [[nodiscard]]
     auto makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext *ctx)
-      -> ast::ConcurrentAssign;
+      -> ast::SelectedConcurrentAssign;
     [[nodiscard]]
     auto makeTarget(vhdlParser::TargetContext *ctx) -> ast::Expr;
     [[nodiscard]]

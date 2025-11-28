@@ -156,4 +156,31 @@ auto Translator::makeSignalDecl(vhdlParser::Signal_declarationContext *ctx) -> a
     return decl;
 }
 
+auto Translator::makeVariableDecl(vhdlParser::Variable_declarationContext *ctx) -> ast::VariableDecl
+{
+    auto decl = make<ast::VariableDecl>(ctx);
+
+    if (ctx->SHARED() != nullptr) {
+        decl.shared = true;
+    }
+
+    decl.names = ctx->identifier_list()->identifier()
+               | std::views::transform([](auto *id) { return id->getText(); })
+               | std::ranges::to<std::vector>();
+
+    if (auto *stype = ctx->subtype_indication()) {
+        decl.type_name = stype->selected_name(0)->getText();
+
+        if (auto *constraint_ctx = stype->constraint()) {
+            decl.constraint = makeConstraint(constraint_ctx);
+        }
+    }
+
+    if (auto *expr = ctx->expression()) {
+        decl.init_expr = makeExpr(expr);
+    }
+
+    return decl;
+}
+
 } // namespace builder
