@@ -1,7 +1,7 @@
-accocs
 ambig
 antlr
 antlr4
+assocs
 bugprone
 combinators
 conanfile
@@ -38,5 +38,6 @@ wshadow
 wsign
 wsuggest
 wsuper
+wthread
 wunused
 wzero
