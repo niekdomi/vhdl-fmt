@@ -273,7 +273,7 @@ jobs:
 
       - name: Generate coverage markdown
         if: github.event_name == 'pull_request'
-        run: .github/scripts/generate-coverage-md.sh
+        run: bash .github/scripts/generate-coverage-md.sh
 
       - name: Post coverage comment
         if: github.event_name == 'pull_request'
