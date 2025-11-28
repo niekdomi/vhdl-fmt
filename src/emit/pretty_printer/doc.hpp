@@ -22,8 +22,6 @@ auto transformImpl(const DocPtr &doc, Fn &&fn) -> DocPtr;
 template<typename T, typename Fn>
 auto foldImpl(const DocPtr &doc, T init, Fn &&fn) -> T;
 
-auto optimizeImpl(const DocPtr &doc) -> DocPtr;
-
 /// @brief An immutable abstraction for a pretty-printable document.
 /// @note This class is a lightweight handle (PImpl pattern) to the underlying
 ///       document structure (DocImpl).
