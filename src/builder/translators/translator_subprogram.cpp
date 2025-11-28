@@ -8,9 +8,13 @@
 
 namespace builder {
 
-auto Translator::makeSubprogramParam(vhdlParser::Interface_declarationContext &ctx,
+auto Translator::makeSubprogramParam(vhdlParser::Interface_declarationContext *ctx,
                                      const bool is_last) -> ast::SubprogramParam
 {
+    if (ctx == nullptr) {
+        return {};
+    }
+
     auto param = make<ast::SubprogramParam>(ctx);
     param.is_last = is_last;
 
@@ -32,13 +36,13 @@ auto Translator::makeSubprogramParam(vhdlParser::Interface_declarationContext &c
         return stype->getText();
     };
 
-    if (auto *const_ctx = ctx.interface_constant_declaration()) {
+    if (auto *const_ctx = ctx->interface_constant_declaration()) {
         param.names = set_names(const_ctx->identifier_list());
         param.mode = const_ctx->IN() != nullptr ? "in" : "";
         param.type_name = fill_type(const_ctx->subtype_indication());
 
         if (auto *expr = const_ctx->expression()) {
-            param.default_expr = makeExpr(*expr);
+            param.default_expr = makeExpr(expr);
         }
 
         return param;
@@ -50,21 +54,21 @@ auto Translator::makeSubprogramParam(vhdlParser::Interface_declarationContext &c
         param.type_name = fill_type(subtype_ctx);
 
         if (auto *expr = decl_ctx->expression()) {
-            param.default_expr = makeExpr(*expr);
+            param.default_expr = makeExpr(expr);
         }
     };
 
-    if (auto *sig_ctx = ctx.interface_signal_declaration()) {
+    if (auto *sig_ctx = ctx->interface_signal_declaration()) {
         fill_signal_like(sig_ctx, sig_ctx->signal_mode(), sig_ctx->subtype_indication());
         return param;
     }
 
-    if (auto *var_ctx = ctx.interface_variable_declaration()) {
+    if (auto *var_ctx = ctx->interface_variable_declaration()) {
         fill_signal_like(var_ctx, var_ctx->signal_mode(), var_ctx->subtype_indication());
         return param;
     }
 
-    if (auto *file_ctx = ctx.interface_file_declaration()) {
+    if (auto *file_ctx = ctx->interface_file_declaration()) {
         param.names = set_names(file_ctx->identifier_list());
         param.type_name = fill_type(file_ctx->subtype_indication());
         return param;
@@ -73,21 +77,15 @@ auto Translator::makeSubprogramParam(vhdlParser::Interface_declarationContext &c
     return param;
 }
 
-auto Translator::makeSubprogramParam(vhdlParser::Interface_declarationContext *ctx,
-                                     const bool is_last) -> ast::SubprogramParam
-{
-    if (ctx == nullptr) {
-        return {};
-    }
-
-    return makeSubprogramParam(*ctx, is_last);
-}
-
-auto Translator::makeParameterList(vhdlParser::Formal_parameter_listContext &ctx)
+auto Translator::makeParameterList(vhdlParser::Formal_parameter_listContext *ctx)
   -> std::vector<ast::SubprogramParam>
 {
     std::vector<ast::SubprogramParam> params;
-    auto *iface_list = ctx.interface_list();
+    if (ctx == nullptr) {
+        return params;
+    }
+
+    auto *iface_list = ctx->interface_list();
     if (iface_list == nullptr) {
         return params;
     }
@@ -103,16 +101,6 @@ auto Translator::makeParameterList(vhdlParser::Formal_parameter_listContext &ctx
     return params;
 }
 
-auto Translator::makeParameterList(vhdlParser::Formal_parameter_listContext *ctx)
-  -> std::vector<ast::SubprogramParam>
-{
-    if (ctx == nullptr) {
-        return {};
-    }
-
-    return makeParameterList(*ctx);
-}
-
 auto Translator::makeSubprogramDecls(vhdlParser::Subprogram_declarative_partContext *ctx)
   -> std::vector<ast::Declaration>
 {
@@ -123,13 +111,13 @@ auto Translator::makeSubprogramDecls(vhdlParser::Subprogram_declarative_partCont
     std::vector<ast::Declaration> decls;
     for (auto *item : ctx->subprogram_declarative_item()) {
         if (auto *const_ctx = item->constant_declaration()) {
-            decls.emplace_back(makeConstantDecl(*const_ctx));
+            decls.emplace_back(makeConstantDecl(const_ctx));
         } else if (auto *alias_ctx = item->alias_declaration()) {
-            decls.emplace_back(makeAliasDecl(*alias_ctx));
+            decls.emplace_back(makeAliasDecl(alias_ctx));
         } else if (auto *type_ctx = item->type_declaration()) {
-            decls.emplace_back(makeTypeDecl(*type_ctx));
+            decls.emplace_back(makeTypeDecl(type_ctx));
         } else if (auto *subtype_ctx = item->subtype_declaration()) {
-            decls.emplace_back(makeSubtypeDecl(*subtype_ctx));
+            decls.emplace_back(makeSubtypeDecl(subtype_ctx));
         } else if (auto *nested_decl = item->subprogram_declaration()) {
             if (auto decl = makeSubprogramDeclaration(nested_decl)) {
                 decls.emplace_back(std::move(*decl));
@@ -153,34 +141,42 @@ auto Translator::makeSubprogramStatements(vhdlParser::Subprogram_statement_partC
     }
 
     return ctx->sequential_statement()
-         | std::views::transform([this](auto *stmt) { return makeSequentialStatement(*stmt); })
+         | std::views::transform([this](auto *stmt) { return makeSequentialStatement(stmt); })
          | std::ranges::to<std::vector>();
 }
 
-auto Translator::makeProcedure(vhdlParser::Procedure_specificationContext &ctx)
+auto Translator::makeProcedure(vhdlParser::Procedure_specificationContext *ctx)
   -> ast::ProcedureDecl
 {
+    if (ctx == nullptr) {
+        return {};
+    }
+
     auto proc = make<ast::ProcedureDecl>(ctx);
 
-    if (auto *designator = ctx.designator()) {
+    if (auto *designator = ctx->designator()) {
         proc.name = designator->getText();
     }
 
-    proc.parameters = makeParameterList(ctx.formal_parameter_list());
+    proc.parameters = makeParameterList(ctx->formal_parameter_list());
     return proc;
 }
 
-auto Translator::makeFunction(vhdlParser::Function_specificationContext &ctx) -> ast::FunctionDecl
+auto Translator::makeFunction(vhdlParser::Function_specificationContext *ctx) -> ast::FunctionDecl
 {
+    if (ctx == nullptr) {
+        return {};
+    }
+
     auto func = make<ast::FunctionDecl>(ctx);
 
-    if (auto *designator = ctx.designator()) {
+    if (auto *designator = ctx->designator()) {
         func.name = designator->getText();
     }
 
-    func.parameters = makeParameterList(ctx.formal_parameter_list());
+    func.parameters = makeParameterList(ctx->formal_parameter_list());
 
-    if (auto *stype = ctx.subtype_indication()) {
+    if (auto *stype = ctx->subtype_indication()) {
         if (!stype->selected_name().empty()) {
             func.return_type = stype->selected_name(0)->getText();
         } else {
@@ -191,52 +187,6 @@ auto Translator::makeFunction(vhdlParser::Function_specificationContext &ctx) ->
     return func;
 }
 
-auto Translator::makeSubprogramDeclaration(vhdlParser::Subprogram_declarationContext &ctx)
-  -> ast::Declaration
-{
-    auto *spec = ctx.subprogram_specification();
-    if (spec == nullptr) {
-        return {};
-    }
-
-    if (auto *proc_spec = spec->procedure_specification()) {
-        return makeProcedure(*proc_spec);
-    }
-
-    if (auto *func_spec = spec->function_specification()) {
-        return makeFunction(*func_spec);
-    }
-
-    return {};
-}
-
-auto Translator::makeSubprogramBody(vhdlParser::Subprogram_bodyContext &ctx) -> ast::Declaration
-{
-    auto *spec = ctx.subprogram_specification();
-    if (spec == nullptr) {
-        return {};
-    }
-
-    auto declarative_part = makeSubprogramDecls(ctx.subprogram_declarative_part());
-    auto statements = makeSubprogramStatements(ctx.subprogram_statement_part());
-
-    if (auto *proc_spec = spec->procedure_specification()) {
-        auto proc = makeProcedure(*proc_spec);
-        proc.decls = std::move(declarative_part);
-        proc.body = std::move(statements);
-        return proc;
-    }
-
-    if (auto *func_spec = spec->function_specification()) {
-        auto func = makeFunction(*func_spec);
-        func.decls = std::move(declarative_part);
-        func.body = std::move(statements);
-        return func;
-    }
-
-    return {};
-}
-
 auto Translator::makeSubprogramDeclaration(vhdlParser::Subprogram_declarationContext *ctx)
   -> std::optional<ast::Declaration>
 {
@@ -244,7 +194,20 @@ auto Translator::makeSubprogramDeclaration(vhdlParser::Subprogram_declarationCon
         return std::nullopt;
     }
 
-    return makeSubprogramDeclaration(*ctx);
+    auto *spec = ctx->subprogram_specification();
+    if (spec == nullptr) {
+        return std::nullopt;
+    }
+
+    if (auto *proc_spec = spec->procedure_specification()) {
+        return makeProcedure(proc_spec);
+    }
+
+    if (auto *func_spec = spec->function_specification()) {
+        return makeFunction(func_spec);
+    }
+
+    return std::nullopt;
 }
 
 auto Translator::makeSubprogramBody(vhdlParser::Subprogram_bodyContext *ctx)
@@ -254,7 +217,29 @@ auto Translator::makeSubprogramBody(vhdlParser::Subprogram_bodyContext *ctx)
         return std::nullopt;
     }
 
-    return makeSubprogramBody(*ctx);
+    auto *spec = ctx->subprogram_specification();
+    if (spec == nullptr) {
+        return std::nullopt;
+    }
+
+    auto declarative_part = makeSubprogramDecls(ctx->subprogram_declarative_part());
+    auto statements = makeSubprogramStatements(ctx->subprogram_statement_part());
+
+    if (auto *proc_spec = spec->procedure_specification()) {
+        auto proc = makeProcedure(proc_spec);
+        proc.decls = std::move(declarative_part);
+        proc.body = std::move(statements);
+        return proc;
+    }
+
+    if (auto *func_spec = spec->function_specification()) {
+        auto func = makeFunction(func_spec);
+        func.decls = std::move(declarative_part);
+        func.body = std::move(statements);
+        return func;
+    }
+
+    return std::nullopt;
 }
 
 } // namespace builder

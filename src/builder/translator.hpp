@@ -60,16 +60,12 @@ class Translator final
     [[nodiscard]] auto makeFunction(vhdlParser::Function_specificationContext *ctx) -> ast::FunctionDecl;
     [[nodiscard]] auto makeGenericParam(vhdlParser::Interface_constant_declarationContext *ctx, bool is_last) -> ast::GenericParam;
     [[nodiscard]] auto makeParameterList(vhdlParser::Formal_parameter_listContext *ctx) -> std::vector<ast::SubprogramParam>;
-    [[nodiscard]] auto makeParameterList(vhdlParser::Formal_parameter_listContext *ctx) -> std::vector<ast::SubprogramParam>;
     [[nodiscard]] auto makeProcedure(vhdlParser::Procedure_specificationContext *ctx) -> ast::ProcedureDecl;
     [[nodiscard]] auto makeSignalDecl(vhdlParser::Signal_declarationContext *ctx) -> ast::SignalDecl;
     [[nodiscard]] auto makeSignalPort(vhdlParser::Interface_port_declarationContext *ctx, bool is_last) -> ast::Port;
-    [[nodiscard]] auto makeSubprogramBody(vhdlParser::Subprogram_bodyContext *ctx) -> ast::Declaration;
     [[nodiscard]] auto makeSubprogramBody(vhdlParser::Subprogram_bodyContext *ctx) -> std::optional<ast::Declaration>;
-    [[nodiscard]] auto makeSubprogramDeclaration(vhdlParser::Subprogram_declarationContext *ctx) -> ast::Declaration;
     [[nodiscard]] auto makeSubprogramDeclaration(vhdlParser::Subprogram_declarationContext *ctx) -> std::optional<ast::Declaration>;
     [[nodiscard]] auto makeSubprogramDecls(vhdlParser::Subprogram_declarative_partContext *ctx) -> std::vector<ast::Declaration>;
-    [[nodiscard]] auto makeSubprogramParam(vhdlParser::Interface_declarationContext *ctx, bool is_last) -> ast::SubprogramParam;
     [[nodiscard]] auto makeSubprogramParam(vhdlParser::Interface_declarationContext *ctx, bool is_last) -> ast::SubprogramParam;
     [[nodiscard]] auto makeSubprogramStatements(vhdlParser::Subprogram_statement_partContext *ctx) -> std::vector<ast::SequentialStatement>;
     [[nodiscard]] auto makeSubtypeDecl(vhdlParser::Subtype_declarationContext *ctx) -> ast::SubtypeDecl;

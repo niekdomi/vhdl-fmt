@@ -10,11 +10,15 @@ namespace builder {
 
 // ---------------------- Clauses ----------------------
 
-auto Translator::makeGenericClause(vhdlParser::Generic_clauseContext &ctx) -> ast::GenericClause
+auto Translator::makeGenericClause(vhdlParser::Generic_clauseContext *ctx) -> ast::GenericClause
 {
+    if (ctx == nullptr) {
+        return {};
+    }
+
     auto clause = make<ast::GenericClause>(ctx);
 
-    auto *list = ctx.generic_list();
+    auto *list = ctx->generic_list();
     if (list == nullptr) {
         return clause;
     }
@@ -28,11 +32,15 @@ auto Translator::makeGenericClause(vhdlParser::Generic_clauseContext &ctx) -> as
     return clause;
 }
 
-auto Translator::makePortClause(vhdlParser::Port_clauseContext &ctx) -> ast::PortClause
+auto Translator::makePortClause(vhdlParser::Port_clauseContext *ctx) -> ast::PortClause
 {
+    if (ctx == nullptr) {
+        return {};
+    }
+
     auto clause = make<ast::PortClause>(ctx);
 
-    auto *list = ctx.port_list();
+    auto *list = ctx->port_list();
     if (list == nullptr) {
         return clause;
     }
@@ -60,7 +68,7 @@ auto Translator::makeGenericParam(vhdlParser::Interface_constant_declarationCont
         return {};
     }
 
-    auto param = make<ast::GenericParam>(*ctx);
+    auto param = make<ast::GenericParam>(ctx);
 
     param.names = ctx->identifier_list()->identifier()
                 | std::views::transform([](auto *id) { return id->getText(); })
@@ -71,7 +79,7 @@ auto Translator::makeGenericParam(vhdlParser::Interface_constant_declarationCont
     }
 
     if (auto *expr = ctx->expression()) {
-        param.default_expr = makeExpr(*expr);
+        param.default_expr = makeExpr(expr);
     }
 
     param.is_last = is_last;
@@ -88,7 +96,7 @@ auto Translator::makeSignalPort(vhdlParser::Interface_port_declarationContext *c
         return {};
     }
 
-    auto port = make<ast::Port>(*ctx);
+    auto port = make<ast::Port>(ctx);
 
     port.names = ctx->identifier_list()->identifier()
                | std::views::transform([](auto *id) { return id->getText(); })
@@ -102,12 +110,12 @@ auto Translator::makeSignalPort(vhdlParser::Interface_port_declarationContext *c
         port.type_name = stype->selected_name(0)->getText();
 
         if (auto *constraint_ctx = stype->constraint()) {
-            port.constraint = makeConstraint(*constraint_ctx);
+            port.constraint = makeConstraint(constraint_ctx);
         }
     }
 
     if (auto *expr = ctx->expression()) {
-        port.default_expr = makeExpr(*expr);
+        port.default_expr = makeExpr(expr);
     }
 
     port.is_last = is_last;
@@ -115,50 +123,58 @@ auto Translator::makeSignalPort(vhdlParser::Interface_port_declarationContext *c
     return port;
 }
 
-auto Translator::makeConstantDecl(vhdlParser::Constant_declarationContext &ctx) -> ast::ConstantDecl
+auto Translator::makeConstantDecl(vhdlParser::Constant_declarationContext *ctx) -> ast::ConstantDecl
 {
+    if (ctx == nullptr) {
+        return {};
+    }
+
     auto decl = make<ast::ConstantDecl>(ctx);
 
-    decl.names = ctx.identifier_list()->identifier()
+    decl.names = ctx->identifier_list()->identifier()
                | std::views::transform([](auto *id) { return id->getText(); })
                | std::ranges::to<std::vector>();
 
-    if (auto *stype = ctx.subtype_indication()) {
+    if (auto *stype = ctx->subtype_indication()) {
         decl.type_name = stype->selected_name(0)->getText();
     }
 
-    if (auto *expr = ctx.expression()) {
-        decl.init_expr = makeExpr(*expr);
+    if (auto *expr = ctx->expression()) {
+        decl.init_expr = makeExpr(expr);
     }
 
     return decl;
 }
 
-auto Translator::makeSignalDecl(vhdlParser::Signal_declarationContext &ctx) -> ast::SignalDecl
+auto Translator::makeSignalDecl(vhdlParser::Signal_declarationContext *ctx) -> ast::SignalDecl
 {
+    if (ctx == nullptr) {
+        return {};
+    }
+
     auto decl = make<ast::SignalDecl>(ctx);
 
-    decl.names = ctx.identifier_list()->identifier()
+    decl.names = ctx->identifier_list()->identifier()
                | std::views::transform([](auto *id) { return id->getText(); })
                | std::ranges::to<std::vector>();
 
-    if (auto *stype = ctx.subtype_indication()) {
+    if (auto *stype = ctx->subtype_indication()) {
         decl.type_name = stype->selected_name(0)->getText();
 
         if (auto *constraint_ctx = stype->constraint()) {
-            decl.constraint = makeConstraint(*constraint_ctx);
+            decl.constraint = makeConstraint(constraint_ctx);
         }
     }
 
     decl.has_bus_kw = false;
-    if (auto *kind = ctx.signal_kind()) {
+    if (auto *kind = ctx->signal_kind()) {
         if (kind->BUS() != nullptr) {
             decl.has_bus_kw = true;
         }
     }
 
-    if (auto *expr = ctx.expression()) {
-        decl.init_expr = makeExpr(*expr);
+    if (auto *expr = ctx->expression()) {
+        decl.init_expr = makeExpr(expr);
     }
 
     return decl;

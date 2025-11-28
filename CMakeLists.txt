@@ -44,8 +44,17 @@ message(STATUS "  Standard: C++${CMAKE_CXX_STANDARD}")
 # Enable ccache for faster rebuilds if available
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
+    # Keep ccache inside the build tree to avoid permission issues in locked-down environments
+    set(CCACHE_DIR ${CMAKE_BINARY_DIR}/.ccache)
+    set(CCACHE_TEMPDIR ${CCACHE_DIR}/tmp)
+    file(MAKE_DIRECTORY ${CCACHE_DIR})
+    file(MAKE_DIRECTORY ${CCACHE_TEMPDIR})
     message(STATUS "  ccache:   ${CCACHE_PROGRAM}")
-    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    message(STATUS "  ccache dir: ${CCACHE_DIR}")
+    set(
+        CMAKE_CXX_COMPILER_LAUNCHER
+        "${CMAKE_COMMAND};-E;env;CCACHE_DIR=${CCACHE_DIR};CCACHE_TEMPDIR=${CCACHE_TEMPDIR};${CCACHE_PROGRAM}"
+    )
 endif()
 
 find_package(antlr4-runtime CONFIG REQUIRED)
