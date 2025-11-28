@@ -13,6 +13,7 @@ target_link_libraries(
     PRIVATE
         ast
         cli
+        common
         builder
         emit
 )
