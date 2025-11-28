@@ -8,9 +8,8 @@ TEST_CASE("If-Generate with Alternatives (VHDL-2008)", "[statements][if_generate
     // Note: 'else generate' and 'elsif generate' are strictly VHDL-2008 features.
     // In VHDL-93, you had to use disjoint 'if' statements.
 
-    constexpr std::string_view PRELUDE =
-        "library ieee;\n"
-        "use ieee.std_logic_1164.all;\n";
+    constexpr std::string_view PRELUDE = "library ieee;\n"
+                                         "use ieee.std_logic_1164.all;\n";
 
     // SECTION("If-Else Generate")
     // {

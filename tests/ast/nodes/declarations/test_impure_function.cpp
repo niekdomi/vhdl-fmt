@@ -7,10 +7,9 @@ TEST_CASE("Impure Functions", "[declarations][impure_function]")
 {
     SECTION("Impure Function Declaration")
     {
-        constexpr std::string_view VHDL_FILE =
-            "package P is\n"
-            "    impure function GetCount return integer;\n"
-            "end P;";
+        constexpr std::string_view VHDL_FILE = "package P is\n"
+                                               "    impure function GetCount return integer;\n"
+                                               "end P;";
 
         auto design = builder::buildFromString(VHDL_FILE);
         // TODO(someone): Check impure function
@@ -18,8 +17,8 @@ TEST_CASE("Impure Functions", "[declarations][impure_function]")
 
     SECTION("Impure Function with Parameters")
     {
-        constexpr std::string_view VHDL_FILE =
-            "package P is\n"
+        constexpr std::string_view VHDL_FILE
+          = "package P is\n"
             "    impure function Calculate(a, b : integer) return integer;\n"
             "end P;";
 
@@ -29,13 +28,12 @@ TEST_CASE("Impure Functions", "[declarations][impure_function]")
 
     SECTION("Impure Function Body")
     {
-        constexpr std::string_view VHDL_FILE =
-            "package body P is\n"
-            "    impure function GetRandom return integer is\n"
-            "    begin\n"
-            "        return 42;\n"
-            "    end function GetRandom;\n"
-            "end P;";
+        constexpr std::string_view VHDL_FILE = "package body P is\n"
+                                               "    impure function GetRandom return integer is\n"
+                                               "    begin\n"
+                                               "        return 42;\n"
+                                               "    end function GetRandom;\n"
+                                               "end P;";
 
         auto design = builder::buildFromString(VHDL_FILE);
         // TODO(someone): Check impure function body
