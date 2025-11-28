@@ -14,7 +14,7 @@ TARGET := build/$(BUILD_TYPE)/bin/vhdl_formatter
 CONAN_STAMP := build/.conan.$(BUILD_TYPE).stamp
 BUILD_STAMP := build/.build.$(BUILD_TYPE).stamp
 
-SOURCES := $(shell find src tests -name '*.cpp' -o -name '*.hpp')
+SOURCES := $(shell find src tests -type f \( -name '*.cpp' -o -name '*.hpp' \) ! -path "*/build/*")
 SOURCES_CMAKE := $(shell find src tests . -name 'CMakeLists.txt')
 
 # -----------------------------
@@ -110,9 +110,9 @@ endef
 ifdef SOURCES_TO_LINT
 	FILES_TO_LINT := $(SOURCES_TO_LINT)
 else ifeq ($(LINT_FILES),source)
-	FILES_TO_LINT := $(shell find src tests -name '*.cpp')
+	FILES_TO_LINT := $(shell find src tests -name '*.cpp' ! -path "*/build/*")
 else ifeq ($(LINT_FILES),header)
-	FILES_TO_LINT := $(shell find src tests -name '*.hpp')
+	FILES_TO_LINT := $(shell find src tests -name '*.hpp' ! -path "*/build/*")
 else
 	FILES_TO_LINT := $(SOURCES)
 endif
@@ -122,19 +122,25 @@ lint:
 	$(call check_tool,$(RUN_CLANG_TIDY_CMD))
 	$(call check_tool,$(CLANG_TIDY_CMD))
 	@echo "Linting with $(LINT_CPUS) cores"
-	@if [ -z "$(SOURCES_TO_LINT)" ]; then \
+	@if [ -z "$(FILES_TO_LINT)" ]; then \
 		echo "No files to lint (LINT_FILES='$(LINT_FILES)')."; \
 		exit 0; \
 	fi
 
 	@if [ "$(LINT_FILES)" = "source" ] || [ -z "$(LINT_FILES)" ]; then \
-		echo "Running clang-tidy on source files..."; \
-		$(RUN_CLANG_TIDY_CMD) $(LINT_COMMON_FLAGS) $(LINT_TIDY_FLAGS) -j $(LINT_CPUS) $(SOURCES_TO_LINT) || exit 1; \
+		SOURCE_FILES="$$(echo '$(FILES_TO_LINT)' | tr ' ' '\n' | grep '\.cpp$$')"; \
+		if [ -n "$$SOURCE_FILES" ]; then \
+			echo "Running clang-tidy on source files..."; \
+			echo "$$SOURCE_FILES" | xargs $(RUN_CLANG_TIDY_CMD) $(LINT_COMMON_FLAGS) $(LINT_TIDY_FLAGS) -j $(LINT_CPUS) || exit 1; \
+		fi; \
 	fi
 
 	@if [ "$(LINT_FILES)" = "header" ] || [ -z "$(LINT_FILES)" ]; then \
-		echo "Running clang-tidy on headers..."; \
-		echo "$(SOURCES_TO_LINT)" | xargs -r -P $(LINT_CPUS) -n 1 $(CLANG_TIDY_CMD) $(LINT_COMMON_FLAGS) $(LINT_TIDY_FLAGS) || exit 1; \
+		HEADER_FILES="$$(echo '$(FILES_TO_LINT)' | tr ' ' '\n' | grep '\.hpp$$')"; \
+		if [ -n "$$HEADER_FILES" ]; then \
+			echo "Running clang-tidy on headers..."; \
+			echo "$$HEADER_FILES" | xargs -r -P $(LINT_CPUS) -n 1 $(CLANG_TIDY_CMD) $(LINT_COMMON_FLAGS) $(LINT_TIDY_FLAGS) || exit 1; \
+		fi; \
 	fi
 
 	@echo "✓ Linting complete"

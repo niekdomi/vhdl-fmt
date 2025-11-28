@@ -1,4 +1,5 @@
 #include "ast/nodes/declarations.hpp"
+#include "ast/nodes/statements.hpp"
 #include "builder/translator.hpp"
 #include "common/range_helpers.hpp"
 #include "vhdlParser.h"
