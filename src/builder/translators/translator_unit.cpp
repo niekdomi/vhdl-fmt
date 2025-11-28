@@ -41,6 +41,11 @@ auto Translator::makeEntity(vhdlParser::Entity_declarationContext *ctx) -> ast::
 
     entity.name = ctx->identifier(0)->getText();
 
+    // Check for 'entity' keyword in END statement
+    if (ctx->ENTITY().size() > 1) {
+        entity.has_end_entity_keyword = true;
+    }
+
     // Optional end label (ENTITY ... END ENTITY <id>)
     if (ctx->identifier().size() > 1) {
         entity.end_label = ctx->identifier(1)->getText();
@@ -64,6 +69,16 @@ auto Translator::makeArchitecture(vhdlParser::Architecture_bodyContext *ctx) -> 
 
     arch.name = ctx->identifier(0)->getText();
     arch.entity_name = ctx->identifier(1)->getText();
+
+    // Check for 'architecture' keyword in END statement
+    if (ctx->ARCHITECTURE().size() > 1) {
+        arch.has_end_architecture_keyword = true;
+    }
+
+    // Optional end label (ARCHITECTURE ... END ARCHITECTURE <id>)
+    if (ctx->identifier().size() > 2) {
+        arch.end_label = ctx->identifier(2)->getText();
+    }
 
     // Walk declarative part and collect declarations directly
     if (auto *decl_part = ctx->architecture_declarative_part()) {
