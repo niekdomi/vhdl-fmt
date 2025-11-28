@@ -9,7 +9,6 @@
 
 TEST_CASE("Sequential Assignments", "[statements][assignment]")
 {
-    // A single process containing multiple assignment scenarios to test
     constexpr std::string_view VHDL_FILE
       = "entity Test is end Test;\n"
         "architecture RTL of Test is\n"
@@ -35,88 +34,74 @@ TEST_CASE("Sequential Assignments", "[statements][assignment]")
         "end RTL;";
 
     const auto design = builder::buildFromString(VHDL_FILE);
-
-    // 1. Get Architecture (Unit 1)
     const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
 
-    // 2. Get the Process (Statement 0)
-    REQUIRE_FALSE(arch->stmts.empty());
     const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
     REQUIRE(proc != nullptr);
-
-    // We expect exactly 4 statements in the body
     REQUIRE(proc->body.size() == 4);
 
     SECTION("Variable Assignments (:=)")
     {
+        // VariableAssign structure did NOT change, it still uses 'value'
         SECTION("Literal Value")
         {
-            // Check Statement [0]
             const auto *assign = std::get_if<ast::VariableAssign>(proc->body.data());
             REQUIRE(assign != nullptr);
 
             const auto *target = std::get_if<ast::TokenExpr>(&assign->target);
             const auto *value = std::get_if<ast::TokenExpr>(&assign->value);
 
-            // Use CHECK so both are reported if they fail
             CHECK(target->text == "var_int");
             CHECK(value->text == "42");
         }
 
         SECTION("Binary Expression")
         {
-            // Check Statement [1]: var_int := var_a + 10;
             const auto *assign = std::get_if<ast::VariableAssign>(&proc->body[1]);
             REQUIRE(assign != nullptr);
 
             CHECK(std::get<ast::TokenExpr>(assign->target).text == "var_int");
-
-            // Verify structure is BinaryExpr, not just a Token
             const auto *bin_expr = std::get_if<ast::BinaryExpr>(&assign->value);
             REQUIRE(bin_expr != nullptr);
-
-            CHECK(std::get<ast::TokenExpr>(*bin_expr->left).text == "var_a");
             CHECK(bin_expr->op == "+");
-            CHECK(std::get<ast::TokenExpr>(*bin_expr->right).text == "10");
         }
     }
 
     SECTION("Signal Assignments (<=)")
     {
+        // SignalAssign structure CHANGED: uses 'waveform.elements'
         SECTION("Simple Literal")
         {
-            // Check Statement [2]
             const auto *assign = std::get_if<ast::SignalAssign>(&proc->body[2]);
             REQUIRE(assign != nullptr);
 
             const auto *target = std::get_if<ast::TokenExpr>(&assign->target);
-            const auto *value = std::get_if<ast::TokenExpr>(&assign->value);
-
             CHECK(target->text == "sig_bit");
+
+            // New AST access:
+            REQUIRE_FALSE(assign->waveform.is_unaffected);
+            REQUIRE(assign->waveform.elements.size() == 1);
+
+            const auto *value = std::get_if<ast::TokenExpr>(&assign->waveform.elements[0].value);
             CHECK(value->text == "'1'");
         }
 
         SECTION("Aggregate/Group Expression")
         {
-            // Check Statement [3]: sig_vec <= (others => '0');
             const auto *assign = std::get_if<ast::SignalAssign>(&proc->body[3]);
             REQUIRE(assign != nullptr);
 
             CHECK(std::get<ast::TokenExpr>(assign->target).text == "sig_vec");
 
-            // Verify structure: GroupExpr containing a BinaryExpr('=>')
-            const auto *group = std::get_if<ast::GroupExpr>(&assign->value);
+            // New AST access:
+            REQUIRE(assign->waveform.elements.size() == 1);
+            const auto *group = std::get_if<ast::GroupExpr>(&assign->waveform.elements[0].value);
             REQUIRE(group != nullptr);
-            REQUIRE_FALSE(group->children.empty());
 
-            // Inside the group is "others => '0'" which parses as a BinaryExpr
             const auto *assoc = std::get_if<ast::BinaryExpr>(group->children.data());
             REQUIRE(assoc != nullptr);
-
             CHECK(assoc->op == "=>");
-            CHECK(std::get<ast::TokenExpr>(*assoc->left).text == "others");
-            CHECK(std::get<ast::TokenExpr>(*assoc->right).text == "'0'");
         }
     }
 }

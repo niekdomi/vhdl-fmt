@@ -88,6 +88,7 @@ add_executable(
     nodes/statements/test_selected_assign.cpp
     nodes/statements/test_sequential_assign.cpp
     nodes/statements/test_wait.cpp
+    nodes/statements/test_waveforms.cpp
     nodes/statements/test_while_loop.cpp
 )
 

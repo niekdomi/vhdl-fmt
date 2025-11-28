@@ -35,10 +35,7 @@ auto Translator::makeSignalAssign(vhdlParser::Signal_assignment_statementContext
     }
 
     if (auto *wave = ctx->waveform()) {
-        auto wave_elems = wave->waveform_element();
-        if (!wave_elems.empty() && !wave_elems[0]->expression().empty()) {
-            assign.value = makeExpr(wave_elems[0]->expression(0));
-        }
+        assign.waveform = makeWaveform(wave);
     }
 
     return assign;

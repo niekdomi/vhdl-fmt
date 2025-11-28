@@ -10,7 +10,6 @@
 
 namespace {
 
-// Helper to create a TokenExpr
 auto token(std::string_view text) -> ast::TokenExpr
 {
     ast::TokenExpr t;
@@ -18,7 +17,6 @@ auto token(std::string_view text) -> ast::TokenExpr
     return t;
 }
 
-// Helper to create a BinaryExpr
 auto binary(std::string_view lhs, std::string_view op, std::string_view rhs) -> ast::BinaryExpr
 {
     ast::BinaryExpr bin;
@@ -26,6 +24,16 @@ auto binary(std::string_view lhs, std::string_view op, std::string_view rhs) -> 
     bin.op = op;
     bin.right = std::make_unique<ast::Expr>(token(rhs));
     return bin;
+}
+
+// Helper to wrap a simple value into a Waveform
+auto makeWave(ast::TokenExpr val) -> ast::Waveform
+{
+    ast::Waveform w;
+    ast::Waveform::Element el;
+    el.value = std::move(val);
+    w.elements.push_back(std::move(el));
+    return w;
 }
 
 } // namespace
@@ -45,7 +53,8 @@ TEST_CASE("Sequential Assignments", "[pretty_printer][assignments]")
     {
         ast::SignalAssign assign;
         assign.target = token("cnt");
-        assign.value = token("0");
+        // Update: use waveform
+        assign.waveform = makeWave(token("0"));
 
         REQUIRE(emit::test::render(assign) == "cnt <= 0;");
     }
@@ -60,14 +69,16 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
         assign.target = token("data_out");
 
         // Waveform 1: '1' when en = '1'
-        assign.waveforms.emplace_back(ast::ConditionalConcurrentAssign::Waveform{
-          .value = token("'1'"),
-          .condition = binary("en", "=", "'1'") // Implicit move into optional<Expr>
-        });
+        ast::ConditionalConcurrentAssign::ConditionalWaveform w1;
+        w1.waveform = makeWave(token("'1'"));
+        w1.condition = binary("en", "=", "'1'");
+        assign.waveforms.push_back(std::move(w1));
 
         // Waveform 2: '0' (else)
-        assign.waveforms.emplace_back(ast::ConditionalConcurrentAssign::Waveform{
-          .value = token("'0'"), .condition = std::nullopt });
+        ast::ConditionalConcurrentAssign::ConditionalWaveform w2;
+        w2.waveform = makeWave(token("'0'"));
+        w2.condition = std::nullopt;
+        assign.waveforms.push_back(std::move(w2));
 
         const auto result = emit::test::render(assign);
         constexpr std::string_view EXPECTED = "data_out <= '1' when en = '1' else\n"
@@ -85,13 +96,13 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
 
         // Selection 1: '0' when "00"
         ast::SelectedConcurrentAssign::Selection sel1;
-        sel1.value = token("'0'");
+        sel1.waveform = makeWave(token("'0'"));
         sel1.choices.emplace_back(token("\"00\""));
         assign.selections.emplace_back(std::move(sel1));
 
         // Selection 2: '1' when others
         ast::SelectedConcurrentAssign::Selection sel2;
-        sel2.value = token("'1'");
+        sel2.waveform = makeWave(token("'1'"));
         sel2.choices.emplace_back(token("others"));
         assign.selections.emplace_back(std::move(sel2));
 
