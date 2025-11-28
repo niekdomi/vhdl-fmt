@@ -6,16 +6,17 @@
 #include <algorithm>
 #include <cstddef>
 #include <ranges>
+#include <span>
 #include <string_view>
 #include <variant>
 #include <vector>
 
 namespace test_utils {
 
-/// @brief Extract comment texts from leading trivia (vector<Trivia>)
-/// @param tv Vector of trivia items
+/// @brief Extract comment texts from a trivia span
+/// @param tv Span of trivia items
 /// @return Vector of comment text views
-inline auto getComments(const std::vector<ast::Trivia> &tv) -> std::vector<std::string_view>
+inline auto getComments(std::span<const ast::Trivia> tv) -> std::vector<std::string_view>
 {
     return tv
          | std::views::filter(
@@ -30,22 +31,23 @@ inline auto getComments(const std::vector<ast::Trivia> &tv) -> std::vector<std::
 struct TriviaCounts
 {
     std::size_t comments{ 0 };        ///< Number of comment trivia items
-    std::size_t newlines_items{ 0 };  ///< Number of ParagraphBreak trivia items
-    unsigned int newline_breaks{ 0 }; ///< Total blank lines across all ParagraphBreak items
+    std::size_t newlines_items{ 0 };  ///< Number of Break trivia items
+    unsigned int newline_breaks{ 0 }; ///< Total blank lines across all Break items
 };
 
-/// @brief Tally different types of trivia in a vector
-/// @param tv Vector of trivia items to count
+/// @brief Tally different types of trivia in a span
+/// @param tv Span of trivia items to count
 /// @return Counts of comments and newlines
-inline auto tallyTrivia(const std::vector<ast::Trivia> &tv) -> TriviaCounts
+inline auto tallyTrivia(std::span<const ast::Trivia> tv) -> TriviaCounts
 {
     return std::ranges::fold_left(
       tv, TriviaCounts{}, [](TriviaCounts c, const ast::Trivia &t) -> TriviaCounts {
           if (std::holds_alternative<ast::Comment>(t)) {
               ++c.comments;
-          } else if (const auto *pb = std::get_if<ast::ParagraphBreak>(&t)) {
+          } else if (const auto *pb = std::get_if<ast::Break>(&t)) {
               ++c.newlines_items;
               // Convert blank_lines to newline count (newlines = blank_lines + 1)
+              // e.g., 1 blank line visually requires 2 \n characters
               c.newline_breaks += pb->blank_lines + 1;
           }
           return c;
