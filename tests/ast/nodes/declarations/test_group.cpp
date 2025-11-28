@@ -3,55 +3,80 @@
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
 
-TEST_CASE("GroupDecl: Group declaration", "[declarations][group]")
+TEST_CASE("Group Declarations", "[declarations][group]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-            group MyGroup is (signal clk, rst : std_logic);
-        begin
-        end A;
-    )";
+    // Common prelude
+    constexpr std::string_view PRELUDE = "library ieee;\n"
+                                         "use ieee.std_logic_1164.all;\n";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    // TODO(someone): Check group declaration when implemented
-}
+    SECTION("Group Declaration (Requires a Template)")
+    {
+        constexpr std::string_view VHDL_FILE
+          = "library ieee;\n"
+            "use ieee.std_logic_1164.all;\n"
+            "entity E is end E;\n"
+            "architecture A of E is\n"
+            "    -- 1. Define signals to be grouped\n"
+            "    signal clk, rst : std_logic;\n"
+            "\n"
+            "    -- 2. Define the Group Template (a group of signals)\n"
+            "    group signal_list is (signal <>);\n"
+            "\n"
+            "    -- 3. Declare the Group using the Template\n"
+            "    group MyGroup : signal_list (clk, rst);\n"
+            "begin\n"
+            "end A;";
 
-TEST_CASE("GroupDecl: Group with multiple signals", "[declarations][group]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-            signal clk, rst, en : std_logic;
-            group ControlGroup is (signal clk, rst, en : std_logic);
-        begin
-        end A;
-    )";
+        auto design = builder::buildFromString(VHDL_FILE);
+        // TODO(someone): Check group declaration node
+    }
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    // TODO(someone): Check group with multiple signals when implemented
-}
+    SECTION("Group with Multiple Signals")
+    {
+        constexpr std::string_view VHDL_FILE
+          = "library ieee;\n"
+            "use ieee.std_logic_1164.all;\n"
+            "entity E is end E;\n"
+            "architecture A of E is\n"
+            "    signal clk, rst, en : std_logic;\n"
+            "\n"
+            "    -- Template accepting any number of signals\n"
+            "    group control_template is (signal <>);\n"
+            "\n"
+            "    -- Group declaration referencing the template and the signals\n"
+            "    group ControlGroup : control_template (clk, rst, en);\n"
+            "begin\n"
+            "end A;";
 
-TEST_CASE("GroupTemplate: Group template declaration", "[declarations][group]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        package P is
-            group pin_group is (signal <>);
-        end P;
-    )";
+        auto design = builder::buildFromString(VHDL_FILE);
+        // TODO(someone): Check group members
+    }
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    // TODO(someone): Check group template declaration when implemented
-}
+    SECTION("Group Template Declaration (Single Class)")
+    {
+        constexpr std::string_view VHDL_FILE
+          = "package P is\n"
+            "    -- Defines a template for groups that contain signals\n"
+            "    group pin_group is (signal <>);\n"
+            "end P;";
 
-TEST_CASE("GroupTemplate: Group template with multiple elements", "[declarations][group]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        package P is
-            group bus_group is (signal <>, signal <>);
-        end P;
-    )";
+        auto design = builder::buildFromString(VHDL_FILE);
+        // TODO(someone): Check group template declaration
+    }
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    // TODO(someone): Check group template with multiple elements when implemented
+    SECTION("Group Template Declaration (Multiple Classes)")
+    {
+        constexpr std::string_view VHDL_FILE
+          = "package P is\n"
+            "    -- Defines a template for groups that contain a signal AND a variable\n"
+            "    -- Note: This is a fixed-size tuple style group\n"
+            "    group mixed_group is (signal, variable);\n"
+            "    \n"
+            "    -- Alternatively, unbounded lists of both:\n"
+            "    group bus_group is (signal <>, constant <>);\n"
+            "end P;";
+
+        auto design = builder::buildFromString(VHDL_FILE);
+        // TODO(someone): Check group template with multiple elements
+    }
 }

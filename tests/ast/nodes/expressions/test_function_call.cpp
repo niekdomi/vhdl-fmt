@@ -3,70 +3,87 @@
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
 
-TEST_CASE("FunctionCall: Simple function call", "[expressions][function_call]")
+TEST_CASE("Function Call Expressions", "[expressions][function_call]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-        begin
-            process
-                variable result : integer := Add(a, b);
-            begin
-            end process;
-        end A;
-    )";
+    SECTION("Simple Function Call")
+    {
+        constexpr std::string_view VHDL_FILE =
+            "entity E is end E;\n"
+            "architecture A of E is\n"
+            "    function Add(a, b : integer) return integer is\n"
+            "    begin return a + b; end function;\n"
+            "begin\n"
+            "    process\n"
+            "        variable a, b : integer := 1;\n"
+            "        variable result : integer;\n"
+            "    begin\n"
+            "        result := Add(a, b);\n"
+            "    end process;\n"
+            "end A;";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    // TODO(someone): Check function call when implemented
-}
+        auto design = builder::buildFromString(VHDL_FILE);
+        // TODO(someone): Check function call node
+    }
 
-TEST_CASE("FunctionCall: Function call with conversion", "[expressions][function_call]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-        begin
-            process
-                variable result : integer := to_integer(value);
-            begin
-            end process;
-        end A;
-    )";
+    SECTION("Function Call with Conversion (to_integer)")
+    {
+        constexpr std::string_view VHDL_FILE =
+            "library ieee;\n"
+            "use ieee.numeric_std.all;\n"
+            "entity E is end E;\n"
+            "architecture A of E is\n"
+            "begin\n"
+            "    process\n"
+            "        variable value : unsigned(7 downto 0) := (others => '0');\n"
+            "        variable result : integer;\n"
+            "    begin\n"
+            "        result := to_integer(value);\n"
+            "    end process;\n"
+            "end A;";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    // TODO(someone): Check function call with conversion when implemented
-}
+        auto design = builder::buildFromString(VHDL_FILE);
+        // TODO(someone): Check conversion call
+    }
 
-TEST_CASE("FunctionCall: Function call with no parameters", "[expressions][function_call]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-        begin
-            process
-                variable result : integer := GetRandom();
-            begin
-            end process;
-        end A;
-    )";
+    SECTION("Function Call with No Parameters")
+    {
+        // Fixed: Removed '()' after GetRandom.
+        // VHDL syntax forbids empty parentheses for calls.
+        constexpr std::string_view VHDL_FILE =
+            "entity E is end E;\n"
+            "architecture A of E is\n"
+            "    impure function GetRandom return integer is\n"
+            "    begin return 42; end function;\n"
+            "begin\n"
+            "    process\n"
+            "        variable result : integer;\n"
+            "    begin\n"
+            "        -- Syntax is 'Name', not 'Name()'\n"
+            "        result := GetRandom;\n"
+            "    end process;\n"
+            "end A;";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    // TODO(someone): Check function call with no params when implemented
-}
+        auto design = builder::buildFromString(VHDL_FILE);
+        // TODO(someone): Check function call with no params
+    }
 
-TEST_CASE("FunctionCall: Nested function calls", "[expressions][function_call]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-        begin
-            process
-                variable result : integer := Add(Multiply(x, y), z);
-            begin
-            end process;
-        end A;
-    )";
+    SECTION("Nested Function Calls")
+    {
+        constexpr std::string_view VHDL_FILE =
+            "entity E is end E;\n"
+            "architecture A of E is\n"
+            "    function Add(a, b : integer) return integer is begin return a+b; end;\n"
+            "    function Multiply(a, b : integer) return integer is begin return a*b; end;\n"
+            "begin\n"
+            "    process\n"
+            "        variable x, y, z : integer := 2;\n"
+            "        variable result : integer;\n"
+            "    begin\n"
+            "        result := Add(Multiply(x, y), z);\n"
+            "    end process;\n"
+            "end A;";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    // TODO(someone): Check nested function calls when implemented
+        auto design = builder::buildFromString(VHDL_FILE);
+        // TODO(someone): Check nested function calls
+    }
 }
