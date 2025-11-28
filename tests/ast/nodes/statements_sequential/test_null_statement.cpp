@@ -5,6 +5,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
+#include <variant>
+
 TEST_CASE("NullStatement: Simple null statement", "[statements_sequential][null_statement]")
 {
     constexpr std::string_view VHDL_FILE = R"(

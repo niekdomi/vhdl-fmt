@@ -4,6 +4,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
+
 TEST_CASE("Architecture: Simple empty architecture", "[design_units][architecture]")
 {
     constexpr std::string_view VHDL_FILE = R"(

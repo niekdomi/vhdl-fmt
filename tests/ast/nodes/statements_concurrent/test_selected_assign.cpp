@@ -6,6 +6,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
+
 TEST_CASE("SelectedAssign: Simple with statement", "[statements_concurrent][selected_assign]")
 {
     constexpr std::string_view VHDL_FILE = R"(

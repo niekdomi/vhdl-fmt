@@ -1,10 +1,12 @@
 #include "ast/nodes/design_file.hpp"
 #include "ast/nodes/design_units.hpp"
+#include "ast/nodes/expressions.hpp"
 #include "ast/nodes/statements.hpp"
 #include "builder/ast_builder.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
+
 TEST_CASE("AssertStatement: Simple assert without message",
           "[statements_sequential][assert_statement]")
 {
@@ -114,7 +116,7 @@ TEST_CASE("AssertStatement: Assert with complex condition",
     REQUIRE(cond->op == "and");
     REQUIRE(cond->left != nullptr);
     REQUIRE(cond->right != nullptr);
-    const auto type_of = [](const ast::Expr &expr) {
+    const auto type_of = [](const ast::Expr &expr) -> const char * {
         if (std::holds_alternative<ast::BinaryExpr>(expr)) {
             return "binary";
         }

@@ -1,10 +1,12 @@
 #include "ast/nodes/design_file.hpp"
 #include "ast/nodes/design_units.hpp"
+#include "ast/nodes/expressions.hpp"
 #include "ast/nodes/statements.hpp"
 #include "builder/ast_builder.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
+
 TEST_CASE("ExitStatement: Simple exit in for loop", "[statements_sequential][exit_statement]")
 {
     constexpr std::string_view VHDL_FILE = R"(

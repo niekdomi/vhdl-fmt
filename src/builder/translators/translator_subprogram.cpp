@@ -3,8 +3,11 @@
 #include "common/range_helpers.hpp"
 #include "vhdlParser.h"
 
+#include <optional>
 #include <ranges>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace builder {
 

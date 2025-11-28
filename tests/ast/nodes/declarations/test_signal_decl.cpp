@@ -5,6 +5,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
+
 TEST_CASE("SignalDecl: Simple signal declaration", "[declarations][signal]")
 {
     constexpr std::string_view VHDL_FILE = R"(

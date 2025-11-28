@@ -4,6 +4,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
+
 TEST_CASE("Port: Single input port", "[declarations][port]")
 {
     constexpr std::string_view VHDL_FILE = R"(

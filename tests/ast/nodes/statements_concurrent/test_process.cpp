@@ -5,6 +5,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
+
 TEST_CASE("Process: Simple process with sensitivity list", "[statements_concurrent][process]")
 {
     constexpr std::string_view VHDL_FILE = R"(

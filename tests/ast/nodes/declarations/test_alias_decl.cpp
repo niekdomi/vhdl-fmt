@@ -6,6 +6,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
+
 TEST_CASE("AliasDecl: Simple signal alias", "[declarations][alias_decl]")
 {
     constexpr std::string_view VHDL_FILE = R"(

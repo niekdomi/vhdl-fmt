@@ -5,6 +5,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
+
 TEST_CASE("ConstantDecl: Simple constant with initialization", "[declarations][constant]")
 {
     constexpr std::string_view VHDL_FILE = R"(

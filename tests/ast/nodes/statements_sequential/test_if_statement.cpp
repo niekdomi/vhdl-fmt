@@ -5,6 +5,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
+
 TEST_CASE("IfStatement: Simple if statement", "[statements_sequential][if_statement]")
 {
     constexpr std::string_view VHDL_FILE = R"(

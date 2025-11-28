@@ -6,6 +6,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
+
 TEST_CASE("WaitStatement: Simple wait statement", "[statements_sequential][wait_statement]")
 {
     constexpr std::string_view VHDL_FILE = R"(

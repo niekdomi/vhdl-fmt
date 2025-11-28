@@ -2,7 +2,10 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
+#include <algorithm>
+#include <cstddef>
 #include <ranges>
+#include <utility>
 
 namespace builder {
 

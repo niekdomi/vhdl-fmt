@@ -7,6 +7,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
+
 TEST_CASE("BinaryExpr: Simple binary expression with logical operator",
           "[expressions][binary_expr]")
 {

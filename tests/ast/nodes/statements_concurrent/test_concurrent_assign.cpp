@@ -6,6 +6,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
+
 TEST_CASE("ConcurrentAssign: Simple signal assignment",
           "[statements_concurrent][concurrent_assign]")
 {
