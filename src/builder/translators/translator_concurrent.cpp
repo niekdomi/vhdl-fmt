@@ -2,7 +2,9 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
+#include <cstddef>
 #include <ranges>
+#include <utility>
 
 namespace builder {
 
@@ -13,12 +15,10 @@ auto Translator::makeConcurrentAssign(
     if (auto *cond = ctx->conditional_signal_assignment()) {
         return makeConditionalAssign(cond);
     }
-    if (auto *sel = ctx->selected_signal_assignment()) {
-        return makeSelectedAssign(sel);
-    }
 
-    // Should be unreachable if grammar is correct
-    throw std::runtime_error("Unknown concurrent assignment type");
+    // Can only be Selected assignment here
+    auto *sel = ctx->selected_signal_assignment();
+    return makeSelectedAssign(sel);
 }
 
 auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext *ctx)
