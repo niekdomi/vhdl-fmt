@@ -1,7 +1,7 @@
-#include "builder/ast_builder.hpp"
+// #include "builder/ast_builder.hpp"
 
 #include <catch2/catch_test_macros.hpp>
-#include <string_view>
+// #include <string_view>
 
 TEST_CASE("Reduction Operators (VHDL-2008)", "[expressions][reduction]")
 {

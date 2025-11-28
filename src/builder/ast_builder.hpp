@@ -2,6 +2,7 @@
 #define BUILDER_AST_BUILDER_HPP
 
 #include "CommonTokenStream.h"
+#include "antlr4-runtime/ANTLRInputStream.h"
 #include "ast/nodes/design_file.hpp"
 #include "vhdlLexer.h"
 #include "vhdlParser.h"

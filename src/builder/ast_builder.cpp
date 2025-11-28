@@ -2,15 +2,29 @@
 
 #include "builder/translator.hpp"
 #include "common/logger.hpp"
+#include "nodes/design_file.hpp"
 
+#include <antlr4-runtime/ANTLRInputStream.h>
 #include <antlr4-runtime/BailErrorStrategy.h>
-#include <antlr4-runtime/ConsoleErrorListener.h>
+#include <antlr4-runtime/BaseErrorListener.h>
+#include <antlr4-runtime/CommonTokenStream.h>
 #include <antlr4-runtime/DefaultErrorStrategy.h>
 #include <antlr4-runtime/Exceptions.h>
+#include <antlr4-runtime/Recognizer.h>
+#include <antlr4-runtime/Token.h>
 #include <antlr4-runtime/atn/ParserATNSimulator.h>
 #include <antlr4-runtime/atn/PredictionMode.h>
+#include <cstddef>
+#include <exception>
+#include <filesystem>
 #include <fstream>
+#include <memory>
 #include <stdexcept>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vhdlLexer.h>
+#include <vhdlParser.h>
 
 namespace builder {
 
@@ -93,8 +107,8 @@ auto build(Context &ctx) -> ast::DesignFile
           "SLL parsing failed (ambiguity). Falling back to LL mode.");
 
         // 2. Fallback to LL (Strong Mode)
-        ctx.tokens->reset();
-        ctx.parser->reset();
+        (*ctx.tokens).reset();
+        (*ctx.parser).reset();
 
         ctx.parser->removeErrorListeners();
 

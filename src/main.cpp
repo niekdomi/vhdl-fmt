@@ -6,8 +6,12 @@
 #include "emit/pretty_printer.hpp"
 
 #include <cstdlib>
+#include <exception>
 #include <fstream>
 #include <iostream>
+#include <span>
+#include <string>
+#include <string_view>
 
 auto main(int argc, char *argv[]) -> int
 {
