@@ -10,6 +10,8 @@
 #include <antlr4-runtime/atn/PredictionMode.h>
 #include <catch2/benchmark/catch_benchmark.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <memory>
+#include <string>
 #include <string_view>
 
 TEST_CASE("Toolchain Performance Breakdown", "[benchmark]")

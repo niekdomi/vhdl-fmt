@@ -3,6 +3,8 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
+#include <optional>
+#include <utility>
 #include <vector>
 
 namespace builder {

@@ -9,6 +9,7 @@
 #include <format>
 #include <ranges>
 #include <stdexcept>
+#include <string>
 
 namespace builder::verify {
 
