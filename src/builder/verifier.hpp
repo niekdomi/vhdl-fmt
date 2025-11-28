@@ -14,82 +14,81 @@ namespace builder::verify {
 
 namespace detail {
 
-// Filter out comments (Hidden Channel) and EOF
-inline auto isSemantic(antlr4::Token *t) -> bool
-{
+// Semantic check: Is this token meaningful for comparison?
+constexpr auto IS_SEMANTIC = [](antlr4::Token *t) -> bool {
     return t
         != nullptr
         && t->getChannel()
         == antlr4::Token::DEFAULT_CHANNEL
         && t->getType()
         != antlr4::Token::EOF;
-}
+};
 
-// Case-insensitive character comparison (VHDL is case-insensitive)
-inline auto charEquals(char a, char b) -> bool
-{
-    return std::tolower(static_cast<unsigned char>(a))
-        == std::tolower(static_cast<unsigned char>(b));
-}
+// Case-insensitive string comparison predicate
+constexpr auto IEQUALS = [](const std::string &a, const std::string &b) -> bool {
+    return std::ranges::equal(a, b, [](unsigned char c1, unsigned char c2) -> bool {
+        return std::tolower(c1) == std::tolower(c2);
+    });
+};
 
 } // namespace detail
 
 /// @brief Verifies that two token streams are strictly equivalent semantically.
-/// Ignores whitespace (channels) and case, but enforces 1:1 token matching.
 inline void ensureSafety(antlr4::CommonTokenStream &original, antlr4::CommonTokenStream &formatted)
 {
-    auto orig_view = original.getTokens() | std::views::filter(detail::isSemantic);
-    auto fmt_view = formatted.getTokens() | std::views::filter(detail::isSemantic);
+    // Create lazy views of the semantic tokens
+    auto orig_view = original.getTokens() | std::views::filter(detail::IS_SEMANTIC);
+    auto fmt_view = formatted.getTokens() | std::views::filter(detail::IS_SEMANTIC);
 
-    auto it_orig = orig_view.begin();
-    auto it_fmt = fmt_view.begin();
-    const auto end_orig = orig_view.end();
-    const auto end_fmt = fmt_view.end();
+    // Predicate: Do these two tokens match?
+    auto token_match = [](antlr4::Token *t1, antlr4::Token *t2) -> bool {
+        return t1->getType() == t2->getType() && detail::IEQUALS(t1->getText(), t2->getText());
+    };
 
-    while (it_orig != end_orig && it_fmt != end_fmt) {
-        auto *const t_orig = *it_orig;
-        auto *const t_fmt = *it_fmt;
+    // Find the first point of divergence
+    auto [it_orig, it_fmt] = std::ranges::mismatch(orig_view, fmt_view, token_match);
 
-        // 1. Check Token Type match
-        if (t_orig->getType() != t_fmt->getType()) {
-            throw std::runtime_error(std::format("Token Type Mismatch!\n"
-                                                 "  Original:  '{}' (Type: {}, Line: {})\n"
-                                                 "  Formatted: '{}' (Type: {}, Line: {})",
-                                                 t_orig->getText(),
-                                                 t_orig->getType(),
-                                                 t_orig->getLine(),
-                                                 t_fmt->getText(),
-                                                 t_fmt->getType(),
-                                                 t_fmt->getLine()));
-        }
-
-        // 2. Check Text Content match (Case-Insensitive)
-        // We assume the formatter might change casing (e.g., entity -> ENTITY),
-        // so we use case-insensitive comparison.
-        if (!std::ranges::equal(t_orig->getText(), t_fmt->getText(), detail::charEquals)) {
-            throw std::runtime_error(std::format("Token Text Mismatch!\n"
-                                                 "  Original:  '{}' (Line: {})\n"
-                                                 "  Formatted: '{}' (Line: {})",
-                                                 t_orig->getText(),
-                                                 t_orig->getLine(),
-                                                 t_fmt->getText(),
-                                                 t_fmt->getLine()));
-        }
-
-        ++it_orig;
-        ++it_fmt;
+    // If both iterators reached the end, the streams are identical
+    if (it_orig == orig_view.end() && it_fmt == fmt_view.end()) {
+        return;
     }
 
-    // 3. Ensure both streams finished at the same time
-    if (it_orig != end_orig) {
+    // Determine the type of error based on which iterator stopped early
+    if (it_orig == orig_view.end()) {
+        throw std::runtime_error(std::format(
+          "Formatted output has extra content. Unexpected token: '{}'", (*it_fmt)->getText()));
+    }
+
+    if (it_fmt == fmt_view.end()) {
         throw std::runtime_error(std::format(
           "Formatted output is truncated. Missing expected token: '{}'", (*it_orig)->getText()));
     }
 
-    if (it_fmt != end_fmt) {
-        throw std::runtime_error(std::format(
-          "Formatted output has extra content. Unexpected token: '{}'", (*it_fmt)->getText()));
+    // If we are here, both iterators pointed to tokens that didn't match.
+    // We inspect the tokens to generate the specific error message (Type vs Text).
+    auto *t_orig = *it_orig;
+    auto *t_fmt = *it_fmt;
+
+    if (t_orig->getType() != t_fmt->getType()) {
+        throw std::runtime_error(std::format("Token Type Mismatch!\n"
+                                             "  Original:  '{}' (Type: {}, Line: {})\n"
+                                             "  Formatted: '{}' (Type: {}, Line: {})",
+                                             t_orig->getText(),
+                                             t_orig->getType(),
+                                             t_orig->getLine(),
+                                             t_fmt->getText(),
+                                             t_fmt->getType(),
+                                             t_fmt->getLine()));
     }
+
+    // Must be a text mismatch if types were equal
+    throw std::runtime_error(std::format("Token Text Mismatch!\n"
+                                         "  Original:  '{}' (Line: {})\n"
+                                         "  Formatted: '{}' (Line: {})",
+                                         t_orig->getText(),
+                                         t_orig->getLine(),
+                                         t_fmt->getText(),
+                                         t_fmt->getLine()));
 }
 
 } // namespace builder::verify
