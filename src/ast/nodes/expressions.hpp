@@ -17,18 +17,28 @@ struct UnaryExpr;
 struct BinaryExpr;
 struct ParenExpr;
 struct CallExpr;
+struct PhysicalLiteral;
 
 /// Helper alias for boxed recursive types
 template<typename T>
 using Box = std::unique_ptr<T>;
 
 /// Variant type for all expressions (holds values, not pointers)
-using Expr = std::variant<TokenExpr, GroupExpr, UnaryExpr, BinaryExpr, ParenExpr, CallExpr>;
+using Expr
+  = std::variant<TokenExpr, GroupExpr, UnaryExpr, BinaryExpr, ParenExpr, CallExpr, PhysicalLiteral>;
 
 /// Single token: literal, identifier, or operator.
 struct TokenExpr : NodeBase
 {
     std::string text; ///< Literal text of the token.
+};
+
+/// Physical literal (e.g. "10 ns")
+/// distinct from TokenExpr because it is composed of two tokens separated by space.
+struct PhysicalLiteral : NodeBase
+{
+    std::string value; // e.g. "10"
+    std::string unit;  // e.g. "ns"
 };
 
 /// Aggregate or grouped list of expressions (e.g. `(others => '0')`).

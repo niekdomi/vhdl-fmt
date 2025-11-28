@@ -89,6 +89,19 @@ auto Translator::makePrimary(vhdlParser::PrimaryContext *ctx) -> ast::Expr
     if (auto *name_ctx = ctx->name()) {
         return makeName(name_ctx);
     }
+    if (auto *lit = ctx->literal()) {
+        if (auto *num = lit->numeric_literal()) {
+            if (auto *phys = num->physical_literal()) {
+                auto phys_node = make<ast::PhysicalLiteral>(ctx);
+                phys_node.value = phys->abstract_literal()->getText();
+                phys_node.unit = phys->identifier()->getText();
+                return phys_node;
+            }
+        }
+        // Fallback for other literals (integers, reals, strings) -> TokenExpr
+        return makeToken(ctx, lit->getText());
+    }
+
     return makeToken(ctx, ctx->getText());
 }
 
