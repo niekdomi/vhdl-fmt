@@ -5,6 +5,26 @@
 
 namespace emit {
 
+auto PrettyPrinter::operator()(const ast::Waveform &node) const -> Doc
+{
+    if (node.is_unaffected) {
+        return Doc::text("unaffected");
+    }
+
+    // Helper to format "value [after time]"
+    const auto format_elem = [&](const ast::Waveform::Element &elem) {
+        Doc d = visit(elem.value);
+        if (elem.after) {
+            d += Doc::text(" after ") + visit(*elem.after);
+        }
+        return d;
+    };
+
+    // Join elements with ", "
+    // Using Doc::line() allows wrapping: "1 after 5 ns," / "0 after 10 ns"
+    return joinMap(node.elements, Doc::text(",") + Doc::line(), format_elem, false);
+}
+
 // TODO(vedivad): This needs a hang combinator for better readability
 // target <= val1 when cond1 else
 //           val2 when cond2 else
@@ -13,17 +33,17 @@ auto PrettyPrinter::operator()(const ast::ConditionalConcurrentAssign &node) con
 {
     const Doc result = visit(node.target) & Doc::text("<=");
 
-    const auto make_wave = [&](const auto &wave) {
-        Doc d = visit(wave.value);
-        if (wave.condition) {
-            d &= Doc::text("when") & visit(*wave.condition);
+    const auto make_cond_wave = [&](const auto &item) {
+        Doc d = visit(item.waveform);
+        if (item.condition) {
+            d &= Doc::text("when") & visit(*item.condition);
         }
         return d;
     };
 
     // Join with "else" and a newline
     const Doc waveforms
-      = joinMap(node.waveforms, Doc::text(" else") + Doc::line(), make_wave, false);
+      = joinMap(node.waveforms, Doc::text(" else") + Doc::line(), make_cond_wave, false);
 
     // Indent the waveforms relative to the target
     return (result << waveforms) + Doc::text(";");
@@ -39,7 +59,7 @@ auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign &node) const 
     const Doc target = visit(node.target) & Doc::text("<=");
 
     const auto make_sel = [&](const auto &sel) {
-        const Doc val = visit(sel.value);
+        const Doc val = visit(sel.waveform);
         const Doc choices = joinMap(sel.choices, Doc::text(" | "), toDoc(*this), false);
         return val & Doc::text("when") & choices;
     };
@@ -55,7 +75,8 @@ auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign &node) const 
 
 auto PrettyPrinter::operator()(const ast::SignalAssign &node) const -> Doc
 {
-    return visit(node.target) & Doc::text("<=") & visit(node.value) + Doc::text(";");
+    const Doc wave = visit(node.waveform);
+    return visit(node.target) & Doc::text("<=") & wave + Doc::text(";");
 }
 
 auto PrettyPrinter::operator()(const ast::VariableAssign &node) const -> Doc

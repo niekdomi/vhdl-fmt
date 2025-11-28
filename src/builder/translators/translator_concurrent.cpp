@@ -5,8 +5,40 @@
 #include <cstddef>
 #include <ranges>
 #include <utility>
+#include <vector>
 
 namespace builder {
+
+auto Translator::makeWaveform(vhdlParser::WaveformContext *ctx) -> ast::Waveform
+{
+    ast::Waveform result;
+
+    // Handle 'UNAFFECTED' keyword
+    if (ctx->UNAFFECTED() != nullptr) {
+        result.is_unaffected = true;
+        return result;
+    }
+
+    // Handle list: waveform_element (COMMA waveform_element)*
+    if (!ctx->waveform_element().empty()) {
+        for (auto *el_ctx : ctx->waveform_element()) {
+            ast::Waveform::Element elem;
+
+            // 1. The Value
+            // Note: expression(0) is the value, expression(1) is the time (if AFTER exists)
+            elem.value = makeExpr(el_ctx->expression(0));
+
+            // 2. The Optional Delay (AFTER expression)
+            if (el_ctx->AFTER() != nullptr) {
+                elem.after = makeExpr(el_ctx->expression(1));
+            }
+
+            result.elements.push_back(std::move(elem));
+        }
+    }
+
+    return result;
+}
 
 auto Translator::makeConcurrentAssign(
   vhdlParser::Concurrent_signal_assignment_statementContext *ctx) -> ast::ConcurrentStatement
@@ -34,14 +66,11 @@ auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignment
     // val1 when cond1 else val2 when cond2 else val3
     auto *current_wave = ctx->conditional_waveforms();
     while (current_wave != nullptr) {
-        ast::ConditionalConcurrentAssign::Waveform wave_item;
+        ast::ConditionalConcurrentAssign::ConditionalWaveform wave_item;
 
-        // 1. Value (Waveform)
-        // TODO(vedivad): Simplified to first element for now
+        // 1. Waveform (Value + Delay or UNAFFECTED)
         if (auto *w = current_wave->waveform()) {
-            if (!w->waveform_element().empty()) {
-                wave_item.value = makeExpr(w->waveform_element(0)->expression(0));
-            }
+            wave_item.waveform = makeWaveform(w);
         }
 
         // 2. Condition (WHEN ...)
@@ -52,7 +81,6 @@ auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignment
         assign.waveforms.push_back(std::move(wave_item));
 
         // 3. Recurse (ELSE ...)
-        // The grammar defines recursive structure for 'else'
         current_wave = current_wave->conditional_waveforms();
     }
 
@@ -82,8 +110,8 @@ auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContex
             ast::SelectedConcurrentAssign::Selection selection{};
 
             // Value
-            if (!waves[i]->waveform_element().empty()) {
-                selection.value = makeExpr(waves[i]->waveform_element(0)->expression(0));
+            if (waves[i] != nullptr) {
+                selection.waveform = makeWaveform(waves[i]);
             }
 
             // Choices (1 | 2 | others)
@@ -120,25 +148,21 @@ auto Translator::makeProcess(vhdlParser::Process_statementContext *ctx) -> ast::
                               | std::ranges::to<std::vector>();
     }
 
-    // 3. Declarations
+    // Declarations
     if (auto *decl_part = ctx->process_declarative_part()) {
         for (auto *item : decl_part->process_declarative_item()) {
-            // Check for Variable
             if (auto *var_ctx = item->variable_declaration()) {
                 proc.decls.emplace_back(makeVariableDecl(var_ctx));
-            }
-            // Check for Constant
-            else if (auto *const_ctx = item->constant_declaration()) {
+            } else if (auto *const_ctx = item->constant_declaration()) {
                 proc.decls.emplace_back(makeConstantDecl(const_ctx));
             }
-            // TODO(vedivad): Add Types, Files, Aliases here as you support them
+            // TODO(vedivad): Add Types, Files, Aliases here
         }
     }
 
-    // Extract sequential statements
+    // Sequential statements
     if (auto *stmt_part = ctx->process_statement_part()) {
         const auto &source_stmts = stmt_part->sequential_statement();
-
         proc.body.reserve(source_stmts.size());
 
         for (auto *stmt_ctx : source_stmts) {

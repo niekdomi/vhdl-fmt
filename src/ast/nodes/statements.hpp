@@ -31,17 +31,32 @@ using ConcurrentStatement
 using SequentialStatement
   = std::variant<VariableAssign, SignalAssign, IfStatement, CaseStatement, ForLoop, WhileLoop>;
 
+/// @brief Represents the right-hand side of a signal assignment.
+/// Matches grammar: waveform_element (COMMA waveform_element)* | UNAFFECTED
+struct Waveform : NodeBase
+{
+    bool is_unaffected{ false };
+
+    struct Element
+    {
+        Expr value;
+        std::optional<Expr> after; // Captures the delay time if it exists
+    };
+    std::vector<Element> elements;
+};
+
 // Matches 'conditional_signal_assignment' rule
 // target <= val WHEN cond ELSE val;
 struct ConditionalConcurrentAssign : NodeBase
 {
     Expr target;
-    struct Waveform
+
+    struct ConditionalWaveform
     {
-        Expr value;
+        Waveform waveform;
         std::optional<Expr> condition;
     };
-    std::vector<Waveform> waveforms;
+    std::vector<ConditionalWaveform> waveforms;
 };
 
 // Matches 'selected_signal_assignment' rule
@@ -49,10 +64,11 @@ struct ConditionalConcurrentAssign : NodeBase
 struct SelectedConcurrentAssign : NodeBase
 {
     Expr target;
-    Expr selector; // The "WITH expression" part
+    Expr selector;
+
     struct Selection
     {
-        Expr value;
+        Waveform waveform;
         std::vector<Expr> choices;
     };
     std::vector<Selection> selections;
@@ -69,7 +85,7 @@ struct VariableAssign : NodeBase
 struct SignalAssign : NodeBase
 {
     Expr target;
-    Expr value;
+    Waveform waveform;
 };
 
 /// @brief If statement with optional elsif and else branches

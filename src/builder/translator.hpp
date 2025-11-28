@@ -65,6 +65,8 @@ class Translator final
 
     // Statements - return by value
     [[nodiscard]]
+    auto makeWaveform(vhdlParser::WaveformContext *ctx) -> ast::Waveform;
+    [[nodiscard]]
     auto makeConcurrentAssign(vhdlParser::Concurrent_signal_assignment_statementContext *ctx)
       -> ast::ConcurrentStatement;
     [[nodiscard]]

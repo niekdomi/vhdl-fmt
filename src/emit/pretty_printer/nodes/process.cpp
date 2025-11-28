@@ -27,13 +27,13 @@ auto PrettyPrinter::operator()(const ast::Process &node) const -> Doc
 
     head /= Doc::text("begin");
 
-    // Body
-    Doc body = Doc::empty();
-    if (!node.body.empty()) {
-        body += joinMap(node.body, Doc::line(), toDoc(*this), false);
+    const Doc end = Doc::text("end process;");
+
+    if (node.body.empty()) {
+        return head / end;
     }
 
-    const Doc end = Doc::text("end process;");
+    const Doc body = joinMap(node.body, Doc::line(), toDoc(*this), false);
 
     return Doc::bracket(head, body, end);
 }
