@@ -31,6 +31,15 @@ auto joinMap(Range &&items, const Doc &sep, Transform transform, const bool with
     return result;
 }
 
+/// @brief Helper to create a lambda that visits AST nodes using the given visitor.
+/// @param visitor The PrettyPrinter visitor instance.
+/// @return A lambda that takes an AST node and returns its Doc representation.
+template<typename Visitor>
+auto toDoc(const Visitor &visitor)
+{
+    return [&](const auto &node) { return visitor.visit(node); };
+}
+
 } // namespace emit
 
 #endif // EMIT_DOC_UTILS_HPP

@@ -1,16 +1,34 @@
--- Top-level entity for testing the AST builder
-entity ExampleEntity is
-  generic (
-    WIDTH      : integer := 8;
-    ENABLE_LOG : boolean := true
-  );
+entity benchmark_entity is
+    generic (
+        WIDTH : integer := 32
+    );
+    port (
+        clk      : in  bit;
+        rst      : in  bit;
+        data_in  : in  bit;
+        data_out : out bit
+    );
+end benchmark_entity;
 
-  port (
-    enable : in  std_logic := '1';
-    width  : in  integer := 8 + 4;
-    clk    : in  std_logic;
-    rst_n  : in  std_logic;
-    data_i : in  std_logic_vector(WIDTH-1 downto 0);
-    data_o : out std_logic_vector(WIDTH-1 downto 0)
-  );
-end ExampleEntity;
+architecture Behavioral of benchmark_entity is
+    signal sig1 : bit;
+    signal sig2 : bit;
+    signal sig3 : bit;
+begin
+    process
+    begin
+        if clk = '1' then
+            if rst = '1' then
+                sig1 <= '0';
+                sig2 <= '0';
+                sig3 <= '0';
+                data_out <= '0';
+            else
+                sig1 <= data_in;
+                sig2 <= sig1;
+                sig3 <= sig2;
+                data_out <= sig3;
+            end if;
+        end if;
+    end process;
+end Behavioral;

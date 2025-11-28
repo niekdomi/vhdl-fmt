@@ -13,7 +13,8 @@ namespace ast {
 
 // Forward declarations
 struct ConcurrentAssign;
-struct SequentialAssign;
+struct VariableAssign;
+struct SignalAssign;
 struct IfStatement;
 struct CaseStatement;
 struct Process;
@@ -25,7 +26,7 @@ using ConcurrentStatement = std::variant<ConcurrentAssign, Process>;
 
 /// Variant type for sequential statements (inside processes)
 using SequentialStatement
-  = std::variant<SequentialAssign, IfStatement, CaseStatement, ForLoop, WhileLoop>;
+  = std::variant<VariableAssign, SignalAssign, IfStatement, CaseStatement, ForLoop, WhileLoop>;
 
 /// @brief Concurrent signal assignment: target <= value;
 struct ConcurrentAssign : NodeBase
@@ -34,11 +35,22 @@ struct ConcurrentAssign : NodeBase
     Expr value;
 };
 
-/// @brief Sequential signal/variable assignment: target := value;
-struct SequentialAssign : NodeBase
+/// @brief Variable Assignment: target := expr;
+struct VariableAssign : NodeBase
 {
     Expr target;
     Expr value;
+};
+
+/// @brief Signal Assignment: target <= waveform;
+/// (Currently simplified to single expr, but ready for expansion)
+struct SignalAssign : NodeBase
+{
+    Expr target;
+    Expr value;
+    // Future expansion:
+    // std::vector<WaveformElement> waveform;
+    // std::optional<DelayMechanism> delay;
 };
 
 /// @brief If statement with optional elsif and else branches
