@@ -1,3 +1,4 @@
+accocs
 ambig
 antlr
 antlr4
@@ -20,8 +21,10 @@ vedivad
 vhdl
 vhdlfmt
 wconversion
+wcovered
 wdouble
 werror
+wexperimental
 wextra
 wfloat
 wfor
@@ -36,3 +39,4 @@ wsign
 wsuggest
 wsuper
 wunused
+wzero
