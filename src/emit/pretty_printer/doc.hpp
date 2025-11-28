@@ -124,6 +124,12 @@ class Doc final
     [[nodiscard]]
     static auto align(const Doc &doc) -> Doc;
 
+    /// @brief Sets the indentation level of the document to the current column.
+    /// @param doc The document to hang.
+    /// @return A `Hang` node.
+    [[nodiscard]]
+    static auto hang(const Doc &doc) -> Doc;
+
     // ========================================================================
     // Tree Traversal & Analysis
     // ========================================================================

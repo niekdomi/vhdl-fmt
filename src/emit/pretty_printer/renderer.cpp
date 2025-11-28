@@ -68,6 +68,8 @@ void Renderer::renderDoc(int indent, Mode mode, const DocPtr &doc)
         // Nest (increases indentation)
         [&](const Nest &node) -> void { renderDoc(indent + indent_size_, mode, node.doc); },
 
+        [&](const Hang &node) -> void { renderDoc(column_, mode, node.doc); },
+
         // Align (conditional pre-processing)
         [&](const Align &node) -> void {
             DocPtr doc_to_render = node.doc;
@@ -135,6 +137,7 @@ auto Renderer::fitsImpl(int width, const DocPtr &doc) -> int
 
         // Nest, Align, Union (Recursive call)
         [&](const Nest &node) -> int { return fitsImpl(width, node.doc); },
+        [&](const Hang &node) -> int { return fitsImpl(width, node.doc); },
         [&](const Align &node) -> int { return fitsImpl(width, node.doc); },
         [&](const Union &node) -> int {
             // Check flat version only for fitting
