@@ -4,8 +4,10 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace {

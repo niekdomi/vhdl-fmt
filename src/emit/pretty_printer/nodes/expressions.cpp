@@ -4,6 +4,9 @@
 #include "emit/pretty_printer/doc.hpp"
 #include "emit/pretty_printer/doc_utils.hpp"
 
+#include <algorithm>
+#include <cctype>
+
 namespace emit {
 
 auto PrettyPrinter::operator()(const ast::TokenExpr &node) const -> Doc
