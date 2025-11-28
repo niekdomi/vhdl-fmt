@@ -56,8 +56,11 @@ TEST_CASE("Waveform Parsing", "[builder][statements][waveforms]")
 
         // Check Delay (5 ns)
         REQUIRE(elem.after.has_value());
-        REQUIRE((std::holds_alternative<ast::BinaryExpr>(*elem.after) ||
-                 std::holds_alternative<ast::TokenExpr>(*elem.after)));
+
+        const auto* phys = std::get_if<ast::PhysicalLiteral>(&*elem.after);
+        REQUIRE(phys != nullptr);
+        CHECK(phys->value == "5");
+        CHECK(phys->unit == "ns");
     }
 
     SECTION("Multiple Drivers (Comma Separated)")
