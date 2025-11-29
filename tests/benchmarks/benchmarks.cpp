@@ -124,9 +124,16 @@ end Behavioral;
     // 5. VERIFICATION (Safety Check)
     BENCHMARK("Stage 5: Verification")
     {
-        // Explicit string_view cast to resolve overload ambiguity
         auto output_ctx = builder::createContext(std::string_view{ formatted_output });
-        builder::verify::ensureSafety(*golden_ctx.tokens, *output_ctx.tokens);
+
+        const auto verify_result
+          = builder::verify::ensureSafety(*golden_ctx.tokens, *output_ctx.tokens);
+
+        // The sample code has to be correct, so any failure is unexpected
+        if (!verify_result) [[unlikely]] {
+            throw std::runtime_error(verify_result.error().message);
+        }
+
         return output_ctx;
     };
 }
