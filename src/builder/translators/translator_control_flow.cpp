@@ -30,7 +30,7 @@ auto Translator::makeIfStatement(vhdlParser::If_statementContext *ctx) -> ast::I
         ast::IfStatement::Branch elsif_branch;
         elsif_branch.condition = makeExpr(conditions[i]->expression());
         elsif_branch.body = makeSequenceOfStatements(sequences[i]);
-        stmt.elsif_branches.push_back(std::move(elsif_branch));
+        stmt.elsif_branches.emplace_back(std::move(elsif_branch));
     }
 
     // else branch - if there are more sequences than conditions, the last one is else
@@ -65,7 +65,7 @@ auto Translator::makeCaseStatement(vhdlParser::Case_statementContext *ctx) -> as
             when_clause.body = makeSequenceOfStatements(seq);
         }
 
-        stmt.when_clauses.push_back(std::move(when_clause));
+        stmt.when_clauses.emplace_back(std::move(when_clause));
     }
 
     return stmt;
