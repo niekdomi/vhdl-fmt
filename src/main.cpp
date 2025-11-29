@@ -39,11 +39,11 @@ auto main(int argc, char *argv[]) -> int
         // 4. Verify Safety
         auto ctx_fmt = builder::createContext(std::string_view{ formatted_code });
 
-        try {
-            builder::verify::ensureSafety(*ctx_orig.tokens, *ctx_fmt.tokens);
-        } catch (const std::exception &e) {
+        auto result = builder::verify::ensureSafety(*ctx_orig.tokens, *ctx_fmt.tokens);
+
+        if (!result) {
             logger.critical("Formatter corrupted the code semantics.");
-            logger.critical("{}", e.what());
+            logger.critical("{}", result.error().message);
             logger.info("Aborting write to prevent data loss.");
             return EXIT_FAILURE;
         }

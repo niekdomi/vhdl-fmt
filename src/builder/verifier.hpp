@@ -6,9 +6,9 @@
 
 #include <algorithm>
 #include <cctype>
+#include <expected>
 #include <format>
 #include <ranges>
-#include <stdexcept>
 #include <string>
 
 namespace builder::verify {
@@ -34,8 +34,25 @@ constexpr auto IEQUALS = [](const std::string &a, const std::string &b) -> bool 
 
 } // namespace detail
 
+/// @brief Aggregate to represent an error found during token stream verification.
+struct VerificationError
+{
+    std::string message;
+    antlr4::Token *expected{ nullptr };
+    antlr4::Token *actual{ nullptr };
+
+    enum class Kind : std::uint8_t
+    {
+        EXTRA_TOKEN,
+        MISSING_TOKEN,
+        TYPE_MISMATCH,
+        TEXT_MISMATCH
+    } kind;
+};
+
 /// @brief Verifies that two token streams are strictly equivalent semantically.
-inline void ensureSafety(antlr4::CommonTokenStream &original, antlr4::CommonTokenStream &formatted)
+inline auto ensureSafety(antlr4::CommonTokenStream &original, antlr4::CommonTokenStream &formatted)
+  -> std::expected<void, VerificationError>
 {
     // Create lazy views of the semantic tokens
     auto orig_view = original.getTokens() | std::views::filter(detail::IS_SEMANTIC);
@@ -51,18 +68,26 @@ inline void ensureSafety(antlr4::CommonTokenStream &original, antlr4::CommonToke
 
     // If both iterators reached the end, the streams are identical
     if (it_orig == orig_view.end() && it_fmt == fmt_view.end()) {
-        return;
+        return {}; // Success
     }
 
     // Determine the type of error based on which iterator stopped early
     if (it_orig == orig_view.end()) {
-        throw std::runtime_error(std::format(
-          "Formatted output has extra content. Unexpected token: '{}'", (*it_fmt)->getText()));
+        return std::unexpected(VerificationError{
+          .message = std::format("Formatted output has extra content. Unexpected token: '{}'",
+                                 (*it_fmt)->getText()),
+          .expected = nullptr,
+          .actual = *it_fmt,
+          .kind = VerificationError::Kind::EXTRA_TOKEN });
     }
 
     if (it_fmt == fmt_view.end()) {
-        throw std::runtime_error(std::format(
-          "Formatted output is truncated. Missing expected token: '{}'", (*it_orig)->getText()));
+        return std::unexpected(VerificationError{
+          .message = std::format("Formatted output is truncated. Missing expected token: '{}'",
+                                 (*it_orig)->getText()),
+          .expected = *it_orig,
+          .actual = nullptr,
+          .kind = VerificationError::Kind::MISSING_TOKEN });
     }
 
     // If we are here, both iterators pointed to tokens that didn't match.
@@ -71,25 +96,33 @@ inline void ensureSafety(antlr4::CommonTokenStream &original, antlr4::CommonToke
     auto *t_fmt = *it_fmt;
 
     if (t_orig->getType() != t_fmt->getType()) {
-        throw std::runtime_error(std::format("Token Type Mismatch!\n"
-                                             "  Original:  '{}' (Type: {}, Line: {})\n"
-                                             "  Formatted: '{}' (Type: {}, Line: {})",
-                                             t_orig->getText(),
-                                             t_orig->getType(),
-                                             t_orig->getLine(),
-                                             t_fmt->getText(),
-                                             t_fmt->getType(),
-                                             t_fmt->getLine()));
+        return std::unexpected(
+          VerificationError{ .message = std::format("Token Type Mismatch!\n"
+                                                    "  Original:  '{}' (Type: {}, Line: {})\n"
+                                                    "  Formatted: '{}' (Type: {}, Line: {})",
+                                                    t_orig->getText(),
+                                                    t_orig->getType(),
+                                                    t_orig->getLine(),
+                                                    t_fmt->getText(),
+                                                    t_fmt->getType(),
+                                                    t_fmt->getLine()),
+                             .expected = t_orig,
+                             .actual = t_fmt,
+                             .kind = VerificationError::Kind::TYPE_MISMATCH });
     }
 
     // Must be a text mismatch if types were equal
-    throw std::runtime_error(std::format("Token Text Mismatch!\n"
-                                         "  Original:  '{}' (Line: {})\n"
-                                         "  Formatted: '{}' (Line: {})",
-                                         t_orig->getText(),
-                                         t_orig->getLine(),
-                                         t_fmt->getText(),
-                                         t_fmt->getLine()));
+    return std::unexpected(
+      VerificationError{ .message = std::format("Token Text Mismatch!\n"
+                                                "  Original:  '{}' (Line: {})\n"
+                                                "  Formatted: '{}' (Line: {})",
+                                                t_orig->getText(),
+                                                t_orig->getLine(),
+                                                t_fmt->getText(),
+                                                t_fmt->getLine()),
+                         .expected = t_orig,
+                         .actual = t_fmt,
+                         .kind = VerificationError::Kind::TEXT_MISMATCH });
 }
 
 } // namespace builder::verify
