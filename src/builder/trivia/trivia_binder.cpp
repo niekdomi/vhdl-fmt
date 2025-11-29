@@ -6,7 +6,6 @@
 #include "ast/node.hpp"
 #include "builder/trivia/utils.hpp"
 
-#include <algorithm>
 #include <cstddef>
 #include <memory>
 #include <optional>
