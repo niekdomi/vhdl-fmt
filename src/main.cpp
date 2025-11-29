@@ -39,7 +39,7 @@ auto main(int argc, char *argv[]) -> int
         // 4. Verify Safety
         auto ctx_fmt = builder::createContext(std::string_view{ formatted_code });
 
-        auto result = builder::verify::ensureSafety(*ctx_orig.tokens, *ctx_fmt.tokens);
+        const auto result = builder::verify::ensureSafety(*ctx_orig.tokens, *ctx_fmt.tokens);
 
         if (!result) {
             logger.critical("Formatter corrupted the code semantics.");
