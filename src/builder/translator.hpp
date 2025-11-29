@@ -60,25 +60,28 @@ class Translator final
     auto makeConstantDecl(vhdlParser::Constant_declarationContext *ctx) -> ast::ConstantDecl;
     [[nodiscard]]
     auto makeSignalDecl(vhdlParser::Signal_declarationContext *ctx) -> ast::SignalDecl;
+    [[nodiscard]]
+    auto makeVariableDecl(vhdlParser::Variable_declarationContext *ctx) -> ast::VariableDecl;
 
     // Statements - return by value
     [[nodiscard]]
+    auto makeWaveform(vhdlParser::WaveformContext *ctx) -> ast::Waveform;
+    [[nodiscard]]
     auto makeConcurrentAssign(vhdlParser::Concurrent_signal_assignment_statementContext *ctx)
-      -> ast::ConcurrentAssign;
+      -> ast::ConcurrentStatement;
     [[nodiscard]]
     auto makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext *ctx)
-      -> ast::ConcurrentAssign;
+      -> ast::ConditionalConcurrentAssign;
     [[nodiscard]]
     auto makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext *ctx)
-      -> ast::ConcurrentAssign;
+      -> ast::SelectedConcurrentAssign;
     [[nodiscard]]
     auto makeTarget(vhdlParser::TargetContext *ctx) -> ast::Expr;
     [[nodiscard]]
-    auto makeSequentialAssign(vhdlParser::Signal_assignment_statementContext *ctx)
-      -> ast::SequentialAssign;
+    auto makeSignalAssign(vhdlParser::Signal_assignment_statementContext *ctx) -> ast::SignalAssign;
     [[nodiscard]]
     auto makeVariableAssign(vhdlParser::Variable_assignment_statementContext *ctx)
-      -> ast::SequentialAssign;
+      -> ast::VariableAssign;
     [[nodiscard]]
     auto makeIfStatement(vhdlParser::If_statementContext *ctx) -> ast::IfStatement;
     [[nodiscard]]
@@ -91,7 +94,7 @@ class Translator final
     auto makeWhileLoop(vhdlParser::Loop_statementContext *ctx) -> ast::WhileLoop;
     [[nodiscard]]
     auto makeSequentialStatement(vhdlParser::Sequential_statementContext *ctx)
-      -> ast::SequentialStatement;
+      -> std::optional<ast::SequentialStatement>;
     [[nodiscard]]
     auto makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext *ctx)
       -> std::vector<ast::SequentialStatement>;

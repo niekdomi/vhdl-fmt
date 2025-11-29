@@ -3,78 +3,83 @@
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
 
-TEST_CASE("AccessDeref: Dereference access type", "[expressions][access_deref]")
+TEST_CASE("Access Type Dereferencing", "[expressions][access_deref]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-        begin
-            process
-                variable ptr : access integer := new integer'(42);
-                variable val : integer := ptr.all;
-            begin
-            end process;
-        end A;
-    )";
+    SECTION("Basic Dereference (Reading value)")
+    {
+        constexpr std::string_view VHDL_FILE
+          = "entity E is end E;\n"
+            "architecture A of E is\n"
+            "begin\n"
+            "    process\n"
+            "        type int_ptr is access integer;\n"
+            "        variable ptr : int_ptr := new integer'(42);\n"
+            "        variable val : integer;\n"
+            "    begin\n"
+            "        val := ptr.all;\n"
+            "    end process;\n"
+            "end A;";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    // TODO(someone): Check dereference when implemented
-}
+        auto design = builder::buildFromString(VHDL_FILE);
+        // TODO(someone): Verify 'ptr.all' parses as a Dereference expression
+    }
 
-TEST_CASE("AccessDeref: Dereference in assignment", "[expressions][access_deref]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-        begin
-            process
-                variable ptr : access integer := new integer;
-            begin
-                ptr.all := 100;
-            end process;
-        end A;
-    )";
+    SECTION("Dereference in Assignment (Writing value)")
+    {
+        constexpr std::string_view VHDL_FILE = "entity E is end E;\n"
+                                               "architecture A of E is\n"
+                                               "begin\n"
+                                               "    process\n"
+                                               "        type int_ptr is access integer;\n"
+                                               "        variable ptr : int_ptr := new integer;\n"
+                                               "    begin\n"
+                                               "        ptr.all := 100;\n"
+                                               "    end process;\n"
+                                               "end A;";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    // TODO(someone): Check dereference in assignment when implemented
-}
+        auto design = builder::buildFromString(VHDL_FILE);
+        // TODO(someone): Verify 'ptr.all' on LHS is a Dereference expression
+    }
 
-TEST_CASE("AccessDeref: Dereference record access", "[expressions][access_deref]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-            type MyRecord is record
-                a : integer;
-                b : std_logic;
-            end record;
-        begin
-            process
-                variable ptr : access MyRecord := new MyRecord'(a => 1, b => '0');
-                variable val : integer := ptr.all.a;
-            begin
-            end process;
-        end A;
-    )";
+    SECTION("Record Access Dereference (Member access)")
+    {
+        constexpr std::string_view VHDL_FILE
+          = "entity E is end E;\n"
+            "architecture A of E is\n"
+            "    type MyRecord is record\n"
+            "        a : integer;\n"
+            "        b : std_logic;\n"
+            "    end record;\n"
+            "begin\n"
+            "    process\n"
+            "        type rec_ptr is access MyRecord;\n"
+            "        variable ptr : rec_ptr := new MyRecord'(a => 1, b => '0');\n"
+            "        variable val : integer;\n"
+            "    begin\n"
+            "        val := ptr.all.a;\n"
+            "    end process;\n"
+            "end A;";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    // TODO(someone): Check dereference record access when implemented
-}
+        auto design = builder::buildFromString(VHDL_FILE);
+        // TODO(someone): Verify structure is SelectedName(Dereference(ptr), a)
+    }
 
-TEST_CASE("AccessDeref: Dereference in expression", "[expressions][access_deref]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-        begin
-            process
-                variable ptr : access integer := new integer'(5);
-                variable result : integer := ptr.all + 10;
-            begin
-            end process;
-        end A;
-    )";
+    SECTION("Dereference within arithmetic expression")
+    {
+        constexpr std::string_view VHDL_FILE
+          = "entity E is end E;\n"
+            "architecture A of E is\n"
+            "begin\n"
+            "    process\n"
+            "        type int_ptr is access integer;\n"
+            "        variable ptr : int_ptr := new integer'(5);\n"
+            "        variable result : integer;\n"
+            "    begin\n"
+            "        result := ptr.all + 10;\n"
+            "    end process;\n"
+            "end A;";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    // TODO(someone): Check dereference in expression when implemented
+        auto design = builder::buildFromString(VHDL_FILE);
+        // TODO(someone): Verify 'ptr.all' is operand in BinaryExpr
+    }
 }

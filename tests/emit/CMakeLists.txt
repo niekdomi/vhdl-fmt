@@ -5,8 +5,12 @@ add_executable(
     pretty_printer/test_optimizer.cpp
     pretty_printer/nodes/test_declarations.cpp
     pretty_printer/nodes/test_clauses.cpp
+    pretty_printer/nodes/test_control_flow.cpp
     pretty_printer/nodes/test_design_units.cpp
     pretty_printer/nodes/test_design_file.cpp
+    pretty_printer/nodes/test_waveforms.cpp
+    pretty_printer/nodes/test_process.cpp
+    pretty_printer/nodes/test_assignments.cpp
 )
 
 target_link_libraries(

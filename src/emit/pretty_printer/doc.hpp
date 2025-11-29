@@ -22,8 +22,6 @@ auto transformImpl(const DocPtr &doc, Fn &&fn) -> DocPtr;
 template<typename T, typename Fn>
 auto foldImpl(const DocPtr &doc, T init, Fn &&fn) -> T;
 
-auto optimizeImpl(const DocPtr &doc) -> DocPtr;
-
 /// @brief An immutable abstraction for a pretty-printable document.
 /// @note This class is a lightweight handle (PImpl pattern) to the underlying
 ///       document structure (DocImpl).
@@ -125,6 +123,12 @@ class Doc final
     ///         alignment for the `doc` sub-tree.
     [[nodiscard]]
     static auto align(const Doc &doc) -> Doc;
+
+    /// @brief Sets the indentation level of the document to the current column.
+    /// @param doc The document to hang.
+    /// @return A `Hang` node.
+    [[nodiscard]]
+    static auto hang(const Doc &doc) -> Doc;
 
     // ========================================================================
     // Tree Traversal & Analysis

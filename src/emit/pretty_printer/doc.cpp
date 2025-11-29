@@ -138,6 +138,11 @@ auto Doc::group(const Doc &doc) -> Doc
     return Doc(makeUnion(flatten(doc.impl_), doc.impl_));
 }
 
+auto Doc::hang(const Doc &doc) -> Doc
+{
+    return Doc(makeHang(doc.impl_));
+}
+
 // ========================================================================
 // Rendering
 // ========================================================================

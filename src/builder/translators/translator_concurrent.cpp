@@ -2,65 +2,128 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
+#include <cstddef>
 #include <ranges>
+#include <utility>
+#include <vector>
 
 namespace builder {
 
+auto Translator::makeWaveform(vhdlParser::WaveformContext *ctx) -> ast::Waveform
+{
+    auto waveform = make<ast::Waveform>(ctx);
+
+    // Handle 'UNAFFECTED' keyword
+    if (ctx->UNAFFECTED() != nullptr) {
+        waveform.is_unaffected = true;
+        return waveform;
+    }
+
+    // Handle list: waveform_element (COMMA waveform_element)*
+    if (!ctx->waveform_element().empty()) {
+        for (auto *el_ctx : ctx->waveform_element()) {
+            ast::Waveform::Element elem;
+
+            // 1. The Value
+            // Note: expression(0) is the value, expression(1) is the time (if AFTER exists)
+            elem.value = makeExpr(el_ctx->expression(0));
+
+            // 2. The Optional Delay (AFTER expression)
+            if (el_ctx->AFTER() != nullptr) {
+                elem.after = makeExpr(el_ctx->expression(1));
+            }
+
+            waveform.elements.emplace_back(std::move(elem));
+        }
+    }
+
+    return waveform;
+}
+
 auto Translator::makeConcurrentAssign(
-  vhdlParser::Concurrent_signal_assignment_statementContext *ctx) -> ast::ConcurrentAssign
+  vhdlParser::Concurrent_signal_assignment_statementContext *ctx) -> ast::ConcurrentStatement
 {
     // Dispatch based on concrete assignment type
     if (auto *cond = ctx->conditional_signal_assignment()) {
         return makeConditionalAssign(cond);
     }
-    if (auto *sel = ctx->selected_signal_assignment()) {
-        return makeSelectedAssign(sel);
-    }
 
-    // Fallback for unhandled cases
-    return make<ast::ConcurrentAssign>(ctx);
+    // Can only be Selected assignment here
+    auto *sel = ctx->selected_signal_assignment();
+    return makeSelectedAssign(sel);
 }
 
 auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext *ctx)
-  -> ast::ConcurrentAssign
+  -> ast::ConditionalConcurrentAssign
 {
-    auto assign = make<ast::ConcurrentAssign>(ctx);
+    auto assign = make<ast::ConditionalConcurrentAssign>(ctx);
 
     if (auto *target_ctx = ctx->target()) {
         assign.target = makeTarget(target_ctx);
     }
 
-    // Get the waveform - for now we'll take the first waveform element's expression
-    if (auto *cond_wave = ctx->conditional_waveforms()) {
-        if (auto *wave = cond_wave->waveform()) {
-            auto wave_elems = wave->waveform_element();
-            if (!wave_elems.empty() && !wave_elems[0]->expression().empty()) {
-                assign.value = makeExpr(wave_elems[0]->expression(0));
-            }
+    // Flatten the recursive conditional waveforms:
+    // val1 when cond1 else val2 when cond2 else val3
+    auto *current_wave = ctx->conditional_waveforms();
+    while (current_wave != nullptr) {
+        ast::ConditionalConcurrentAssign::ConditionalWaveform wave_item;
+
+        // 1. Waveform (Value + Delay or UNAFFECTED)
+        if (auto *w = current_wave->waveform()) {
+            wave_item.waveform = makeWaveform(w);
         }
+
+        // 2. Condition (WHEN ...)
+        if (auto *cond = current_wave->condition()) {
+            wave_item.condition = makeExpr(cond->expression());
+        }
+
+        assign.waveforms.emplace_back(std::move(wave_item));
+
+        // 3. Recurse (ELSE ...)
+        current_wave = current_wave->conditional_waveforms();
     }
 
     return assign;
 }
 
 auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext *ctx)
-  -> ast::ConcurrentAssign
+  -> ast::SelectedConcurrentAssign
 {
-    auto assign = make<ast::ConcurrentAssign>(ctx);
+    auto assign = make<ast::SelectedConcurrentAssign>(ctx);
+
+    // WITH expression ...
+    if (auto *expr = ctx->expression()) {
+        assign.selector = makeExpr(expr);
+    }
 
     if (auto *target_ctx = ctx->target()) {
         assign.target = makeTarget(target_ctx);
     }
 
-    // For selected assignments (with...select), we'll take the first waveform
-    // TODO(someone): Handle full selected waveforms structure
+    // ... SELECT target <= opts waveforms
     if (auto *sel_waves = ctx->selected_waveforms()) {
-        auto waves = sel_waves->waveform();
-        if (!waves.empty()) {
-            auto wave_elems = waves[0]->waveform_element();
-            if (!wave_elems.empty() && !wave_elems[0]->expression().empty()) {
-                assign.value = makeExpr(wave_elems[0]->expression(0));
+        const auto waves = sel_waves->waveform();
+        const auto choices = sel_waves->choices();
+
+        for (size_t i = 0; i < waves.size(); ++i) {
+            ast::SelectedConcurrentAssign::Selection selection{};
+
+            // Value
+            if (waves[i] != nullptr) {
+                selection.waveform = makeWaveform(waves[i]);
             }
+
+            // Choices (1 | 2 | others)
+            if (i < choices.size()) {
+                if (auto *ch_ctx = choices[i]) {
+                    for (auto *c : ch_ctx->choice()) {
+                        selection.choices.emplace_back(makeChoice(c));
+                    }
+                }
+            }
+
+            assign.selections.emplace_back(std::move(selection));
         }
     }
 
@@ -85,12 +148,28 @@ auto Translator::makeProcess(vhdlParser::Process_statementContext *ctx) -> ast::
                               | std::ranges::to<std::vector>();
     }
 
-    // Extract sequential statements
+    // Declarations
+    if (auto *decl_part = ctx->process_declarative_part()) {
+        for (auto *item : decl_part->process_declarative_item()) {
+            if (auto *var_ctx = item->variable_declaration()) {
+                proc.decls.emplace_back(makeVariableDecl(var_ctx));
+            } else if (auto *const_ctx = item->constant_declaration()) {
+                proc.decls.emplace_back(makeConstantDecl(const_ctx));
+            }
+            // TODO(vedivad): Add Types, Files, Aliases here
+        }
+    }
+
+    // Sequential statements
     if (auto *stmt_part = ctx->process_statement_part()) {
-        proc.body
-          = stmt_part->sequential_statement()
-          | std::views::transform([this](auto *stmt) { return makeSequentialStatement(stmt); })
-          | std::ranges::to<std::vector>();
+        const auto &source_stmts = stmt_part->sequential_statement();
+        proc.body.reserve(source_stmts.size());
+
+        for (auto *stmt_ctx : source_stmts) {
+            if (auto stmt = makeSequentialStatement(stmt_ctx)) {
+                proc.body.emplace_back(std::move(*stmt));
+            }
+        }
     }
 
     return proc;

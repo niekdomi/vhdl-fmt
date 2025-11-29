@@ -10,6 +10,7 @@
 #include "ast/visitor.hpp"
 #include "emit/pretty_printer/doc.hpp"
 
+#include <type_traits>
 #include <utility>
 
 namespace emit {
@@ -22,7 +23,8 @@ concept IsExpression = std::is_same_v<T, ast::TokenExpr>
                     || std::is_same_v<T, ast::UnaryExpr>
                     || std::is_same_v<T, ast::BinaryExpr>
                     || std::is_same_v<T, ast::ParenExpr>
-                    || std::is_same_v<T, ast::CallExpr>;
+                    || std::is_same_v<T, ast::CallExpr>
+                    || std::is_same_v<T, ast::PhysicalLiteral>;
 
 class PrettyPrinter final : public ast::VisitorBase<Doc>
 {
@@ -39,6 +41,7 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     // Declarations
     auto operator()(const ast::SignalDecl &node) const -> Doc;
     auto operator()(const ast::ConstantDecl &node) const -> Doc;
+    auto operator()(const ast::VariableDecl &node) const -> Doc;
 
     // Expressions
     auto operator()(const ast::TokenExpr &node) const -> Doc;
@@ -47,17 +50,21 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     auto operator()(const ast::BinaryExpr &node) const -> Doc;
     auto operator()(const ast::ParenExpr &node) const -> Doc;
     auto operator()(const ast::CallExpr &node) const -> Doc;
+    auto operator()(const ast::PhysicalLiteral &node) const -> Doc;
 
     // Constraints
     auto operator()(const ast::IndexConstraint &node) const -> Doc;
     auto operator()(const ast::RangeConstraint &node) const -> Doc;
 
     // Concurrent Statements
-    auto operator()(const ast::ConcurrentAssign &node) const -> Doc;
+    auto operator()(const ast::Waveform &node) const -> Doc;
+    auto operator()(const ast::ConditionalConcurrentAssign &node) const -> Doc;
+    auto operator()(const ast::SelectedConcurrentAssign &node) const -> Doc;
     auto operator()(const ast::Process &node) const -> Doc;
 
     // Sequential Statements
-    auto operator()(const ast::SequentialAssign &node) const -> Doc;
+    auto operator()(const ast::SignalAssign &node) const -> Doc;
+    auto operator()(const ast::VariableAssign &node) const -> Doc;
     auto operator()(const ast::IfStatement &node) const -> Doc;
     auto operator()(const ast::CaseStatement &node) const -> Doc;
     auto operator()(const ast::ForLoop &node) const -> Doc;

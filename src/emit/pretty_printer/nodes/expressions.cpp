@@ -4,11 +4,19 @@
 #include "emit/pretty_printer/doc.hpp"
 #include "emit/pretty_printer/doc_utils.hpp"
 
+#include <algorithm>
+#include <cctype>
+
 namespace emit {
 
 auto PrettyPrinter::operator()(const ast::TokenExpr &node) const -> Doc
 {
     return Doc::text(node.text);
+}
+
+auto PrettyPrinter::operator()(const ast::PhysicalLiteral &node) const -> Doc
+{
+    return Doc::text(node.value) & Doc::text(node.unit);
 }
 
 auto PrettyPrinter::operator()(const ast::GroupExpr &node) const -> Doc
@@ -21,6 +29,15 @@ auto PrettyPrinter::operator()(const ast::GroupExpr &node) const -> Doc
 
 auto PrettyPrinter::operator()(const ast::UnaryExpr &node) const -> Doc
 {
+    // Check if the operator contains letters (is a keyword like 'not', 'abs', 'xor')
+    const bool is_keyword
+      = std::ranges::any_of(node.op, [](unsigned char c) -> int { return std::isalpha(c); });
+
+    // If keyword, add space between operator and value
+    if (is_keyword) {
+        return Doc::text(node.op) & visit(*node.value);
+    }
+
     return Doc::text(node.op) + visit(*node.value);
 }
 

@@ -1,10 +1,6 @@
 # tests/benchmarks/CMakeLists.txt
 
-add_executable(
-    vhdl_benchmarks
-    benchmarks.cpp
-    benchmark_utils.cpp
-)
+add_executable(vhdl_benchmarks benchmarks.cpp)
 
 # 1. Link Dependencies
 target_link_libraries(

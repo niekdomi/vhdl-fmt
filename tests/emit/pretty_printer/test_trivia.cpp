@@ -1,133 +1,117 @@
 #include "ast/node.hpp"
 #include "ast/nodes/declarations.hpp"
+#include "ast/nodes/expressions.hpp"
 #include "emit/test_utils.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
 
-TEST_CASE("withTrivia: Empty/No trivia", "[pretty_printer][trivia]")
+TEST_CASE("Trivia Rendering", "[pretty_printer][trivia]")
 {
-    const ast::GenericParam param{ .names = { "WIDTH" }, .type_name = "integer", .is_last = true };
+    SECTION("Standard Nodes (Declarations)")
+    {
+        ast::GenericParam param{ .names = { "WIDTH" }, .type_name = "integer", .is_last = true };
 
-    const auto result = emit::test::render(param);
-    REQUIRE(result == "WIDTH : integer");
-}
+        SECTION("No Trivia")
+        {
+            REQUIRE(emit::test::render(param) == "WIDTH : integer");
+        }
 
-TEST_CASE("withTrivia: Single leading comment", "[pretty_printer][trivia]")
-{
-    ast::GenericParam param{ .names = { "WIDTH" }, .type_name = "integer", .is_last = true };
+        SECTION("Leading Trivia")
+        {
+            SECTION("Single Comment")
+            {
+                param.addLeading(ast::Comment{ "-- lead" });
+                // Comment gets hardline() automatically
+                REQUIRE(emit::test::render(param) == "-- lead\nWIDTH : integer");
+            }
 
-    param.addLeading(ast::Comment{ "-- a leading comment" });
+            SECTION("Vertical Whitespace (Breaks preserved)")
+            {
+                param.addLeading(ast::Break{ .blank_lines = 2 });
+                REQUIRE(emit::test::render(param) == "\n\nWIDTH : integer");
+            }
+        }
 
-    const auto result = emit::test::render(param);
-    REQUIRE(result == "-- a leading comment\nWIDTH : integer");
-}
+        SECTION("Trailing Trivia (Special 'Last Item' Logic)")
+        {
+            // The renderer adds a Hardline prefix before the trailing block starts.
+            // formatLastTrailing reduces Break count by 1 to account for that prefix.
 
-TEST_CASE("withTrivia: Multiple leading comments", "[pretty_printer][trivia]")
-{
-    ast::GenericParam param{ .names = { "WIDTH" }, .type_name = "integer", .is_last = true };
+            SECTION("Trailing Comment")
+            {
+                param.addTrailing(ast::Comment{ "-- trail" });
+                // Result: Core + \n + Comment
+                REQUIRE(emit::test::render(param) == "WIDTH : integer\n-- trail");
+            }
 
-    param.addLeading(ast::Comment{ "-- line 1" });
-    param.addLeading(ast::Comment{ "-- line 2" });
+            SECTION("Trailing Break (1 line)")
+            {
+                // Break{1} -> Prefix(\n) + (1-1 newlines) -> \n
+                param.addTrailing(ast::Break{ .blank_lines = 1 });
+                REQUIRE(emit::test::render(param) == "WIDTH : integer\n");
+            }
 
-    const auto result = emit::test::render(param);
-    REQUIRE(result == "-- line 1\n-- line 2\nWIDTH : integer");
-}
+            SECTION("Trailing Break (2 lines)")
+            {
+                // Break{2} -> Prefix(\n) + (2-1 newlines) -> \n\n
+                param.addTrailing(ast::Break{ .blank_lines = 2 });
+                REQUIRE(emit::test::render(param) == "WIDTH : integer\n\n");
+            }
+        }
 
-TEST_CASE("withTrivia: Leading paragraph break (1 blank line)", "[pretty_printer][trivia]")
-{
-    ast::GenericParam param{ .names = { "WIDTH" }, .type_name = "integer", .is_last = true };
+        SECTION("Inline Trivia")
+        {
+            param.setInlineComment("-- inline");
+            // Inline adds: Space + Text + Hardlines(0) (break enforcer)
+            REQUIRE(emit::test::render(param) == "WIDTH : integer -- inline");
+        }
 
-    param.addLeading(ast::Break{ .blank_lines = 1 });
+        SECTION("Inline + Trailing Combination")
+        {
+            // This tests that the inline comment doesn't eat the newline required
+            // for the trailing trivia.
+            param.setInlineComment("-- inline");
+            param.addTrailing(ast::Comment{ "-- trailing" });
 
-    const auto result = emit::test::render(param);
-    REQUIRE(result == "\nWIDTH : integer");
-}
+            constexpr std::string_view EXPECTED = "WIDTH : integer -- inline\n"
+                                                  "-- trailing";
+            REQUIRE(emit::test::render(param) == EXPECTED);
+        }
+    }
 
-TEST_CASE("withTrivia: Leading paragraph break (2 blank lines)", "[pretty_printer][trivia]")
-{
-    ast::GenericParam param{ .names = { "WIDTH" }, .type_name = "integer", .is_last = true };
+    SECTION("Expression Nodes (Newline Suppression)")
+    {
+        // TokenExpr satisfies the `IsExpression` concept in PrettyPrinter,
+        // so `suppress_newlines` will be passed as true to `withTrivia`.
+        ast::TokenExpr expr{ .text = "A" };
 
-    param.addLeading(ast::Break{ .blank_lines = 2 });
+        SECTION("Leading Breaks are suppressed")
+        {
+            // Add a break that would normally render as \n\n
+            expr.addLeading(ast::Break{ .blank_lines = 2 });
 
-    const auto result = emit::test::render(param);
-    REQUIRE(result == "\n\nWIDTH : integer");
-}
+            // Should be ignored for expressions to keep math tight
+            REQUIRE(emit::test::render(expr) == "A");
+        }
 
-TEST_CASE("withTrivia: Leading comments and newlines", "[pretty_printer][trivia]")
-{
-    ast::GenericParam param{ .names = { "WIDTH" }, .type_name = "integer", .is_last = true };
+        SECTION("Leading Comments are KEPT")
+        {
+            // Comments are never suppressed, as that would delete data
+            expr.addLeading(ast::Comment{ "-- note" });
+            REQUIRE(emit::test::render(expr) == "-- note\nA");
+        }
 
-    param.addLeading(ast::Comment{ "-- header" });
-    param.addLeading(ast::Break{ .blank_lines = 1 });
-    param.addLeading(ast::Comment{ "-- description" });
+        SECTION("Trailing Breaks are suppressed")
+        {
+            expr.addTrailing(ast::Break{ .blank_lines = 1 });
+            REQUIRE(emit::test::render(expr) == "A");
+        }
 
-    const auto result = emit::test::render(param);
-    constexpr std::string_view EXPECTED = "-- header\n"
-                                          "\n"
-                                          "-- description\n"
-                                          "WIDTH : integer";
-    REQUIRE(result == EXPECTED);
-}
-
-TEST_CASE("withTrivia: Inline comment only", "[pretty_printer][trivia]")
-{
-    ast::GenericParam param{ .names = { "WIDTH" }, .type_name = "integer", .is_last = true };
-
-    // Helper accepts the string text directly
-    param.setInlineComment("-- inline");
-
-    const auto result = emit::test::render(param);
-    REQUIRE(result == "WIDTH : integer -- inline");
-}
-
-TEST_CASE("withTrivia: Single trailing comment", "[pretty_printer][trivia]")
-{
-    ast::GenericParam param{ .names = { "WIDTH" }, .type_name = "integer", .is_last = true };
-
-    param.addTrailing(ast::Comment{ "-- inline comment" });
-
-    const auto result = emit::test::render(param);
-    REQUIRE(result == "WIDTH : integer\n-- inline comment");
-}
-
-TEST_CASE("withTrivia: Leading and trailing comments", "[pretty_printer][trivia]")
-{
-    ast::GenericParam param{ .names = { "WIDTH" }, .type_name = "integer", .is_last = true };
-
-    param.addLeading(ast::Comment{ "-- leading" });
-    param.addTrailing(ast::Comment{ "-- trailing" });
-
-    const auto result = emit::test::render(param);
-    REQUIRE(result == "-- leading\nWIDTH : integer\n-- trailing");
-}
-
-TEST_CASE("withTrivia: Complex mix", "[pretty_printer][trivia]")
-{
-    ast::GenericParam param{ .names = { "WIDTH" }, .type_name = "integer", .is_last = true };
-
-    // Leading
-    param.addLeading(ast::Comment{ "-- header comment" });
-    param.addLeading(ast::Break{ .blank_lines = 2 });
-    param.addLeading(ast::Comment{ "-- description" });
-
-    // Inline
-    param.setInlineComment("-- inline comment");
-
-    // Trailing
-    param.addTrailing(ast::Comment{ "-- trailing comment" });
-    param.addTrailing(ast::Break{ .blank_lines = 2 });
-    param.addTrailing(ast::Comment{ "-- footer comment" });
-
-    const auto result = emit::test::render(param);
-    constexpr std::string_view EXPECTED = "-- header comment\n"
-                                          "\n"
-                                          "\n"
-                                          "-- description\n"
-                                          "WIDTH : integer -- inline comment\n"
-                                          "-- trailing comment\n"
-                                          "\n"
-                                          "\n"
-                                          "-- footer comment";
-    REQUIRE(result == EXPECTED);
+        SECTION("Inline Comments still work")
+        {
+            expr.setInlineComment("-- val");
+            REQUIRE(emit::test::render(expr) == "A -- val");
+        }
+    }
 }

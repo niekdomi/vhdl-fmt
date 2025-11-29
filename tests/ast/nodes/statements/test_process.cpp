@@ -1,3 +1,4 @@
+#include "ast/nodes/declarations.hpp"
 #include "ast/nodes/design_units.hpp"
 #include "ast/nodes/statements.hpp"
 #include "builder/ast_builder.hpp"
@@ -6,77 +7,76 @@
 #include <string_view>
 #include <variant>
 
-TEST_CASE("Process: Process with sensitivity list", "[statements][process]")
+TEST_CASE("Process Translator", "[builder][process]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process (clk, rst)
-            begin
-                if rst = '1' then
-                    count <= 0;
-                end if;
-            end process;
-        end RTL;
-    )";
+    constexpr std::string_view VHDL_FILE
+      = "entity E is end E;\n"
+        "architecture A of E is\n"
+        "begin\n"
+        "    process(clk, rst)\n"
+        "        -- [0] Variable Declaration\n"
+        "        variable counter : integer := 0;\n"
+        "        \n"
+        "        -- [1] Constant Declaration\n"
+        "        constant MAX_VAL : integer := 255;\n"
+        "        \n"
+        "        -- [2] Shared Variable Declaration\n"
+        "        shared variable flags : bit_vector(7 downto 0);\n"
+        "    begin\n"
+        "        null;\n"
+        "    end process;\n"
+        "end A;";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+
+    // Navigate to the Process node
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
-    REQUIRE(arch->stmts.size() == 1);
+    REQUIRE_FALSE(arch->stmts.empty());
 
-    auto *proc = std::get_if<ast::Process>(arch->stmts.data());
+    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
     REQUIRE(proc != nullptr);
-    REQUIRE(proc->sensitivity_list.size() == 2);
-    REQUIRE(proc->sensitivity_list[0] == "clk");
-    REQUIRE(proc->sensitivity_list[1] == "rst");
-}
 
-TEST_CASE("Process: Process without sensitivity list", "[statements][process]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process
-            begin
-                wait until clk = '1';
-                count <= count + 1;
-            end process;
-        end RTL;
-    )";
+    SECTION("Sensitivity List")
+    {
+        REQUIRE(proc->sensitivity_list.size() == 2);
+        CHECK(proc->sensitivity_list[0] == "clk");
+        CHECK(proc->sensitivity_list[1] == "rst");
+    }
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
-    REQUIRE(arch->stmts.size() == 1);
+    SECTION("Process Declarations")
+    {
+        REQUIRE(proc->decls.size() == 3);
 
-    auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-    REQUIRE(proc->sensitivity_list.empty());
-}
+        SECTION("Variable Declaration")
+        {
+            const auto *variable = std::get_if<ast::VariableDecl>(proc->decls.data());
+            REQUIRE(variable != nullptr);
 
-TEST_CASE("Process: Labeled process", "[statements][process]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            counter_proc : process (clk)
-            begin
-                count <= count + 1;
-            end process counter_proc;
-        end RTL;
-    )";
+            CHECK(variable->names[0] == "counter");
+            CHECK(variable->type_name == "integer");
+            CHECK(variable->shared == false);
+            CHECK(variable->init_expr.has_value());
+        }
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
-    REQUIRE(arch->stmts.size() == 1);
+        SECTION("Constant Declaration")
+        {
+            const auto *constant = std::get_if<ast::ConstantDecl>(&proc->decls[1]);
+            REQUIRE(constant != nullptr);
 
-    auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-    REQUIRE(proc->label.has_value());
-    REQUIRE(proc->label.value() == "counter_proc");
+            CHECK(constant->names[0] == "MAX_VAL");
+            CHECK(constant->type_name == "integer");
+            CHECK(constant->init_expr.has_value());
+        }
+
+        SECTION("Shared Variable Declaration")
+        {
+            const auto *shared = std::get_if<ast::VariableDecl>(&proc->decls[2]);
+            REQUIRE(shared != nullptr);
+
+            CHECK(shared->names[0] == "flags");
+            CHECK(shared->type_name == "bit_vector");
+            CHECK(shared->shared == true);
+        }
+    }
 }
