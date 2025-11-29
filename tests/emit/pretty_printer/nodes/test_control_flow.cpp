@@ -4,12 +4,26 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+namespace {
+
+// Helper to wrap a simple value into a Waveform
+auto makeWave(ast::TokenExpr val) -> ast::Waveform
+{
+    ast::Waveform w;
+    ast::Waveform::Element el;
+    el.value = std::move(val);
+    w.elements.emplace_back(std::move(el));
+    return w;
+}
+
+} // namespace
+
 TEST_CASE("Control Flow Rendering", "[pretty_printer][control_flow]")
 {
     // Helper to create a dummy statement (x <= '0')
     auto make_stmt = []() -> ast::SequentialStatement {
         return ast::SignalAssign{ .target = ast::TokenExpr{ .text = "x" },
-                                  .value = ast::TokenExpr{ .text = "'0'" } };
+                                  .waveform = makeWave(ast::TokenExpr{ .text = "'0'" }) };
     };
 
     SECTION("If Statement")
@@ -18,17 +32,17 @@ TEST_CASE("Control Flow Rendering", "[pretty_printer][control_flow]")
 
         // 1. IF
         stmt.if_branch.condition = ast::TokenExpr{ .text = "rst" };
-        stmt.if_branch.body.push_back(make_stmt());
+        stmt.if_branch.body.emplace_back(make_stmt());
 
         // 2. ELSIF
         ast::IfStatement::Branch elsif;
         elsif.condition = ast::TokenExpr{ .text = "en" };
-        elsif.body.push_back(make_stmt());
-        stmt.elsif_branches.push_back(std::move(elsif));
+        elsif.body.emplace_back(make_stmt());
+        stmt.elsif_branches.emplace_back(std::move(elsif));
 
         // 3. ELSE
         ast::IfStatement::Branch else_br;
-        else_br.body.push_back(make_stmt());
+        else_br.body.emplace_back(make_stmt());
         stmt.else_branch = std::move(else_br);
 
         constexpr std::string_view EXPECTED = "if rst then\n"
@@ -50,9 +64,9 @@ TEST_CASE("Control Flow Rendering", "[pretty_printer][control_flow]")
         ast::CaseStatement::WhenClause clause;
         clause.choices.emplace_back(ast::TokenExpr{ .text = "IDLE" });
         clause.choices.emplace_back(ast::TokenExpr{ .text = "RESET" });
-        clause.body.push_back(make_stmt());
+        clause.body.emplace_back(make_stmt());
 
-        stmt.when_clauses.push_back(std::move(clause));
+        stmt.when_clauses.emplace_back(std::move(clause));
 
         constexpr std::string_view EXPECTED = "case state is\n"
                                               "  when IDLE | RESET =>\n"
@@ -67,7 +81,7 @@ TEST_CASE("Control Flow Rendering", "[pretty_printer][control_flow]")
         ast::ForLoop stmt;
         stmt.iterator = "i";
         stmt.range = ast::TokenExpr{ .text = "0 to 7" };
-        stmt.body.push_back(make_stmt());
+        stmt.body.emplace_back(make_stmt());
 
         constexpr std::string_view EXPECTED = "for i in 0 to 7 loop\n"
                                               "  x <= '0';\n"
@@ -80,7 +94,7 @@ TEST_CASE("Control Flow Rendering", "[pretty_printer][control_flow]")
     {
         ast::WhileLoop stmt;
         stmt.condition = ast::TokenExpr{ .text = "valid" };
-        stmt.body.push_back(make_stmt());
+        stmt.body.emplace_back(make_stmt());
 
         constexpr std::string_view EXPECTED = "while valid loop\n"
                                               "  x <= '0';\n"
