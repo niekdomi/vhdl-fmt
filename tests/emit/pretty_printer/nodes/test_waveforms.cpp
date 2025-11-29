@@ -30,7 +30,7 @@ TEST_CASE("Waveform Rendering", "[pretty_printer][waveforms]")
         ast::Waveform::Element elem;
         elem.value = token("'1'");
         elem.after = token("5 ns");
-        assign.waveform.elements.push_back(std::move(elem));
+        assign.waveform.elements.emplace_back(std::move(elem));
 
         REQUIRE(emit::test::render(assign) == "s <= '1' after 5 ns;");
     }
@@ -41,13 +41,13 @@ TEST_CASE("Waveform Rendering", "[pretty_printer][waveforms]")
         ast::Waveform::Element el1;
         el1.value = token("'1'");
         el1.after = token("5 ns");
-        assign.waveform.elements.push_back(std::move(el1));
+        assign.waveform.elements.emplace_back(std::move(el1));
 
         // Driver 2
         ast::Waveform::Element el2;
         el2.value = token("'0'");
         el2.after = token("10 ns");
-        assign.waveform.elements.push_back(std::move(el2));
+        assign.waveform.elements.emplace_back(std::move(el2));
 
         SECTION("Fits on one line (Flat)")
         {

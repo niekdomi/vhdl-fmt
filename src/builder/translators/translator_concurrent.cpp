@@ -11,12 +11,12 @@ namespace builder {
 
 auto Translator::makeWaveform(vhdlParser::WaveformContext *ctx) -> ast::Waveform
 {
-    ast::Waveform result;
+    auto waveform = make<ast::Waveform>(ctx);
 
     // Handle 'UNAFFECTED' keyword
     if (ctx->UNAFFECTED() != nullptr) {
-        result.is_unaffected = true;
-        return result;
+        waveform.is_unaffected = true;
+        return waveform;
     }
 
     // Handle list: waveform_element (COMMA waveform_element)*
@@ -33,11 +33,11 @@ auto Translator::makeWaveform(vhdlParser::WaveformContext *ctx) -> ast::Waveform
                 elem.after = makeExpr(el_ctx->expression(1));
             }
 
-            result.elements.push_back(std::move(elem));
+            waveform.elements.emplace_back(std::move(elem));
         }
     }
 
-    return result;
+    return waveform;
 }
 
 auto Translator::makeConcurrentAssign(
@@ -78,7 +78,7 @@ auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignment
             wave_item.condition = makeExpr(cond->expression());
         }
 
-        assign.waveforms.push_back(std::move(wave_item));
+        assign.waveforms.emplace_back(std::move(wave_item));
 
         // 3. Recurse (ELSE ...)
         current_wave = current_wave->conditional_waveforms();
@@ -118,12 +118,12 @@ auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContex
             if (i < choices.size()) {
                 if (auto *ch_ctx = choices[i]) {
                     for (auto *c : ch_ctx->choice()) {
-                        selection.choices.push_back(makeChoice(c));
+                        selection.choices.emplace_back(makeChoice(c));
                     }
                 }
             }
 
-            assign.selections.push_back(std::move(selection));
+            assign.selections.emplace_back(std::move(selection));
         }
     }
 

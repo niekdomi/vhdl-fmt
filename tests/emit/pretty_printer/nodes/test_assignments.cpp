@@ -34,7 +34,7 @@ auto makeWave(ast::TokenExpr val) -> ast::Waveform
     ast::Waveform w;
     ast::Waveform::Element el;
     el.value = std::move(val);
-    w.elements.push_back(std::move(el));
+    w.elements.emplace_back(std::move(el));
     return w;
 }
 
@@ -75,13 +75,13 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
         ast::ConditionalConcurrentAssign::ConditionalWaveform w1;
         w1.waveform = makeWave(token("'1'"));
         w1.condition = binary("en", "=", "'1'");
-        assign.waveforms.push_back(std::move(w1));
+        assign.waveforms.emplace_back(std::move(w1));
 
         // Waveform 2: '0' (else)
         ast::ConditionalConcurrentAssign::ConditionalWaveform w2;
         w2.waveform = makeWave(token("'0'"));
         w2.condition = std::nullopt;
-        assign.waveforms.push_back(std::move(w2));
+        assign.waveforms.emplace_back(std::move(w2));
 
         SECTION("Fits on line (Flat)")
         {
