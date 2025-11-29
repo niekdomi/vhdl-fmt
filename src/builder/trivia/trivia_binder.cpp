@@ -52,19 +52,20 @@ auto TriviaBinder::extractTrivia(std::span<antlr4::Token *const> range) -> std::
     return result;
 }
 
+// TODO(vedivad): Suboptimal, the grammar should be adjusted to include semicolons to the contexts
 auto TriviaBinder::findContextEnd(const antlr4::ParserRuleContext *ctx) const -> std::size_t
 {
     const auto stop = ctx->getStop()->getTokenIndex();
-    const auto line = tokens_.get(stop)->getLine();
 
-    const auto indices = std::views::iota(stop + 1, tokens_.size());
+    const auto next = stop + 1;
+    if (next >= tokens_.size()) {
+        return stop;
+    }
+    if (tokens_.get(next)->getText() == ";") {
+        return next;
+    }
 
-    const auto it = std::ranges::find_if(indices, [this, line](std::size_t i) -> bool {
-        auto *token = tokens_.get(i);
-        return !isDefault(token) || (token->getLine() != line);
-    });
-
-    return (it != indices.end()) ? (*it - 1) : stop;
+    return stop;
 }
 
 void TriviaBinder::bind(ast::NodeBase &node, const antlr4::ParserRuleContext *ctx)
