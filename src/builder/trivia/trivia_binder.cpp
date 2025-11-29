@@ -52,6 +52,7 @@ auto TriviaBinder::extractTrivia(std::span<antlr4::Token *const> range) -> std::
 }
 
 // TODO(vedivad): Suboptimal, the grammar should be adjusted to include semicolons to the contexts
+// Note: This also affects commas in lists
 auto TriviaBinder::findContextEnd(const antlr4::ParserRuleContext *ctx) const -> std::size_t
 {
     const auto stop = ctx->getStop()->getTokenIndex();
