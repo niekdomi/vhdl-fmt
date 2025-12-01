@@ -46,7 +46,7 @@ struct Entity : NodeBase
     std::vector<Declaration> decls;         ///< Entity declarative items.
     std::vector<ConcurrentStatement> stmts; ///< Entity concurrent statements.
     std::optional<std::string> end_label;   ///< Optional label after END keyword.
-    bool has_end_entity_keyword = false;    ///< Whether END ENTITY syntax is used.
+    bool has_end_entity_keyword{ false };   ///< Whether END ENTITY syntax is used.
 };
 
 /// @brief Represents a VHDL architecture body.
@@ -59,7 +59,7 @@ struct Architecture : NodeBase
     std::vector<Declaration> decls;             ///< Architecture declarative items.
     std::vector<ConcurrentStatement> stmts;     ///< Architecture concurrent statements.
     std::optional<std::string> end_label;       ///< Optional label after END keyword.
-    bool has_end_architecture_keyword = false;  ///< Whether END ARCHITECTURE syntax is used.
+    bool has_end_architecture_keyword{ false }; ///< Whether END ARCHITECTURE syntax is used.
 };
 
 } // namespace ast

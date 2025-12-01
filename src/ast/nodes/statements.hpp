@@ -94,7 +94,7 @@ struct VariableAssign : NodeBase
 /// Example: `target <= expr;`
 struct SignalAssign : NodeBase
 {
-    Expr target;      ///< Target signal of the assignment.
+    Expr target;       ///< Target signal of the assignment.
     Waveform waveform; ///< Waveform to assign.
 };
 
@@ -106,8 +106,8 @@ struct IfStatement : NodeBase
     /// @brief Represents a branch (if, elsif, or else).
     struct Branch
     {
-        std::optional<NodeTrivia> trivia;    ///< Leading trivia (comments, whitespace).
-        Expr condition;                      ///< Branch condition (empty for else branch).
+        std::optional<NodeTrivia> trivia;      ///< Leading trivia (comments, whitespace).
+        Expr condition;                        ///< Branch condition (empty for else branch).
         std::vector<SequentialStatement> body; ///< Statements in the branch.
     };
 
@@ -124,12 +124,12 @@ struct CaseStatement : NodeBase
     /// @brief Represents a WHEN clause in a CASE statement.
     struct WhenClause
     {
-        std::optional<NodeTrivia> trivia;    ///< Leading trivia (comments, whitespace).
-        std::vector<Expr> choices;           ///< Choice expressions (alternatives).
+        std::optional<NodeTrivia> trivia;      ///< Leading trivia (comments, whitespace).
+        std::vector<Expr> choices;             ///< Choice expressions (alternatives).
         std::vector<SequentialStatement> body; ///< Statements for this clause.
     };
 
-    Expr selector;                       ///< Selector expression.
+    Expr selector;                        ///< Selector expression.
     std::vector<WhenClause> when_clauses; ///< List of WHEN clauses.
 };
 
@@ -138,10 +138,10 @@ struct CaseStatement : NodeBase
 /// Example: `process (clk) begin stmts; end process;`
 struct Process : NodeBase
 {
-    std::optional<std::string> label;       ///< Optional process label.
+    std::optional<std::string> label;          ///< Optional process label.
     std::vector<std::string> sensitivity_list; ///< List of sensitivity signals.
-    std::vector<Declaration> decls;         ///< Process declarative items.
-    std::vector<SequentialStatement> body;  ///< Sequential statements in process.
+    std::vector<Declaration> decls;            ///< Process declarative items.
+    std::vector<SequentialStatement> body;     ///< Sequential statements in process.
 };
 
 /// @brief Represents a FOR loop statement.

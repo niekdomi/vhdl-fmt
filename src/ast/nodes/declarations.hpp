@@ -36,11 +36,11 @@ struct ConstantDecl : NodeBase
 /// Example: `signal v : std_logic_vector(7 downto 0) := (others => '0');`
 struct SignalDecl : NodeBase
 {
-    std::vector<std::string> names;      ///< List of signal identifiers.
-    std::string type_name;               ///< Type of the signal.
-    bool has_bus_kw{ false };            ///< Whether the BUS keyword is present.
+    std::vector<std::string> names;       ///< List of signal identifiers.
+    std::string type_name;                ///< Type of the signal.
     std::optional<Constraint> constraint; ///< Optional type constraint (e.g., range).
-    std::optional<Expr> init_expr;       ///< Optional initialization expression.
+    std::optional<Expr> init_expr;        ///< Optional initialization expression.
+    bool has_bus_kw{ false };             ///< Whether the BUS keyword is present.
 };
 
 /// @brief Represents a VHDL variable declaration.
@@ -48,11 +48,11 @@ struct SignalDecl : NodeBase
 /// Example: `variable v : integer := 0;`
 struct VariableDecl : NodeBase
 {
-    bool shared{ false };                 ///< Whether the SHARED keyword is present.
     std::vector<std::string> names;       ///< List of variable identifiers.
     std::string type_name;                ///< Type of the variable.
     std::optional<Constraint> constraint; ///< Optional type constraint.
     std::optional<Expr> init_expr;        ///< Optional initialization expression.
+    bool shared{ false };                 ///< Whether the SHARED keyword is present.
 };
 
 /// @brief Represents a generic parameter inside a GENERIC clause.
@@ -60,9 +60,9 @@ struct VariableDecl : NodeBase
 /// Example: `generic (WIDTH : integer := 8);`
 struct GenericParam : NodeBase
 {
-    std::vector<std::string> names;     ///< List of generic parameter identifiers.
-    std::string type_name;              ///< Type of the generic parameter.
-    std::optional<Expr> default_expr;   ///< Optional default value expression.
+    std::vector<std::string> names;   ///< List of generic parameter identifiers.
+    std::string type_name;            ///< Type of the generic parameter.
+    std::optional<Expr> default_expr; ///< Optional default value expression.
 };
 
 /// @brief Represents a port entry inside a PORT clause.
