@@ -1,5 +1,6 @@
 #include "ast/nodes/statements.hpp"
 #include "builder/translator.hpp"
+#include "nodes/declarations.hpp"
 #include "vhdlParser.h"
 
 #include <cstddef>
@@ -133,7 +134,7 @@ auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContex
 auto Translator::makeProcessDeclarativePart(vhdlParser::Process_declarative_partContext *ctx)
   -> std::vector<ast::Declaration>
 {
-    std::vector<ast::Declaration> decls;
+    std::vector<ast::Declaration> decls{};
 
     for (auto *item : ctx->process_declarative_item()) {
         if (auto *var_ctx = item->variable_declaration()) {
@@ -150,7 +151,7 @@ auto Translator::makeProcessDeclarativePart(vhdlParser::Process_declarative_part
 auto Translator::makeProcessStatementPart(vhdlParser::Process_statement_partContext *ctx)
   -> std::vector<ast::SequentialStatement>
 {
-    std::vector<ast::SequentialStatement> stmts;
+    std::vector<ast::SequentialStatement> stmts{};
     const auto &source_stmts = ctx->sequential_statement();
     stmts.reserve(source_stmts.size());
 

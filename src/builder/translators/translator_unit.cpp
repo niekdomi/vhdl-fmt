@@ -1,7 +1,11 @@
 #include "ast/nodes/design_file.hpp"
 #include "ast/nodes/design_units.hpp"
 #include "builder/translator.hpp"
+#include "nodes/declarations.hpp"
+#include "nodes/statements.hpp"
 #include "vhdlParser.h"
+
+#include <vector>
 
 namespace builder {
 
@@ -90,7 +94,7 @@ auto Translator::makeArchitecture(vhdlParser::Architecture_bodyContext *ctx) -> 
 auto Translator::makeArchitectureDeclarativePart(
   vhdlParser::Architecture_declarative_partContext *ctx) -> std::vector<ast::Declaration>
 {
-    std::vector<ast::Declaration> decls;
+    std::vector<ast::Declaration> decls{};
 
     for (auto *item : ctx->block_declarative_item()) {
         if (auto *const_ctx = item->constant_declaration()) {
@@ -108,7 +112,7 @@ auto Translator::makeArchitectureDeclarativePart(
 auto Translator::makeArchitectureStatementPart(vhdlParser::Architecture_statement_partContext *ctx)
   -> std::vector<ast::ConcurrentStatement>
 {
-    std::vector<ast::ConcurrentStatement> stmts;
+    std::vector<ast::ConcurrentStatement> stmts{};
 
     for (auto *stmt : ctx->architecture_statement()) {
         if (auto *proc = stmt->process_statement()) {
