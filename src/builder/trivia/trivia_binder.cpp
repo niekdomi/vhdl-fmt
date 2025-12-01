@@ -58,7 +58,11 @@ auto TriviaBinder::findContextEnd(const antlr4::ParserRuleContext *ctx) const ->
     const auto stop = ctx->getStop()->getTokenIndex();
 
     const auto next = stop + 1;
-    if (next < tokens_.size() && tokens_.get(next)->getText() == ";") {
+    if (next >= tokens_.size()) {
+        return stop;
+    }
+
+    if (tokens_.get(next)->getText() == ";" || tokens_.get(next)->getText() == ",") {
         return next;
     }
 
