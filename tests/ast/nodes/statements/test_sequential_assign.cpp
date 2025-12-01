@@ -7,62 +7,101 @@
 #include <string_view>
 #include <variant>
 
-TEST_CASE("SequentialAssign: Simple variable assignment", "[statements][sequential_assign]")
+TEST_CASE("Sequential Assignments", "[statements][assignment]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process
-            begin
-                count := 0;
-            end process;
-        end RTL;
-    )";
+    constexpr std::string_view VHDL_FILE
+      = "entity Test is end Test;\n"
+        "architecture RTL of Test is\n"
+        "    signal sig_bit : bit;\n"
+        "    signal sig_vec : bit_vector(7 downto 0);\n"
+        "begin\n"
+        "    process\n"
+        "        variable var_int : integer;\n"
+        "        variable var_a   : integer := 1;\n"
+        "    begin\n"
+        "        -- [0] Variable := Literal\n"
+        "        var_int := 42;\n"
+        "\n"
+        "        -- [1] Variable := Binary Expression\n"
+        "        var_int := var_a + 10;\n"
+        "\n"
+        "        -- [2] Signal <= Literal\n"
+        "        sig_bit <= '1';\n"
+        "\n"
+        "        -- [3] Signal <= Complex Expression (Aggregate)\n"
+        "        sig_vec <= (others => '0');\n"
+        "    end process;\n"
+        "end RTL;";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
 
-    auto *proc = std::get_if<ast::Process>(arch->stmts.data());
+    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
     REQUIRE(proc != nullptr);
-    REQUIRE_FALSE(proc->body.empty());
+    REQUIRE(proc->body.size() == 4);
 
-    auto *assign = std::get_if<ast::SequentialAssign>(proc->body.data());
-    REQUIRE(assign != nullptr);
-}
+    SECTION("Variable Assignments (:=)")
+    {
+        // VariableAssign structure did NOT change, it still uses 'value'
+        SECTION("Literal Value")
+        {
+            const auto *assign = std::get_if<ast::VariableAssign>(proc->body.data());
+            REQUIRE(assign != nullptr);
 
-TEST_CASE("SequentialAssign: Assignment with literal value", "[statements][sequential_assign]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process
-            begin
-                result := '1';
-            end process;
-        end RTL;
-    )";
+            const auto *target = std::get_if<ast::TokenExpr>(&assign->target);
+            const auto *value = std::get_if<ast::TokenExpr>(&assign->value);
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
+            CHECK(target->text == "var_int");
+            CHECK(value->text == "42");
+        }
 
-    auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-    REQUIRE_FALSE(proc->body.empty());
+        SECTION("Binary Expression")
+        {
+            const auto *assign = std::get_if<ast::VariableAssign>(&proc->body[1]);
+            REQUIRE(assign != nullptr);
 
-    auto *assign = std::get_if<ast::SequentialAssign>(proc->body.data());
-    REQUIRE(assign != nullptr);
+            CHECK(std::get<ast::TokenExpr>(assign->target).text == "var_int");
+            const auto *bin_expr = std::get_if<ast::BinaryExpr>(&assign->value);
+            REQUIRE(bin_expr != nullptr);
+            CHECK(bin_expr->op == "+");
+        }
+    }
 
-    // Check target
-    auto *target = std::get_if<ast::TokenExpr>(&assign->target);
-    REQUIRE(target != nullptr);
-    REQUIRE(target->text == "result");
+    SECTION("Signal Assignments (<=)")
+    {
+        // SignalAssign structure CHANGED: uses 'waveform.elements'
+        SECTION("Simple Literal")
+        {
+            const auto *assign = std::get_if<ast::SignalAssign>(&proc->body[2]);
+            REQUIRE(assign != nullptr);
 
-    // Check value
-    auto *value = std::get_if<ast::TokenExpr>(&assign->value);
-    REQUIRE(value != nullptr);
-    REQUIRE(value->text == "'1'");
+            const auto *target = std::get_if<ast::TokenExpr>(&assign->target);
+            CHECK(target->text == "sig_bit");
+
+            // New AST access:
+            REQUIRE_FALSE(assign->waveform.is_unaffected);
+            REQUIRE(assign->waveform.elements.size() == 1);
+
+            const auto *value = std::get_if<ast::TokenExpr>(&assign->waveform.elements[0].value);
+            CHECK(value->text == "'1'");
+        }
+
+        SECTION("Aggregate/Group Expression")
+        {
+            const auto *assign = std::get_if<ast::SignalAssign>(&proc->body[3]);
+            REQUIRE(assign != nullptr);
+
+            CHECK(std::get<ast::TokenExpr>(assign->target).text == "sig_vec");
+
+            // New AST access:
+            REQUIRE(assign->waveform.elements.size() == 1);
+            const auto *group = std::get_if<ast::GroupExpr>(&assign->waveform.elements[0].value);
+            REQUIRE(group != nullptr);
+
+            const auto *assoc = std::get_if<ast::BinaryExpr>(group->children.data());
+            REQUIRE(assoc != nullptr);
+            CHECK(assoc->op == "=>");
+        }
+    }
 }

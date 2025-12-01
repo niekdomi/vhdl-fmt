@@ -102,7 +102,7 @@ auto Translator::makeIndexConstraint(vhdlParser::Index_constraintContext *ctx)
             continue;
         }
         auto range_expr = makeRange(explicit_r);
-        group.children.push_back(std::move(range_expr));
+        group.children.emplace_back(std::move(range_expr));
     }
 
     constraint.ranges = std::move(group);

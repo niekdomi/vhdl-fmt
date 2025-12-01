@@ -108,7 +108,7 @@ auto Translator::makeCallExpr(ast::Expr base,
             } else {
                 auto group = make<ast::GroupExpr>(list_ctx);
                 for (auto *elem : associations) {
-                    group.children.push_back(makeCallArgument(elem));
+                    group.children.emplace_back(makeCallArgument(elem));
                 }
                 call_expr.args = std::make_unique<ast::Expr>(ast::Expr{ std::move(group) });
             }

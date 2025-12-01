@@ -7,80 +7,104 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
-TEST_CASE("Empty DesignFile", "[pretty_printer][design_file]")
-{
-    const ast::DesignFile file{};
-
-    const auto result = emit::test::render(file);
-    REQUIRE(result.empty());
-}
-
-TEST_CASE("DesignFile with single entity", "[pretty_printer][design_file]")
+TEST_CASE("DesignFile Rendering", "[pretty_printer][design_file]")
 {
     ast::DesignFile file{};
 
-    ast::Entity entity{ .name = "test_entity" };
+    SECTION("Empty File")
+    {
+        const auto result = emit::test::render(file);
+        REQUIRE(result.empty());
+    }
 
-    file.units.emplace_back(std::move(entity));
+    SECTION("Single Unit")
+    {
+        SECTION("Entity only")
+        {
+            file.units.emplace_back(ast::Entity{
+              .name = "test_entity",
+              // Simulate default behavior where end label matches name if not explicitly cleared
+              .end_label = "test_entity",
+              .has_end_entity_keyword = true });
 
-    const std::string result = emit::test::render(file);
-    constexpr std::string_view EXPECTED = "entity test_entity is\n"
-                                          "end entity test_entity;\n";
+            const std::string result = emit::test::render(file);
+            constexpr std::string_view EXPECTED = "entity test_entity is\n"
+                                                  "end entity test_entity;\n";
+            REQUIRE(result == EXPECTED);
+        }
 
-    REQUIRE(result == EXPECTED);
-}
+        SECTION("Architecture only")
+        {
+            file.units.emplace_back(ast::Architecture{ .name = "rtl",
+                                                       .entity_name = "processor",
+                                                       .end_label = "rtl",
+                                                       .has_end_architecture_keyword = true });
 
-TEST_CASE("DesignFile with entity and architecture", "[pretty_printer][design_file]")
-{
-    ast::DesignFile file{};
+            const std::string result = emit::test::render(file);
+            constexpr std::string_view EXPECTED = "architecture rtl of processor is\n"
+                                                  "begin\n"
+                                                  "end architecture rtl;\n";
+            REQUIRE(result == EXPECTED);
+        }
+    }
 
-    ast::Entity entity{ .name = "counter" };
+    SECTION("Multiple Units")
+    {
+        SECTION("Entity and corresponding Architecture")
+        {
+            // 1. Entity
+            ast::Entity entity{ .name = "counter" };
+            entity.port_clause.ports.emplace_back(
+              ast::Port{ .names = { "clk" }, .mode = "in", .type_name = "std_logic" });
+            entity.end_label = "counter";
+            entity.has_end_entity_keyword = true;
 
-    ast::Port port{ .names = { "clk" }, .mode = "in", .type_name = "std_logic", .is_last = true };
-    entity.port_clause.ports.emplace_back(std::move(port));
+            // 2. Architecture
+            ast::Architecture arch{ .name = "rtl",
+                                    .entity_name = "counter",
+                                    .end_label = "rtl",
+                                    .has_end_architecture_keyword = true };
 
-    // Create architecture
-    ast::Architecture arch{ .name = "rtl", .entity_name = "counter" };
+            file.units.emplace_back(std::move(entity));
+            file.units.emplace_back(std::move(arch));
 
-    file.units.emplace_back(std::move(entity));
-    file.units.emplace_back(std::move(arch));
+            const std::string result = emit::test::render(file);
+            constexpr std::string_view EXPECTED = "entity counter is\n"
+                                                  "  port ( clk : in std_logic );\n"
+                                                  "end entity counter;\n"
+                                                  "architecture rtl of counter is\n"
+                                                  "begin\n"
+                                                  "end architecture rtl;\n";
+            REQUIRE(result == EXPECTED);
+        }
 
-    const std::string result = emit::test::render(file);
-    constexpr std::string_view EXPECTED = "entity counter is\n"
-                                          "  port ( clk : in std_logic );\n"
-                                          "end entity counter;\n"
-                                          "architecture rtl of counter is\n"
-                                          "begin\n"
-                                          "end architecture rtl;\n";
+        SECTION("Multiple independent entities and architectures")
+        {
+            // Entity 1
+            file.units.emplace_back(ast::Entity{
+              .name = "entity1", .end_label = "entity1", .has_end_entity_keyword = true });
 
-    REQUIRE(result == EXPECTED);
-}
-TEST_CASE("DesignFile with multiple design units", "[pretty_printer][design_file]")
-{
-    ast::DesignFile file{};
+            // Entity 2
+            file.units.emplace_back(ast::Entity{
+              .name = "entity2", .end_label = "entity2", .has_end_entity_keyword = true });
 
-    // First entity
-    ast::Entity entity1{ .name = "entity1" };
+            // Arch for Entity 1
+            file.units.emplace_back(ast::Architecture{ .name = "behavioral",
+                                                       .entity_name = "entity1",
+                                                       .end_label = "behavioral",
+                                                       .has_end_architecture_keyword = true });
 
-    // Second entity
-    ast::Entity entity2{ .name = "entity2" };
-
-    // Architecture for entity1
-    ast::Architecture arch1{ .name = "behavioral", .entity_name = "entity1" };
-
-    file.units.emplace_back(std::move(entity1));
-    file.units.emplace_back(std::move(entity2));
-    file.units.emplace_back(std::move(arch1));
-
-    const std::string result = emit::test::render(file);
-    constexpr std::string_view EXPECTED = "entity entity1 is\n"
-                                          "end entity entity1;\n"
-                                          "entity entity2 is\n"
-                                          "end entity entity2;\n"
-                                          "architecture behavioral of entity1 is\n"
-                                          "begin\n"
-                                          "end architecture behavioral;\n";
-
-    REQUIRE(result == EXPECTED);
+            const std::string result = emit::test::render(file);
+            constexpr std::string_view EXPECTED = "entity entity1 is\n"
+                                                  "end entity entity1;\n"
+                                                  "entity entity2 is\n"
+                                                  "end entity entity2;\n"
+                                                  "architecture behavioral of entity1 is\n"
+                                                  "begin\n"
+                                                  "end architecture behavioral;\n";
+            REQUIRE(result == EXPECTED);
+        }
+    }
 }

@@ -91,6 +91,11 @@ auto makeNest(DocPtr doc) -> DocPtr
     return std::make_shared<DocImpl>(Nest{ .doc = std::move(doc) });
 }
 
+auto makeHang(DocPtr doc) -> DocPtr
+{
+    return std::make_shared<DocImpl>(Hang{ .doc = std::move(doc) });
+}
+
 auto makeUnion(DocPtr flat, DocPtr broken) -> DocPtr
 {
     return std::make_shared<DocImpl>(Union{ .flat = std::move(flat), .broken = std::move(broken) });
@@ -104,6 +109,11 @@ auto makeAlignText(std::string_view text, int level) -> DocPtr
 auto makeAlign(DocPtr doc) -> DocPtr
 {
     return std::make_shared<DocImpl>(Align{ .doc = std::move(doc) });
+}
+
+auto makeInlineComment(std::string_view text) -> DocPtr
+{
+    return std::make_shared<DocImpl>(InlineComment{ std::string(text) });
 }
 
 // Utility functions
@@ -129,7 +139,7 @@ auto flatten(const DocPtr &doc) -> DocPtr
             // In flat mode, the alignment group is just its content.
             return node.doc;
         },
-        // For all other nodes (Concat, Nest, Text, Empty, HardLine, etc.),
+        // For all other nodes (Concat, Nest, Hang, Text, Empty, HardLine, etc.),
         [](const auto &node) -> DocPtr { return std::make_shared<DocImpl>(node); } });
 }
 

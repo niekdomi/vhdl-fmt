@@ -16,35 +16,50 @@ namespace ast {
 struct Entity;
 struct Architecture;
 
-/// Variant type for all design units (holds values, not pointers)
+/// @brief Variant type for all design units (holds values, not pointers).
 using DesignUnit = std::variant<Entity, Architecture>;
 
+/// @brief Represents a VHDL GENERIC clause.
+///
+/// Example: `generic (WIDTH : integer := 8);`
 struct GenericClause : NodeBase
 {
-    std::vector<GenericParam> generics;
+    std::vector<GenericParam> generics; ///< List of generic parameters.
 };
 
+/// @brief Represents a VHDL PORT clause.
+///
+/// Example: `port (clk : in std_logic; data : out std_logic_vector);`
 struct PortClause : NodeBase
 {
-    std::vector<Port> ports;
+    std::vector<Port> ports; ///< List of port declarations.
 };
 
+/// @brief Represents a VHDL entity declaration.
+///
+/// Example: `entity counter is port (clk : in std_logic); end entity;`
 struct Entity : NodeBase
 {
-    std::string name;
-    GenericClause generic_clause;
-    PortClause port_clause;
-    std::vector<Declaration> decls;
-    std::vector<ConcurrentStatement> stmts;
-    std::optional<std::string> end_label;
+    std::string name;                       ///< Entity identifier.
+    GenericClause generic_clause;           ///< Generic parameters clause.
+    PortClause port_clause;                 ///< Port declarations clause.
+    std::vector<Declaration> decls;         ///< Entity declarative items.
+    std::vector<ConcurrentStatement> stmts; ///< Entity concurrent statements.
+    std::optional<std::string> end_label;   ///< Optional label after END keyword.
+    bool has_end_entity_keyword{ false };   ///< Whether END ENTITY syntax is used.
 };
 
+/// @brief Represents a VHDL architecture body.
+///
+/// Example: `architecture rtl of counter is begin end architecture;`
 struct Architecture : NodeBase
 {
-    std::string name;
-    std::string entity_name;
-    std::vector<Declaration> decls;
-    std::vector<ConcurrentStatement> stmts;
+    std::string name;                           ///< Architecture identifier.
+    std::string entity_name;                    ///< Name of the associated entity.
+    std::vector<Declaration> decls;             ///< Architecture declarative items.
+    std::vector<ConcurrentStatement> stmts;     ///< Architecture concurrent statements.
+    std::optional<std::string> end_label;       ///< Optional label after END keyword.
+    bool has_end_architecture_keyword{ false }; ///< Whether END ARCHITECTURE syntax is used.
 };
 
 } // namespace ast

@@ -76,6 +76,24 @@ auto Translator::makeFactor(vhdlParser::FactorContext *ctx) -> ast::Expr
     return makePrimary(ctx->primary(0));
 }
 
+auto Translator::makeLiteral(vhdlParser::LiteralContext *ctx) -> ast::Expr
+{
+    auto *num = ctx->numeric_literal();
+    if (num == nullptr) {
+        return makeToken(ctx, ctx->getText());
+    }
+
+    auto *phys = num->physical_literal();
+    if (phys == nullptr) {
+        return makeToken(ctx, ctx->getText());
+    }
+
+    auto phys_node = make<ast::PhysicalLiteral>(ctx);
+    phys_node.value = phys->abstract_literal()->getText();
+    phys_node.unit = phys->identifier()->getText();
+    return phys_node;
+}
+
 auto Translator::makePrimary(vhdlParser::PrimaryContext *ctx) -> ast::Expr
 {
     if (ctx->expression() != nullptr) {
@@ -88,6 +106,9 @@ auto Translator::makePrimary(vhdlParser::PrimaryContext *ctx) -> ast::Expr
     }
     if (auto *name_ctx = ctx->name()) {
         return makeName(name_ctx);
+    }
+    if (auto *lit = ctx->literal()) {
+        return makeLiteral(lit);
     }
     return makeToken(ctx, ctx->getText());
 }

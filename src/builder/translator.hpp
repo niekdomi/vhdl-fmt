@@ -42,6 +42,12 @@ class Translator final
     auto makeEntity(vhdlParser::Entity_declarationContext *ctx) -> ast::Entity;
     [[nodiscard]]
     auto makeArchitecture(vhdlParser::Architecture_bodyContext *ctx) -> ast::Architecture;
+    [[nodiscard]]
+    auto makeArchitectureDeclarativePart(vhdlParser::Architecture_declarative_partContext *ctx)
+      -> std::vector<ast::Declaration>;
+    [[nodiscard]]
+    auto makeArchitectureStatementPart(vhdlParser::Architecture_statement_partContext *ctx)
+      -> std::vector<ast::ConcurrentStatement>;
 
     // Clauses - return by value
     [[nodiscard]]
@@ -51,34 +57,36 @@ class Translator final
 
     // Declarations - return by value
     [[nodiscard]]
-    auto makeGenericParam(vhdlParser::Interface_constant_declarationContext *ctx, bool is_last)
+    auto makeGenericParam(vhdlParser::Interface_constant_declarationContext *ctx)
       -> ast::GenericParam;
     [[nodiscard]]
-    auto makeSignalPort(vhdlParser::Interface_port_declarationContext *ctx, bool is_last)
-      -> ast::Port;
+    auto makeSignalPort(vhdlParser::Interface_port_declarationContext *ctx) -> ast::Port;
     [[nodiscard]]
     auto makeConstantDecl(vhdlParser::Constant_declarationContext *ctx) -> ast::ConstantDecl;
     [[nodiscard]]
     auto makeSignalDecl(vhdlParser::Signal_declarationContext *ctx) -> ast::SignalDecl;
+    [[nodiscard]]
+    auto makeVariableDecl(vhdlParser::Variable_declarationContext *ctx) -> ast::VariableDecl;
 
     // Statements - return by value
     [[nodiscard]]
+    auto makeWaveform(vhdlParser::WaveformContext *ctx) -> ast::Waveform;
+    [[nodiscard]]
     auto makeConcurrentAssign(vhdlParser::Concurrent_signal_assignment_statementContext *ctx)
-      -> ast::ConcurrentAssign;
+      -> ast::ConcurrentStatement;
     [[nodiscard]]
     auto makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext *ctx)
-      -> ast::ConcurrentAssign;
+      -> ast::ConditionalConcurrentAssign;
     [[nodiscard]]
     auto makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext *ctx)
-      -> ast::ConcurrentAssign;
+      -> ast::SelectedConcurrentAssign;
     [[nodiscard]]
     auto makeTarget(vhdlParser::TargetContext *ctx) -> ast::Expr;
     [[nodiscard]]
-    auto makeSequentialAssign(vhdlParser::Signal_assignment_statementContext *ctx)
-      -> ast::SequentialAssign;
+    auto makeSignalAssign(vhdlParser::Signal_assignment_statementContext *ctx) -> ast::SignalAssign;
     [[nodiscard]]
     auto makeVariableAssign(vhdlParser::Variable_assignment_statementContext *ctx)
-      -> ast::SequentialAssign;
+      -> ast::VariableAssign;
     [[nodiscard]]
     auto makeIfStatement(vhdlParser::If_statementContext *ctx) -> ast::IfStatement;
     [[nodiscard]]
@@ -86,12 +94,18 @@ class Translator final
     [[nodiscard]]
     auto makeProcess(vhdlParser::Process_statementContext *ctx) -> ast::Process;
     [[nodiscard]]
+    auto makeProcessDeclarativePart(vhdlParser::Process_declarative_partContext *ctx)
+      -> std::vector<ast::Declaration>;
+    [[nodiscard]]
+    auto makeProcessStatementPart(vhdlParser::Process_statement_partContext *ctx)
+      -> std::vector<ast::SequentialStatement>;
+    [[nodiscard]]
     auto makeForLoop(vhdlParser::Loop_statementContext *ctx) -> ast::ForLoop;
     [[nodiscard]]
     auto makeWhileLoop(vhdlParser::Loop_statementContext *ctx) -> ast::WhileLoop;
     [[nodiscard]]
     auto makeSequentialStatement(vhdlParser::Sequential_statementContext *ctx)
-      -> ast::SequentialStatement;
+      -> std::optional<ast::SequentialStatement>;
     [[nodiscard]]
     auto makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext *ctx)
       -> std::vector<ast::SequentialStatement>;
@@ -111,6 +125,8 @@ class Translator final
     auto makeFactor(vhdlParser::FactorContext *ctx) -> ast::Expr;
     [[nodiscard]]
     auto makePrimary(vhdlParser::PrimaryContext *ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeLiteral(vhdlParser::LiteralContext *ctx) -> ast::Expr;
     [[nodiscard]]
     auto makeShiftExpr(vhdlParser::Shift_expressionContext *ctx) -> ast::Expr;
     [[nodiscard]]

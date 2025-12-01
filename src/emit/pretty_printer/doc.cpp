@@ -47,6 +47,11 @@ auto Doc::alignText(std::string_view str, int level) -> Doc
     return Doc(makeAlignText(str, level));
 }
 
+auto Doc::inlineComment(std::string_view text) -> Doc
+{
+    return Doc(makeInlineComment(text));
+}
+
 // ========================================================================
 // Low-Level Combinators (Operators)
 // ========================================================================
@@ -136,6 +141,11 @@ auto Doc::align(const Doc &doc) -> Doc
 auto Doc::group(const Doc &doc) -> Doc
 {
     return Doc(makeUnion(flatten(doc.impl_), doc.impl_));
+}
+
+auto Doc::hang(const Doc &doc) -> Doc
+{
+    return Doc(makeHang(doc.impl_));
 }
 
 // ========================================================================

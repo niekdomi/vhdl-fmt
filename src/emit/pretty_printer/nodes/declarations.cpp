@@ -29,10 +29,6 @@ auto PrettyPrinter::operator()(const ast::GenericParam &node) const -> Doc
         result &= Doc::text(":=") & visit(node.default_expr.value());
     }
 
-    if (!node.is_last) {
-        result += Doc::text(";");
-    }
-
     return result;
 }
 
@@ -56,23 +52,77 @@ auto PrettyPrinter::operator()(const ast::Port &node) const -> Doc
         result &= Doc::text(":=") & visit(node.default_expr.value());
     }
 
-    if (!node.is_last) {
-        result += Doc::text(";");
-    }
-
     return result;
 }
 
-auto PrettyPrinter::operator()([[maybe_unused]] const ast::SignalDecl &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::SignalDecl &node) const -> Doc
 {
-    // TODO(vedivad): Implement signal declaration printing
-    return Doc::text("-- signal");
+    const std::string names = node.names
+                            | std::views::join_with(std::string_view{ ", " })
+                            | std::ranges::to<std::string>();
+
+    Doc result = Doc::text("signal") & Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":");
+
+    // Type definition
+    result &= Doc::alignText(node.type_name, AlignmentLevel::TYPE);
+
+    if (node.constraint) {
+        result += visit(node.constraint.value());
+    }
+
+    if (node.has_bus_kw) {
+        result &= Doc::text("bus");
+    }
+
+    // Initialization
+    if (node.init_expr) {
+        result &= Doc::text(":=") & visit(node.init_expr.value());
+    }
+
+    return result + Doc::text(";");
 }
 
-auto PrettyPrinter::operator()([[maybe_unused]] const ast::ConstantDecl &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::ConstantDecl &node) const -> Doc
 {
-    // TODO(vedivad): Implement constant declaration printing
-    return Doc::text("-- constant");
+    const std::string names = node.names
+                            | std::views::join_with(std::string_view{ ", " })
+                            | std::ranges::to<std::string>();
+
+    Doc result
+      = Doc::text("constant") & Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":");
+
+    result &= Doc::alignText(node.type_name, AlignmentLevel::TYPE);
+
+    if (node.init_expr) {
+        result &= Doc::text(":=") & visit(node.init_expr.value());
+    }
+
+    return result + Doc::text(";");
+}
+
+auto PrettyPrinter::operator()(const ast::VariableDecl &node) const -> Doc
+{
+    const std::string names = node.names
+                            | std::views::join_with(std::string_view{ ", " })
+                            | std::ranges::to<std::string>();
+
+    // "variable x, y : integer"
+    Doc result = Doc::text(node.shared ? "shared variable" : "variable")
+               & Doc::alignText(names, AlignmentLevel::NAME)
+               & Doc::text(":")
+               & Doc::alignText(node.type_name, AlignmentLevel::TYPE);
+
+    // Constraint (e.g., (7 downto 0) or range 0 to 255)
+    if (node.constraint) {
+        result += visit(node.constraint.value());
+    }
+
+    // ":= 0"
+    if (node.init_expr) {
+        result &= Doc::text(":=") & visit(node.init_expr.value());
+    }
+
+    return result + Doc::text(";");
 }
 
 } // namespace emit

@@ -14,48 +14,67 @@ namespace ast {
 // Forward declarations
 struct ConstantDecl;
 struct SignalDecl;
+struct VariableDecl;
 struct GenericParam;
 struct Port;
 
-/// Variant type for all declarations
-using Declaration = std::variant<ConstantDecl, SignalDecl, GenericParam, Port>;
+/// @brief Variant type for all declarations.
+using Declaration = std::variant<ConstantDecl, SignalDecl, VariableDecl, GenericParam, Port>;
 
-// Constant declaration: constant WIDTH : integer := 8;
+/// @brief Represents a VHDL constant declaration.
+///
+/// Example: `constant WIDTH : integer := 8;`
 struct ConstantDecl : NodeBase
 {
-    std::vector<std::string> names;
-    std::string type_name;
-    std::optional<Expr> init_expr;
+    std::vector<std::string> names; ///< List of constant identifiers.
+    std::string type_name;          ///< Type of the constant.
+    std::optional<Expr> init_expr;  ///< Optional initialization expression.
 };
 
-// Signal declaration: signal v : std_logic_vector(7 downto 0) := (others => '0');
+/// @brief Represents a VHDL signal declaration.
+///
+/// Example: `signal v : std_logic_vector(7 downto 0) := (others => '0');`
 struct SignalDecl : NodeBase
 {
-    std::vector<std::string> names;
-    std::string type_name;
-    bool has_bus_kw{ false };
-    std::optional<Constraint> constraint;
-    std::optional<Expr> init_expr;
+    std::vector<std::string> names;       ///< List of signal identifiers.
+    std::string type_name;                ///< Type of the signal.
+    std::optional<Constraint> constraint; ///< Optional type constraint (e.g., range).
+    std::optional<Expr> init_expr;        ///< Optional initialization expression.
+    bool has_bus_kw{ false };             ///< Whether the BUS keyword is present.
 };
 
-// Generic parameter inside GENERIC clause
+/// @brief Represents a VHDL variable declaration.
+///
+/// Example: `variable v : integer := 0;`
+struct VariableDecl : NodeBase
+{
+    std::vector<std::string> names;       ///< List of variable identifiers.
+    std::string type_name;                ///< Type of the variable.
+    std::optional<Constraint> constraint; ///< Optional type constraint.
+    std::optional<Expr> init_expr;        ///< Optional initialization expression.
+    bool shared{ false };                 ///< Whether the SHARED keyword is present.
+};
+
+/// @brief Represents a generic parameter inside a GENERIC clause.
+///
+/// Example: `generic (WIDTH : integer := 8);`
 struct GenericParam : NodeBase
 {
-    std::vector<std::string> names;
-    std::string type_name;
-    std::optional<Expr> default_expr;
-    bool is_last{};
+    std::vector<std::string> names;   ///< List of generic parameter identifiers.
+    std::string type_name;            ///< Type of the generic parameter.
+    std::optional<Expr> default_expr; ///< Optional default value expression.
 };
 
-// Port entry inside PORT clause
+/// @brief Represents a port entry inside a PORT clause.
+///
+/// Example: `port (clk : in std_logic);`
 struct Port : NodeBase
 {
-    std::vector<std::string> names;
-    std::string mode; // "in" / "out"
-    std::string type_name;
-    std::optional<Expr> default_expr;
-    std::optional<Constraint> constraint;
-    bool is_last{};
+    std::vector<std::string> names;       ///< List of port identifiers.
+    std::string mode;                     ///< Port mode: "in", "out", "inout", or "buffer".
+    std::string type_name;                ///< Type of the port.
+    std::optional<Expr> default_expr;     ///< Optional default value expression.
+    std::optional<Constraint> constraint; ///< Optional type constraint.
 };
 
 } // namespace ast

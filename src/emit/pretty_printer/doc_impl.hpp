@@ -144,6 +144,24 @@ struct Nest
     }
 };
 
+/// Set indentation level to the current column
+struct Hang
+{
+    DocPtr doc;
+
+    template<typename Fn>
+    auto fmap(Fn &&fn) const -> Hang
+    {
+        return { std::forward<Fn>(fn)(doc) };
+    }
+
+    template<typename T, typename Fn>
+    auto fold(T init, Fn &&fn) const -> T
+    {
+        return std::forward<Fn>(fn)(std::move(init), doc);
+    }
+};
+
 /// Choice between flat and broken layout
 struct Union
 {
@@ -201,10 +219,38 @@ struct Align
     }
 };
 
+struct InlineComment
+{
+    std::string content;
+
+    template<typename Fn>
+    auto fmap(Fn && /* fn */) const -> InlineComment
+    {
+        return { content };
+    }
+
+    template<typename T, typename Fn>
+    auto fold(T init, Fn && /* fn */) const -> T
+    {
+        return init;
+    }
+};
+
 /// Internal document representation using variant
 struct DocImpl
 {
-    std::variant<Empty, Text, SoftLine, HardLine, HardLines, Concat, Nest, Union, AlignText, Align>
+    std::variant<Empty,
+                 Text,
+                 SoftLine,
+                 HardLine,
+                 HardLines,
+                 Concat,
+                 Nest,
+                 Hang,
+                 Union,
+                 AlignText,
+                 Align,
+                 InlineComment>
       value;
 };
 
@@ -248,9 +294,11 @@ auto makeHardLine() -> DocPtr;
 auto makeHardLines(unsigned count) -> DocPtr;
 auto makeConcat(DocPtr left, DocPtr right) -> DocPtr;
 auto makeNest(DocPtr doc) -> DocPtr;
+auto makeHang(DocPtr doc) -> DocPtr;
 auto makeUnion(DocPtr flat, DocPtr broken) -> DocPtr;
 auto makeAlignText(std::string_view text, int level) -> DocPtr;
 auto makeAlign(DocPtr doc) -> DocPtr;
+auto makeInlineComment(std::string_view text) -> DocPtr;
 
 // Utility functions
 auto flatten(const DocPtr &doc) -> DocPtr;

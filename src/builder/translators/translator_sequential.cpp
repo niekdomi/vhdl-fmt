@@ -3,6 +3,8 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
+#include <optional>
+#include <utility>
 #include <vector>
 
 namespace builder {
@@ -23,29 +25,26 @@ auto Translator::makeTarget(vhdlParser::TargetContext *ctx) -> ast::Expr
     return token;
 }
 
-auto Translator::makeSequentialAssign(vhdlParser::Signal_assignment_statementContext *ctx)
-  -> ast::SequentialAssign
+auto Translator::makeSignalAssign(vhdlParser::Signal_assignment_statementContext *ctx)
+  -> ast::SignalAssign
 {
-    auto assign = make<ast::SequentialAssign>(ctx);
+    auto assign = make<ast::SignalAssign>(ctx);
 
     if (auto *target_ctx = ctx->target()) {
         assign.target = makeTarget(target_ctx);
     }
 
     if (auto *wave = ctx->waveform()) {
-        auto wave_elems = wave->waveform_element();
-        if (!wave_elems.empty() && !wave_elems[0]->expression().empty()) {
-            assign.value = makeExpr(wave_elems[0]->expression(0));
-        }
+        assign.waveform = makeWaveform(wave);
     }
 
     return assign;
 }
 
 auto Translator::makeVariableAssign(vhdlParser::Variable_assignment_statementContext *ctx)
-  -> ast::SequentialAssign
+  -> ast::VariableAssign
 {
-    auto assign = make<ast::SequentialAssign>(ctx);
+    auto assign = make<ast::VariableAssign>(ctx);
 
     if (auto *target_ctx = ctx->target()) {
         assign.target = makeTarget(target_ctx);
@@ -59,11 +58,11 @@ auto Translator::makeVariableAssign(vhdlParser::Variable_assignment_statementCon
 }
 
 auto Translator::makeSequentialStatement(vhdlParser::Sequential_statementContext *ctx)
-  -> ast::SequentialStatement
+  -> std::optional<ast::SequentialStatement>
 {
     // Dispatch based on concrete statement type
     if (auto *signal_assign = ctx->signal_assignment_statement()) {
-        return makeSequentialAssign(signal_assign);
+        return makeSignalAssign(signal_assign);
     }
     if (auto *var_assign = ctx->variable_assignment_statement()) {
         return makeVariableAssign(var_assign);
@@ -89,8 +88,8 @@ auto Translator::makeSequentialStatement(vhdlParser::Sequential_statementContext
     // TODO(someone): Add support for wait_statement, assertion_statement,
     // report_statement, next_statement, exit_statement, return_statement, etc.
 
-    // Fallback: return empty assignment as placeholder
-    return ast::SequentialAssign{};
+    // Fallback: return nullopt
+    return std::nullopt;
 }
 
 auto Translator::makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext *ctx)
@@ -99,7 +98,9 @@ auto Translator::makeSequenceOfStatements(vhdlParser::Sequence_of_statementsCont
     std::vector<ast::SequentialStatement> statements;
 
     for (auto *stmt : ctx->sequential_statement()) {
-        statements.emplace_back(makeSequentialStatement(stmt));
+        if (auto result = makeSequentialStatement(stmt)) {
+            statements.emplace_back(std::move(*result));
+        }
     }
 
     return statements;
