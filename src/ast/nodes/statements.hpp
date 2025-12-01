@@ -23,122 +23,144 @@ struct Process;
 struct ForLoop;
 struct WhileLoop;
 
-/// Variant type for concurrent statements (outside processes)
+/// @brief Variant type for concurrent statements (outside processes).
 using ConcurrentStatement
   = std::variant<ConditionalConcurrentAssign, SelectedConcurrentAssign, Process>;
 
-/// Variant type for sequential statements (inside processes)
+/// @brief Variant type for sequential statements (inside processes).
 using SequentialStatement
   = std::variant<VariableAssign, SignalAssign, IfStatement, CaseStatement, ForLoop, WhileLoop>;
 
 /// @brief Represents the right-hand side of a signal assignment.
-/// Matches grammar: waveform_element (COMMA waveform_element)* | UNAFFECTED
+///
+/// Example: `'1'`, `'0' after 10 ns`, `UNAFFECTED`
 struct Waveform : NodeBase
 {
-    bool is_unaffected{ false };
+    bool is_unaffected{ false }; ///< True if waveform is UNAFFECTED keyword.
 
+    /// @brief Represents a single waveform element.
     struct Element
     {
-        Expr value;
-        std::optional<Expr> after; // Captures the delay time if it exists
+        Expr value;                ///< Value expression to assign.
+        std::optional<Expr> after; ///< Optional delay time (AFTER clause).
     };
-    std::vector<Element> elements;
+    std::vector<Element> elements; ///< List of waveform elements.
 };
 
-// Matches 'conditional_signal_assignment' rule
-// target <= val WHEN cond ELSE val;
+/// @brief Represents a conditional concurrent signal assignment.
+///
+/// Example: `target <= val WHEN cond ELSE val;`
 struct ConditionalConcurrentAssign : NodeBase
 {
-    Expr target;
+    Expr target; ///< Target signal of the assignment.
 
+    /// @brief Represents a waveform with an optional condition.
     struct ConditionalWaveform
     {
-        Waveform waveform;
-        std::optional<Expr> condition;
+        Waveform waveform;             ///< The waveform to assign.
+        std::optional<Expr> condition; ///< Optional WHEN condition (none for final ELSE).
     };
-    std::vector<ConditionalWaveform> waveforms;
+    std::vector<ConditionalWaveform> waveforms; ///< List of conditional waveforms.
 };
 
-// Matches 'selected_signal_assignment' rule
-// WITH sel SELECT target <= val WHEN choice;
+/// @brief Represents a selected concurrent signal assignment.
+///
+/// Example: `WITH sel SELECT target <= val WHEN choice;`
 struct SelectedConcurrentAssign : NodeBase
 {
-    Expr target;
-    Expr selector;
+    Expr target;   ///< Target signal of the assignment.
+    Expr selector; ///< Selector expression in WITH clause.
 
+    /// @brief Represents a selection branch with choices.
     struct Selection
     {
-        Waveform waveform;
-        std::vector<Expr> choices;
+        Waveform waveform;         ///< The waveform to assign for this selection.
+        std::vector<Expr> choices; ///< List of choices (WHEN alternatives).
     };
-    std::vector<Selection> selections;
+    std::vector<Selection> selections; ///< List of selection branches.
 };
 
-/// @brief Variable Assignment: target := expr;
+/// @brief Represents a variable assignment statement.
+///
+/// Example: `target := expr;`
 struct VariableAssign : NodeBase
 {
-    Expr target;
-    Expr value;
+    Expr target; ///< Target variable of the assignment.
+    Expr value;  ///< Value expression to assign.
 };
 
-/// @brief Signal Assignment: target <= expr;
+/// @brief Represents a signal assignment statement.
+///
+/// Example: `target <= expr;`
 struct SignalAssign : NodeBase
 {
-    Expr target;
-    Waveform waveform;
+    Expr target;      ///< Target signal of the assignment.
+    Waveform waveform; ///< Waveform to assign.
 };
 
-/// @brief If statement with optional elsif and else branches
+/// @brief Represents an IF statement with optional ELSIF and ELSE branches.
+///
+/// Example: `if cond then stmts; elsif cond then stmts; else stmts; end if;`
 struct IfStatement : NodeBase
 {
+    /// @brief Represents a branch (if, elsif, or else).
     struct Branch
     {
-        std::optional<NodeTrivia> trivia;
-        Expr condition; // Empty for else branch
-        std::vector<SequentialStatement> body;
+        std::optional<NodeTrivia> trivia;    ///< Leading trivia (comments, whitespace).
+        Expr condition;                      ///< Branch condition (empty for else branch).
+        std::vector<SequentialStatement> body; ///< Statements in the branch.
     };
 
-    Branch if_branch;                   // The initial if
-    std::vector<Branch> elsif_branches; // elsif clauses
-    std::optional<Branch> else_branch;  // Optional else
+    Branch if_branch;                   ///< The initial IF branch.
+    std::vector<Branch> elsif_branches; ///< ELSIF branches.
+    std::optional<Branch> else_branch;  ///< Optional ELSE branch.
 };
 
-/// @brief Case statement with when clauses
+/// @brief Represents a CASE statement with WHEN clauses.
+///
+/// Example: `case sel is when "00" => stmts; when others => stmts; end case;`
 struct CaseStatement : NodeBase
 {
+    /// @brief Represents a WHEN clause in a CASE statement.
     struct WhenClause
     {
-        std::optional<NodeTrivia> trivia;
-        std::vector<Expr> choices;
-        std::vector<SequentialStatement> body;
+        std::optional<NodeTrivia> trivia;    ///< Leading trivia (comments, whitespace).
+        std::vector<Expr> choices;           ///< Choice expressions (alternatives).
+        std::vector<SequentialStatement> body; ///< Statements for this clause.
     };
 
-    Expr selector;
-    std::vector<WhenClause> when_clauses;
+    Expr selector;                       ///< Selector expression.
+    std::vector<WhenClause> when_clauses; ///< List of WHEN clauses.
 };
 
-/// @brief Process statement
+/// @brief Represents a VHDL process statement.
+///
+/// Example: `process (clk) begin stmts; end process;`
 struct Process : NodeBase
 {
-    std::optional<std::string> label;
-    std::vector<std::string> sensitivity_list;
-    std::vector<Declaration> decls;
-    std::vector<SequentialStatement> body;
+    std::optional<std::string> label;       ///< Optional process label.
+    std::vector<std::string> sensitivity_list; ///< List of sensitivity signals.
+    std::vector<Declaration> decls;         ///< Process declarative items.
+    std::vector<SequentialStatement> body;  ///< Sequential statements in process.
 };
 
-/// @brief For loop
+/// @brief Represents a FOR loop statement.
+///
+/// Example: `for i in 0 to 7 loop stmts; end loop;`
 struct ForLoop : NodeBase
 {
-    std::string iterator;
-    Expr range;
-    std::vector<SequentialStatement> body;
+    std::string iterator;                  ///< Loop iterator identifier.
+    Expr range;                            ///< Loop range expression.
+    std::vector<SequentialStatement> body; ///< Loop body statements.
 };
 
-/// @brief While loop
+/// @brief Represents a WHILE loop statement.
+///
+/// Example: `while cond loop stmts; end loop;`
 struct WhileLoop : NodeBase
 {
-    Expr condition;
-    std::vector<SequentialStatement> body;
+    Expr condition;                        ///< Loop condition expression.
+    std::vector<SequentialStatement> body; ///< Loop body statements.
 };
 
 } // namespace ast
