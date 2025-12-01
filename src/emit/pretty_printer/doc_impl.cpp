@@ -111,6 +111,11 @@ auto makeAlign(DocPtr doc) -> DocPtr
     return std::make_shared<DocImpl>(Align{ .doc = std::move(doc) });
 }
 
+auto makeInlineComment(std::string_view text) -> DocPtr
+{
+    return std::make_shared<DocImpl>(InlineComment{ std::string(text) });
+}
+
 // Utility functions
 auto flatten(const DocPtr &doc) -> DocPtr
 {

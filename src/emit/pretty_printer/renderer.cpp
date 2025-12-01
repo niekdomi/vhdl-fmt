@@ -24,6 +24,9 @@ auto Renderer::render(const DocPtr &doc) -> std::string
 
     renderDoc(0, Mode::BREAK, doc);
 
+    // Flush any remaining comments at the end
+    flushComments();
+
     return std::move(output_);
 }
 
@@ -84,6 +87,9 @@ void Renderer::renderDoc(int indent, Mode mode, const DocPtr &doc)
 
         // AlignText (base case for alignment, renders as text)
         [&](const AlignText &node) -> void { write(node.content); },
+
+        // InlineComment (stores comment for later flushing)
+        [&](const InlineComment &node) -> void { pending_comments_.emplace_back(node.content); },
 
         // Union (decision point)
         [&](const Union &node) -> void {
@@ -152,6 +158,7 @@ auto Renderer::fitsImpl(int width, const DocPtr &doc) -> int
         // All others (HardLine, HardLines) do not fit
         [](const HardLine &) -> int { return -1; },
         [](const HardLines &) -> int { return -1; },
+        [](const InlineComment &) -> int { return -1; },
     };
 
     return std::visit(fits_visitor, doc->value);
@@ -166,9 +173,23 @@ void Renderer::write(std::string_view text)
 
 void Renderer::newline(int indent)
 {
+    flushComments();
+
     output_ += '\n';
     output_.append(indent, ' ');
     column_ = indent;
+}
+
+void Renderer::flushComments()
+{
+    if (pending_comments_.empty()) {
+        return;
+    }
+
+    for (const auto &comment : pending_comments_) {
+        output_ += comment;
+    }
+    pending_comments_.clear();
 }
 
 } // namespace emit

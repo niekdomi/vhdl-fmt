@@ -51,7 +51,6 @@ auto joinMap(Range &&items, const Doc &sep, const bool with_trailing) -> Doc
     return result;
 }
 
-
 /// @brief Helper to create a lambda that visits AST nodes using the given visitor.
 /// @param visitor The PrettyPrinter visitor instance.
 /// @return A lambda that takes an AST node and returns its Doc representation.

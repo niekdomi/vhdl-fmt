@@ -91,7 +91,7 @@ auto PrettyPrinter::withTrivia(const ast::NodeBase &node, Doc core, const bool s
 
     // 3. Inline Comment
     if (auto comment = node.getInlineComment()) {
-        result += Doc::text(" ") + Doc::text(*comment) + Doc::hardlines(0);
+        result += Doc::inlineComment(std::string{ " " }.append(*comment));
     }
 
     // 4. Trailing Trivia
