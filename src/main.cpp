@@ -37,7 +37,7 @@ auto main(int argc, char *argv[]) -> int
         const std::string formatted_code = doc.render(config);
 
         // 4. Verify Safety
-        auto ctx_fmt = builder::createContext(std::string_view{ formatted_code });
+        const auto ctx_fmt = builder::createContext(std::string_view{ formatted_code });
 
         const auto result = builder::verify::ensureSafety(*ctx_orig.tokens, *ctx_fmt.tokens);
 
@@ -45,6 +45,7 @@ auto main(int argc, char *argv[]) -> int
             logger.critical("Formatter corrupted the code semantics.");
             logger.critical("{}", result.error().message);
             logger.info("Aborting write to prevent data loss.");
+
             return EXIT_FAILURE;
         }
 

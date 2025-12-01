@@ -17,7 +17,7 @@ namespace builder::verify {
 namespace detail {
 
 // Semantic check: Is this token meaningful for comparison?
-constexpr auto IS_SEMANTIC = [](antlr4::Token *t) -> bool {
+constexpr auto IS_SEMANTIC = [](const antlr4::Token *t) -> bool {
     return t
         != nullptr
         && t->getChannel()
@@ -27,7 +27,7 @@ constexpr auto IS_SEMANTIC = [](antlr4::Token *t) -> bool {
 };
 
 // Case-insensitive string comparison predicate
-constexpr auto IEQUALS = [](const std::string &a, const std::string &b) -> bool {
+constexpr auto EQUALS = [](const std::string &a, const std::string &b) -> bool {
     return std::ranges::equal(a, b, [](unsigned char c1, unsigned char c2) -> bool {
         return std::tolower(c1) == std::tolower(c2);
     });
@@ -61,7 +61,7 @@ inline auto ensureSafety(antlr4::CommonTokenStream &original, antlr4::CommonToke
 
     // Predicate: Do these two tokens match?
     auto token_match = [](antlr4::Token *t1, antlr4::Token *t2) -> bool {
-        return t1->getType() == t2->getType() && detail::IEQUALS(t1->getText(), t2->getText());
+        return t1->getType() == t2->getType() && detail::EQUALS(t1->getText(), t2->getText());
     };
 
     // Find the first point of divergence
