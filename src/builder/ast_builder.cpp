@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <exception>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <memory>
 #include <stdexcept>
@@ -50,8 +51,8 @@ class ThrowingErrorListener : public antlr4::BaseErrorListener
   public:
     void syntaxError(antlr4::Recognizer * /*recognizer*/,
                      antlr4::Token * /*offendingSymbol*/,
-                     size_t line,
-                     size_t char_position_in_line,
+                     const size_t line,
+                     const size_t char_position_in_line,
                      const std::string &msg,
                      std::exception_ptr /*e*/) override
     {
@@ -72,7 +73,7 @@ auto createContext(const std::filesystem::path &path) -> Context
 {
     std::ifstream file(path);
     if (!file) {
-        throw std::runtime_error("Failed to open input file: " + path.string());
+        throw std::runtime_error(std::format("Failed to open input file: {}", path.string()));
     }
 
     Context ctx{};
@@ -93,7 +94,7 @@ auto build(Context &ctx) -> ast::DesignFile
 {
     auto *interpreter = ctx.parser->getInterpreter<antlr4::atn::ParserATNSimulator>();
 
-    // 1. Try SLL (Fast Mode)
+    // 1. Try SLL
     interpreter->setPredictionMode(antlr4::atn::PredictionMode::SLL);
     ctx.parser->setErrorHandler(std::make_shared<antlr4::BailErrorStrategy>());
     ctx.parser->removeErrorListeners();
@@ -106,7 +107,7 @@ auto build(Context &ctx) -> ast::DesignFile
         common::Logger::instance().trace(
           "SLL parsing failed (ambiguity). Falling back to LL mode.");
 
-        // 2. Fallback to LL (Strong Mode)
+        // 2. Fallback to LL
         (*ctx.tokens).reset();
         (*ctx.parser).reset();
 
@@ -129,6 +130,7 @@ auto build(Context &ctx) -> ast::DesignFile
     ast::DesignFile root{};
     Translator translator(*ctx.tokens);
     translator.buildDesignFile(root, tree);
+
     return root;
 }
 

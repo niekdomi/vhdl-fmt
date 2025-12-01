@@ -42,9 +42,7 @@ auto Translator::makeEntity(vhdlParser::Entity_declarationContext *ctx) -> ast::
     entity.name = ctx->identifier(0)->getText();
 
     // Check for 'entity' keyword in END statement
-    if (ctx->ENTITY().size() > 1) {
-        entity.has_end_entity_keyword = true;
-    }
+    entity.has_end_entity_keyword = (ctx->ENTITY().size() > 1);
 
     // Optional end label (ENTITY ... END ENTITY <id>)
     if (ctx->identifier().size() > 1) {
@@ -71,42 +69,58 @@ auto Translator::makeArchitecture(vhdlParser::Architecture_bodyContext *ctx) -> 
     arch.entity_name = ctx->identifier(1)->getText();
 
     // Check for 'architecture' keyword in END statement
-    if (ctx->ARCHITECTURE().size() > 1) {
-        arch.has_end_architecture_keyword = true;
-    }
+    arch.has_end_architecture_keyword = (ctx->ARCHITECTURE().size() > 1);
 
     // Optional end label (ARCHITECTURE ... END ARCHITECTURE <id>)
     if (ctx->identifier().size() > 2) {
         arch.end_label = ctx->identifier(2)->getText();
     }
 
-    // Walk declarative part and collect declarations directly
     if (auto *decl_part = ctx->architecture_declarative_part()) {
-        for (auto *item : decl_part->block_declarative_item()) {
-            if (auto *const_ctx = item->constant_declaration()) {
-                arch.decls.emplace_back(makeConstantDecl(const_ctx));
-            } else if (auto *sig_ctx = item->signal_declaration()) {
-                arch.decls.emplace_back(makeSignalDecl(sig_ctx));
-            }
-            // TODO(someone): Add more declaration types as needed (variables, types, subprograms,
-            // etc.)
-        }
+        arch.decls = makeArchitectureDeclarativePart(decl_part);
     }
 
-    // Walk statement part and collect concurrent statements
     if (auto *stmt_part = ctx->architecture_statement_part()) {
-        for (auto *stmt : stmt_part->architecture_statement()) {
-            if (auto *proc = stmt->process_statement()) {
-                arch.stmts.emplace_back(makeProcess(proc));
-            } else if (auto *sig_assign = stmt->concurrent_signal_assignment_statement()) {
-                arch.stmts.emplace_back(makeConcurrentAssign(sig_assign));
-            }
-            // TODO(someone): Add more concurrent statement types (component instantiation,
-            // generate, etc.)
-        }
+        arch.stmts = makeArchitectureStatementPart(stmt_part);
     }
 
     return arch;
+}
+
+auto Translator::makeArchitectureDeclarativePart(
+  vhdlParser::Architecture_declarative_partContext *ctx) -> std::vector<ast::Declaration>
+{
+    std::vector<ast::Declaration> decls;
+
+    for (auto *item : ctx->block_declarative_item()) {
+        if (auto *const_ctx = item->constant_declaration()) {
+            decls.emplace_back(makeConstantDecl(const_ctx));
+        } else if (auto *sig_ctx = item->signal_declaration()) {
+            decls.emplace_back(makeSignalDecl(sig_ctx));
+        }
+        // TODO(someone): Add more declaration types as needed (variables, types, subprograms,
+        // etc.)
+    }
+
+    return decls;
+}
+
+auto Translator::makeArchitectureStatementPart(vhdlParser::Architecture_statement_partContext *ctx)
+  -> std::vector<ast::ConcurrentStatement>
+{
+    std::vector<ast::ConcurrentStatement> stmts;
+
+    for (auto *stmt : ctx->architecture_statement()) {
+        if (auto *proc = stmt->process_statement()) {
+            stmts.emplace_back(makeProcess(proc));
+        } else if (auto *sig_assign = stmt->concurrent_signal_assignment_statement()) {
+            stmts.emplace_back(makeConcurrentAssign(sig_assign));
+        }
+        // TODO(someone): Add more concurrent statement types (component instantiation,
+        // generate, etc.)
+    }
+
+    return stmts;
 }
 
 } // namespace builder

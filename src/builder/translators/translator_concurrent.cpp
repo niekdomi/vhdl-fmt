@@ -106,7 +106,7 @@ auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContex
         const auto waves = sel_waves->waveform();
         const auto choices = sel_waves->choices();
 
-        for (size_t i = 0; i < waves.size(); ++i) {
+        for (const auto i : std::views::iota(std::size_t{ 0 }, waves.size())) {
             ast::SelectedConcurrentAssign::Selection selection{};
 
             // Value
@@ -130,15 +130,46 @@ auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContex
     return assign;
 }
 
+auto Translator::makeProcessDeclarativePart(vhdlParser::Process_declarative_partContext *ctx)
+  -> std::vector<ast::Declaration>
+{
+    std::vector<ast::Declaration> decls;
+
+    for (auto *item : ctx->process_declarative_item()) {
+        if (auto *var_ctx = item->variable_declaration()) {
+            decls.emplace_back(makeVariableDecl(var_ctx));
+        } else if (auto *const_ctx = item->constant_declaration()) {
+            decls.emplace_back(makeConstantDecl(const_ctx));
+        }
+        // TODO(vedivad): Add Types, Files, Aliases here
+    }
+
+    return decls;
+}
+
+auto Translator::makeProcessStatementPart(vhdlParser::Process_statement_partContext *ctx)
+  -> std::vector<ast::SequentialStatement>
+{
+    std::vector<ast::SequentialStatement> stmts;
+    const auto &source_stmts = ctx->sequential_statement();
+    stmts.reserve(source_stmts.size());
+
+    for (auto *stmt_ctx : source_stmts) {
+        if (auto stmt = makeSequentialStatement(stmt_ctx)) {
+            stmts.emplace_back(std::move(*stmt));
+        }
+    }
+
+    return stmts;
+}
+
 auto Translator::makeProcess(vhdlParser::Process_statementContext *ctx) -> ast::Process
 {
     auto proc = make<ast::Process>(ctx);
 
     // Extract label if present
-    if (auto *label = ctx->label_colon()) {
-        if (auto *id = label->identifier()) {
-            proc.label = id->getText();
-        }
+    if (auto *label = ctx->label_colon(); label != nullptr && label->identifier() != nullptr) {
+        proc.label = label->identifier()->getText();
     }
 
     // Extract sensitivity list
@@ -148,28 +179,12 @@ auto Translator::makeProcess(vhdlParser::Process_statementContext *ctx) -> ast::
                               | std::ranges::to<std::vector>();
     }
 
-    // Declarations
     if (auto *decl_part = ctx->process_declarative_part()) {
-        for (auto *item : decl_part->process_declarative_item()) {
-            if (auto *var_ctx = item->variable_declaration()) {
-                proc.decls.emplace_back(makeVariableDecl(var_ctx));
-            } else if (auto *const_ctx = item->constant_declaration()) {
-                proc.decls.emplace_back(makeConstantDecl(const_ctx));
-            }
-            // TODO(vedivad): Add Types, Files, Aliases here
-        }
+        proc.decls = makeProcessDeclarativePart(decl_part);
     }
 
-    // Sequential statements
     if (auto *stmt_part = ctx->process_statement_part()) {
-        const auto &source_stmts = stmt_part->sequential_statement();
-        proc.body.reserve(source_stmts.size());
-
-        for (auto *stmt_ctx : source_stmts) {
-            if (auto stmt = makeSequentialStatement(stmt_ctx)) {
-                proc.body.emplace_back(std::move(*stmt));
-            }
-        }
+        proc.body = makeProcessStatementPart(stmt_part);
     }
 
     return proc;

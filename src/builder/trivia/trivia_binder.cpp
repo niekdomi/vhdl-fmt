@@ -60,7 +60,7 @@ auto TriviaBinder::findContextEnd(const antlr4::ParserRuleContext *ctx) const ->
         return stop;
     }
 
-    if (tokens_.get(next)->getText() == ";" || tokens_.get(next)->getText() == ",") {
+    if (const auto tok = tokens_.get(next)->getText(); tok == ";" || tok == ",") {
         return next;
     }
 

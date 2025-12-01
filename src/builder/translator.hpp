@@ -42,6 +42,12 @@ class Translator final
     auto makeEntity(vhdlParser::Entity_declarationContext *ctx) -> ast::Entity;
     [[nodiscard]]
     auto makeArchitecture(vhdlParser::Architecture_bodyContext *ctx) -> ast::Architecture;
+    [[nodiscard]]
+    auto makeArchitectureDeclarativePart(vhdlParser::Architecture_declarative_partContext *ctx)
+      -> std::vector<ast::Declaration>;
+    [[nodiscard]]
+    auto makeArchitectureStatementPart(vhdlParser::Architecture_statement_partContext *ctx)
+      -> std::vector<ast::ConcurrentStatement>;
 
     // Clauses - return by value
     [[nodiscard]]
@@ -88,6 +94,12 @@ class Translator final
     [[nodiscard]]
     auto makeProcess(vhdlParser::Process_statementContext *ctx) -> ast::Process;
     [[nodiscard]]
+    auto makeProcessDeclarativePart(vhdlParser::Process_declarative_partContext *ctx)
+      -> std::vector<ast::Declaration>;
+    [[nodiscard]]
+    auto makeProcessStatementPart(vhdlParser::Process_statement_partContext *ctx)
+      -> std::vector<ast::SequentialStatement>;
+    [[nodiscard]]
     auto makeForLoop(vhdlParser::Loop_statementContext *ctx) -> ast::ForLoop;
     [[nodiscard]]
     auto makeWhileLoop(vhdlParser::Loop_statementContext *ctx) -> ast::WhileLoop;
@@ -113,6 +125,8 @@ class Translator final
     auto makeFactor(vhdlParser::FactorContext *ctx) -> ast::Expr;
     [[nodiscard]]
     auto makePrimary(vhdlParser::PrimaryContext *ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeLiteral(vhdlParser::LiteralContext *ctx) -> ast::Expr;
     [[nodiscard]]
     auto makeShiftExpr(vhdlParser::Shift_expressionContext *ctx) -> ast::Expr;
     [[nodiscard]]
