@@ -10,7 +10,7 @@ TEST_CASE("Trivia Rendering", "[pretty_printer][trivia]")
 {
     SECTION("Standard Nodes (Declarations)")
     {
-        ast::GenericParam param{ .names = { "WIDTH" }, .type_name = "integer", .is_last = true };
+        ast::GenericParam param{ .names = { "WIDTH" }, .type_name = "integer" };
 
         SECTION("No Trivia")
         {

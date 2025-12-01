@@ -56,8 +56,8 @@ TEST_CASE("DesignFile Rendering", "[pretty_printer][design_file]")
         {
             // 1. Entity
             ast::Entity entity{ .name = "counter" };
-            entity.port_clause.ports.emplace_back(ast::Port{
-              .names = { "clk" }, .mode = "in", .type_name = "std_logic", .is_last = true });
+            entity.port_clause.ports.emplace_back(
+              ast::Port{ .names = { "clk" }, .mode = "in", .type_name = "std_logic" });
             entity.end_label = "counter";
             entity.has_end_entity_keyword = true;
 

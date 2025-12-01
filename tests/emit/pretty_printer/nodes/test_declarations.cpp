@@ -11,7 +11,6 @@ TEST_CASE("GenericParam Rendering", "[pretty_printer][declarations]")
 {
     ast::GenericParam param;
     // Default common settings
-    param.is_last = true;
     param.type_name = "integer";
 
     SECTION("Basic Declarations")
@@ -53,7 +52,6 @@ TEST_CASE("Port Rendering", "[pretty_printer][declarations]")
 {
     ast::Port port;
     // Default common settings
-    port.is_last = true;
     port.mode = "in";
     port.type_name = "std_logic";
 

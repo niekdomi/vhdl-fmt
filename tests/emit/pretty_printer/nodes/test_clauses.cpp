@@ -26,8 +26,7 @@ TEST_CASE("GenericClause Rendering", "[pretty_printer][clauses][generic]")
             clause.generics.emplace_back(
               ast::GenericParam{ .names = { "WIDTH" },
                                  .type_name = "integer",
-                                 .default_expr = ast::TokenExpr{ .text = "8" },
-                                 .is_last = true });
+                                 .default_expr = ast::TokenExpr{ .text = "8" } });
 
             const auto result = emit::test::render(clause);
             REQUIRE(result == "generic ( WIDTH : integer := 8 );");
@@ -39,14 +38,12 @@ TEST_CASE("GenericClause Rendering", "[pretty_printer][clauses][generic]")
             clause.generics.emplace_back(
               ast::GenericParam{ .names = { "WIDTH" },
                                  .type_name = "positive",
-                                 .default_expr = ast::TokenExpr{ .text = "8" },
-                                 .is_last = false });
+                                 .default_expr = ast::TokenExpr{ .text = "8" } });
 
             clause.generics.emplace_back(
               ast::GenericParam{ .names = { "HEIGHT" },
                                  .type_name = "positive",
-                                 .default_expr = ast::TokenExpr{ .text = "16" },
-                                 .is_last = true });
+                                 .default_expr = ast::TokenExpr{ .text = "16" } });
 
             const auto result = emit::test::render(clause);
             REQUIRE(result == "generic ( WIDTH : positive := 8; HEIGHT : positive := 16 );");
@@ -68,8 +65,8 @@ TEST_CASE("PortClause Rendering", "[pretty_printer][clauses][port]")
     {
         SECTION("Single Port (Flat Layout)")
         {
-            clause.ports.emplace_back(ast::Port{
-              .names = { "clk" }, .mode = "in", .type_name = "std_logic", .is_last = true });
+            clause.ports.emplace_back(
+              ast::Port{ .names = { "clk" }, .mode = "in", .type_name = "std_logic" });
 
             const auto result = emit::test::render(clause);
             REQUIRE(result == "port ( clk : in std_logic );");
@@ -78,13 +75,12 @@ TEST_CASE("PortClause Rendering", "[pretty_printer][clauses][port]")
         SECTION("Multiple Ports (Vertical/Broken Layout)")
         {
             // 1. Simple Port
-            clause.ports.emplace_back(ast::Port{
-              .names = { "clk" }, .mode = "in", .type_name = "std_logic", .is_last = false });
+            clause.ports.emplace_back(
+              ast::Port{ .names = { "clk" }, .mode = "in", .type_name = "std_logic" });
 
             // 2. Simple Port
-            clause.ports.emplace_back(ast::Port{
-              .names = { "reset" }, .mode = "in", .type_name = "std_logic", .is_last = false });
-
+            clause.ports.emplace_back(
+              ast::Port{ .names = { "reset" }, .mode = "in", .type_name = "std_logic" });
             SECTION("With Complex Constraints")
             {
                 // Build constraint: (7 downto 0)
@@ -100,8 +96,7 @@ TEST_CASE("PortClause Rendering", "[pretty_printer][clauses][port]")
                   ast::Port{ .names = { "data_out" },
                              .mode = "out",
                              .type_name = "std_logic_vector",
-                             .constraint = ast::Constraint(std::move(idx_constraint)),
-                             .is_last = true });
+                             .constraint = ast::Constraint(std::move(idx_constraint)) });
 
                 const std::string result = emit::test::render(clause);
                 constexpr std::string_view EXPECTED
@@ -116,10 +111,8 @@ TEST_CASE("PortClause Rendering", "[pretty_printer][clauses][port]")
             SECTION("Without Constraints (Standard Vertical)")
             {
                 // 3. Simple Port
-                clause.ports.emplace_back(ast::Port{ .names = { "output_signal" },
-                                                     .mode = "out",
-                                                     .type_name = "std_logic_vector",
-                                                     .is_last = true });
+                clause.ports.emplace_back(ast::Port{
+                  .names = { "output_signal" }, .mode = "out", .type_name = "std_logic_vector" });
 
                 const auto result = emit::test::render(clause);
                 constexpr std::string_view EXPECTED = "port (\n"

@@ -56,7 +56,6 @@ struct GenericParam : NodeBase
     std::vector<std::string> names;
     std::string type_name;
     std::optional<Expr> default_expr;
-    bool is_last{};
 };
 
 // Port entry inside PORT clause
@@ -67,7 +66,6 @@ struct Port : NodeBase
     std::string type_name;
     std::optional<Expr> default_expr;
     std::optional<Constraint> constraint;
-    bool is_last{};
 };
 
 } // namespace ast

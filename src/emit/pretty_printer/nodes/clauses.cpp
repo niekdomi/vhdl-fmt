@@ -16,8 +16,11 @@ auto PrettyPrinter::operator()(const ast::GenericClause &node) const -> Doc
     const Doc opener = Doc::text("generic") & Doc::text("(");
     const Doc closer = Doc::text(");");
 
-    const Doc doc
-      = joinMap(node.generics, Doc::line(), [this](const auto &g) { return visit(g); }, false);
+    const Doc doc = joinMap(
+      node.generics,
+      Doc::text(";") + Doc::line(),
+      [this](const auto &g) { return visit(g); },
+      false);
 
     const Doc result = Doc::align(doc);
 
@@ -33,8 +36,8 @@ auto PrettyPrinter::operator()(const ast::PortClause &node) const -> Doc
     const Doc opener = Doc::text("port") & Doc::text("(");
     const Doc closer = Doc::text(");");
 
-    const Doc doc
-      = joinMap(node.ports, Doc::line(), [this](const auto &p) { return visit(p); }, false);
+    const Doc doc = joinMap(
+      node.ports, Doc::text(";") + Doc::line(), [this](const auto &p) { return visit(p); }, false);
 
     const Doc result = Doc::align(doc);
 

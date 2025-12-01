@@ -29,8 +29,7 @@ TEST_CASE("Entity Rendering", "[pretty_printer][design_units][entity]")
         {
             ast::GenericParam param{ .names = { "WIDTH" },
                                      .type_name = "positive",
-                                     .default_expr = ast::TokenExpr{ .text = "8" },
-                                     .is_last = true };
+                                     .default_expr = ast::TokenExpr{ .text = "8" } };
             entity.generic_clause.generics.emplace_back(std::move(param));
 
             const std::string result = emit::test::render(entity);
@@ -42,10 +41,10 @@ TEST_CASE("Entity Rendering", "[pretty_printer][design_units][entity]")
 
         SECTION("Ports Only")
         {
-            entity.port_clause.ports.emplace_back(ast::Port{
-              .names = { "clk" }, .mode = "in", .type_name = "std_logic", .is_last = false });
-            entity.port_clause.ports.emplace_back(ast::Port{
-              .names = { "count" }, .mode = "out", .type_name = "natural", .is_last = true });
+            entity.port_clause.ports.emplace_back(
+              ast::Port{ .names = { "clk" }, .mode = "in", .type_name = "std_logic" });
+            entity.port_clause.ports.emplace_back(
+              ast::Port{ .names = { "count" }, .mode = "out", .type_name = "natural" });
 
             const std::string result = emit::test::render(entity);
             constexpr std::string_view EXPECTED
@@ -61,8 +60,7 @@ TEST_CASE("Entity Rendering", "[pretty_printer][design_units][entity]")
             entity.generic_clause.generics.emplace_back(
               ast::GenericParam{ .names = { "DEPTH" },
                                  .type_name = "positive",
-                                 .default_expr = ast::TokenExpr{ .text = "16" },
-                                 .is_last = true });
+                                 .default_expr = ast::TokenExpr{ .text = "16" } });
 
             // Port Constraint Construction
             auto left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "7" });
@@ -76,8 +74,7 @@ TEST_CASE("Entity Rendering", "[pretty_printer][design_units][entity]")
               ast::Port{ .names = { "data_in" },
                          .mode = "in",
                          .type_name = "std_logic_vector",
-                         .constraint = ast::Constraint(std::move(idx_constraint)),
-                         .is_last = true });
+                         .constraint = ast::Constraint(std::move(idx_constraint)) });
 
             const std::string result = emit::test::render(entity);
             constexpr std::string_view EXPECTED
