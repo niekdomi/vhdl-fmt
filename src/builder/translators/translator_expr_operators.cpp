@@ -3,6 +3,7 @@
 #include "vhdlParser.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <ranges>
 #include <utility>
@@ -18,9 +19,9 @@ auto Translator::makeExpr(vhdlParser::ExpressionContext &ctx) -> ast::Expr
         return makeRelation(*relations[0]);
     }
 
-    return std::ranges::fold_left(std::views::iota(size_t{ 0 }, operators.size()),
+    return std::ranges::fold_left(std::views::iota(std::size_t{ 0 }, operators.size()),
                                   makeRelation(*relations[0]),
-                                  [&](ast::Expr acc, size_t i) -> ast::Expr {
+                                  [&](ast::Expr acc, std::size_t i) -> ast::Expr {
                                       return makeBinary(ctx,
                                                         operators[i]->getText(),
                                                         std::move(acc),
@@ -69,9 +70,9 @@ auto Translator::makeSimpleExpr(vhdlParser::Simple_expressionContext &ctx) -> as
     }
 
     return std::ranges::fold_left(
-      std::views::iota(size_t{ 0 }, operators.size()),
+      std::views::iota(std::size_t{ 0 }, operators.size()),
       std::move(init),
-      [&](ast::Expr acc, size_t i) -> ast::Expr {
+      [&](ast::Expr acc, std::size_t i) -> ast::Expr {
           return makeBinary(ctx, operators[i]->getText(), std::move(acc), makeTerm(*terms[i + 1]));
       });
 }
@@ -85,9 +86,9 @@ auto Translator::makeTerm(vhdlParser::TermContext &ctx) -> ast::Expr
         return makeToken(ctx, ctx.getText());
     }
 
-    return std::ranges::fold_left(std::views::iota(size_t{ 0 }, operators.size()),
+    return std::ranges::fold_left(std::views::iota(std::size_t{ 0 }, operators.size()),
                                   makeFactor(*factors[0]),
-                                  [&](ast::Expr acc, size_t i) -> ast::Expr {
+                                  [&](ast::Expr acc, std::size_t i) -> ast::Expr {
                                       return makeBinary(ctx,
                                                         operators[i]->getText(),
                                                         std::move(acc),

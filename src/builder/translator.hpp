@@ -171,7 +171,8 @@ class Translator final
 
     /// @brief Extract identifier names from an identifier_list context
     [[nodiscard]]
-    static auto makeIdentifierList(vhdlParser::Identifier_listContext &ctx) -> std::vector<std::string>;
+    static auto makeIdentifierList(vhdlParser::Identifier_listContext &ctx)
+      -> std::vector<std::string>;
 
     /// @brief Helper to create binary expressions
     template<typename Ctx>

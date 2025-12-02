@@ -177,7 +177,8 @@ auto Translator::makeVariableDecl(vhdlParser::Variable_declarationContext &ctx) 
     return decl;
 }
 
-auto Translator::makeIdentifierList(vhdlParser::Identifier_listContext &ctx) -> std::vector<std::string>
+auto Translator::makeIdentifierList(vhdlParser::Identifier_listContext &ctx)
+  -> std::vector<std::string>
 {
     return ctx.identifier()
          | std::views::transform([](auto *id) { return id->getText(); })
