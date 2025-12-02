@@ -4,6 +4,8 @@
 #include "vhdlParser.h"
 
 #include <ranges>
+#include <string>
+#include <vector>
 
 namespace builder {
 
@@ -55,9 +57,9 @@ auto Translator::makeGenericParam(vhdlParser::Interface_constant_declarationCont
 {
     auto param = make<ast::GenericParam>(ctx);
 
-    param.names = ctx.identifier_list()->identifier()
-                | std::views::transform([](auto *id) { return id->getText(); })
-                | std::ranges::to<std::vector>();
+    if (auto *list = ctx.identifier_list()) {
+        param.names = makeIdentifierList(*list);
+    }
 
     if (auto *stype = ctx.subtype_indication()) {
         param.type_name = stype->getText();
@@ -76,9 +78,9 @@ auto Translator::makeSignalPort(vhdlParser::Interface_port_declarationContext &c
 {
     auto port = make<ast::Port>(ctx);
 
-    port.names = ctx.identifier_list()->identifier()
-               | std::views::transform([](auto *id) { return id->getText(); })
-               | std::ranges::to<std::vector>();
+    if (auto *list = ctx.identifier_list()) {
+        port.names = makeIdentifierList(*list);
+    }
 
     if (auto *mode = ctx.signal_mode()) {
         port.mode = mode->getText();
@@ -103,9 +105,9 @@ auto Translator::makeConstantDecl(vhdlParser::Constant_declarationContext &ctx) 
 {
     auto decl = make<ast::ConstantDecl>(ctx);
 
-    decl.names = ctx.identifier_list()->identifier()
-               | std::views::transform([](auto *id) { return id->getText(); })
-               | std::ranges::to<std::vector>();
+    if (auto *list = ctx.identifier_list()) {
+        decl.names = makeIdentifierList(*list);
+    }
 
     if (auto *stype = ctx.subtype_indication()) {
         decl.type_name = stype->selected_name(0)->getText();
@@ -122,9 +124,9 @@ auto Translator::makeSignalDecl(vhdlParser::Signal_declarationContext &ctx) -> a
 {
     auto decl = make<ast::SignalDecl>(ctx);
 
-    decl.names = ctx.identifier_list()->identifier()
-               | std::views::transform([](auto *id) { return id->getText(); })
-               | std::ranges::to<std::vector>();
+    if (auto *list = ctx.identifier_list()) {
+        decl.names = makeIdentifierList(*list);
+    }
 
     if (auto *stype = ctx.subtype_indication()) {
         decl.type_name = stype->selected_name(0)->getText();
@@ -156,9 +158,9 @@ auto Translator::makeVariableDecl(vhdlParser::Variable_declarationContext &ctx) 
         decl.shared = true;
     }
 
-    decl.names = ctx.identifier_list()->identifier()
-               | std::views::transform([](auto *id) { return id->getText(); })
-               | std::ranges::to<std::vector>();
+    if (auto *list = ctx.identifier_list()) {
+        decl.names = makeIdentifierList(*list);
+    }
 
     if (auto *stype = ctx.subtype_indication()) {
         decl.type_name = stype->selected_name(0)->getText();
@@ -173,6 +175,13 @@ auto Translator::makeVariableDecl(vhdlParser::Variable_declarationContext &ctx) 
     }
 
     return decl;
+}
+
+auto Translator::makeIdentifierList(vhdlParser::Identifier_listContext &ctx) -> std::vector<std::string>
+{
+    return ctx.identifier()
+         | std::views::transform([](auto *id) { return id->getText(); })
+         | std::ranges::to<std::vector>();
 }
 
 } // namespace builder

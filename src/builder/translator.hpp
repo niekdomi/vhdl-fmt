@@ -37,7 +37,7 @@ class Translator final
     auto operator=(Translator &&) -> Translator & = delete;
 
   private:
-    // Design units - return by value
+    // Design units
     [[nodiscard]]
     auto makeEntity(vhdlParser::Entity_declarationContext &ctx) -> ast::Entity;
     [[nodiscard]]
@@ -49,13 +49,13 @@ class Translator final
     auto makeArchitectureStatementPart(vhdlParser::Architecture_statement_partContext &ctx)
       -> std::vector<ast::ConcurrentStatement>;
 
-    // Clauses - return by value
+    // Clauses
     [[nodiscard]]
     auto makeGenericClause(vhdlParser::Generic_clauseContext &ctx) -> ast::GenericClause;
     [[nodiscard]]
     auto makePortClause(vhdlParser::Port_clauseContext &ctx) -> ast::PortClause;
 
-    // Declarations - return by value
+    // Declarations
     [[nodiscard]]
     auto makeGenericParam(vhdlParser::Interface_constant_declarationContext &ctx)
       -> ast::GenericParam;
@@ -68,7 +68,7 @@ class Translator final
     [[nodiscard]]
     auto makeVariableDecl(vhdlParser::Variable_declarationContext &ctx) -> ast::VariableDecl;
 
-    // Statements - return by value
+    // Statements
     [[nodiscard]]
     auto makeWaveform(vhdlParser::WaveformContext &ctx) -> ast::Waveform;
     [[nodiscard]]
@@ -110,7 +110,7 @@ class Translator final
     auto makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext &ctx)
       -> std::vector<ast::SequentialStatement>;
 
-    // Expressions - return by value
+    // Expressions
     [[nodiscard]]
     auto makeExpr(vhdlParser::ExpressionContext &ctx) -> ast::Expr;
     [[nodiscard]]
@@ -168,6 +168,10 @@ class Translator final
         trivia_.bind(node, ctx);
         return node;
     }
+
+    /// @brief Extract identifier names from an identifier_list context
+    [[nodiscard]]
+    static auto makeIdentifierList(vhdlParser::Identifier_listContext &ctx) -> std::vector<std::string>;
 
     /// @brief Helper to create binary expressions
     template<typename Ctx>

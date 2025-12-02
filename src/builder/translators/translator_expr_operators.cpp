@@ -2,26 +2,30 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
+#include <algorithm>
 #include <memory>
+#include <ranges>
+#include <utility>
 
 namespace builder {
 
 auto Translator::makeExpr(vhdlParser::ExpressionContext &ctx) -> ast::Expr
 {
-    const auto &relations = ctx.relation();
-    const auto &operators = ctx.logical_operator();
+    const auto relations = ctx.relation();
+    const auto operators = ctx.logical_operator();
 
     if (relations.size() == 1) {
         return makeRelation(*relations[0]);
     }
 
-    ast::Expr result = makeRelation(*relations[0]);
-    for (size_t i = 0; i < operators.size(); ++i) {
-        result = makeBinary(
-          ctx, operators[i]->getText(), std::move(result), makeRelation(*relations[i + 1]));
-    }
-
-    return result;
+    return std::ranges::fold_left(std::views::iota(size_t{ 0 }, operators.size()),
+                                  makeRelation(*relations[0]),
+                                  [&](ast::Expr acc, size_t i) -> ast::Expr {
+                                      return makeBinary(ctx,
+                                                        operators[i]->getText(),
+                                                        std::move(acc),
+                                                        makeRelation(*relations[i + 1]));
+                                  });
 }
 
 auto Translator::makeRelation(vhdlParser::RelationContext &ctx) -> ast::Expr
@@ -55,21 +59,21 @@ auto Translator::makeSimpleExpr(vhdlParser::Simple_expressionContext &ctx) -> as
         return makeToken(ctx, ctx.getText());
     }
 
-    ast::Expr result = makeTerm(*terms[0]);
+    ast::Expr init = makeTerm(*terms[0]);
 
     // Handle optional leading sign
     if (ctx.PLUS() != nullptr) {
-        result = makeUnary(ctx, "+", std::move(result));
+        init = makeUnary(ctx, "+", std::move(init));
     } else if (ctx.MINUS() != nullptr) {
-        result = makeUnary(ctx, "-", std::move(result));
+        init = makeUnary(ctx, "-", std::move(init));
     }
 
-    for (size_t i = 0; i < operators.size(); ++i) {
-        result
-          = makeBinary(ctx, operators[i]->getText(), std::move(result), makeTerm(*terms[i + 1]));
-    }
-
-    return result;
+    return std::ranges::fold_left(
+      std::views::iota(size_t{ 0 }, operators.size()),
+      std::move(init),
+      [&](ast::Expr acc, size_t i) -> ast::Expr {
+          return makeBinary(ctx, operators[i]->getText(), std::move(acc), makeTerm(*terms[i + 1]));
+      });
 }
 
 auto Translator::makeTerm(vhdlParser::TermContext &ctx) -> ast::Expr
@@ -81,14 +85,14 @@ auto Translator::makeTerm(vhdlParser::TermContext &ctx) -> ast::Expr
         return makeToken(ctx, ctx.getText());
     }
 
-    ast::Expr result = makeFactor(*factors[0]);
-
-    for (size_t i = 0; i < operators.size(); ++i) {
-        result = makeBinary(
-          ctx, operators[i]->getText(), std::move(result), makeFactor(*factors[i + 1]));
-    }
-
-    return result;
+    return std::ranges::fold_left(std::views::iota(size_t{ 0 }, operators.size()),
+                                  makeFactor(*factors[0]),
+                                  [&](ast::Expr acc, size_t i) -> ast::Expr {
+                                      return makeBinary(ctx,
+                                                        operators[i]->getText(),
+                                                        std::move(acc),
+                                                        makeFactor(*factors[i + 1]));
+                                  });
 }
 
 auto Translator::makeFactor(vhdlParser::FactorContext &ctx) -> ast::Expr
