@@ -55,6 +55,17 @@ class NodeBuilder
         return std::forward<Self>(self);
     }
 
+    /// @brief Sets a unique_ptr field by wrapping the value automatically (boxing).
+    /// @param self Deduced self reference (lvalue or rvalue).
+    /// @param field Pointer-to-member for the target unique_ptr field.
+    /// @param value The value to wrap in std::make_unique.
+    template<typename Self, typename Inner, typename Value>
+    auto setBox(this Self &&self, std::unique_ptr<Inner> T::*field, Value &&value) -> Self &&
+    {
+        self.node_.*field = std::make_unique<Inner>(std::forward<Value>(value));
+        return std::forward<Self>(self);
+    }
+
     /// @brief Sets a field only if the context pointer is non-null.
     /// @param self Deduced self reference.
     /// @param field Pointer-to-member for the target field.
@@ -65,6 +76,20 @@ class NodeBuilder
     {
         if (ctx) {
             self.node_.*field = std::forward<Fn>(fn)(*ctx);
+        }
+        return std::forward<Self>(self);
+    }
+
+    /// @brief Sets a unique_ptr field by wrapping result if context is non-null (boxing).
+    /// @param self Deduced self reference.
+    /// @param field Pointer-to-member for the target unique_ptr field.
+    /// @param ctx Nullable pointer to parse context.
+    /// @param fn Transformation function to apply if ctx is non-null.
+    template<typename Self, typename Inner, typename Ctx, typename Fn>
+    auto maybeBox(this Self &&self, std::unique_ptr<Inner> T::*field, Ctx *ctx, Fn &&fn) -> Self &&
+    {
+        if (ctx) {
+            self.node_.*field = std::make_unique<Inner>(std::forward<Fn>(fn)(*ctx));
         }
         return std::forward<Self>(self);
     }
@@ -139,6 +164,25 @@ class NodeBuilder
             if (auto result = std::forward<Fn>(fn)(*elem)) {
                 (self.node_.*field).emplace_back(std::move(*result));
             }
+        }
+        return std::forward<Self>(self);
+    }
+
+    /// @brief Zips two ranges and collects into a vector field using a transformation.
+    /// @param self Deduced self reference.
+    /// @param field Pointer-to-member for the target vector field.
+    /// @param range1 First source range.
+    /// @param range2 Second source range (must be same size or longer).
+    /// @param fn Transformation function receiving (elem1, elem2*) where elem2 may be null.
+    template<typename Self, typename Field, typename Range1, typename Range2, typename Fn>
+    auto collectZipped(this Self &&self, Field T::*field, Range1 &&range1, Range2 &&range2, Fn &&fn)
+      -> Self &&
+    {
+        auto it2 = std::begin(range2);
+        auto end2 = std::end(range2);
+        for (auto *elem1 : std::forward<Range1>(range1)) {
+            auto *elem2 = (it2 != end2) ? *it2++ : nullptr;
+            (self.node_.*field).emplace_back(std::forward<Fn>(fn)(elem1, elem2));
         }
         return std::forward<Self>(self);
     }

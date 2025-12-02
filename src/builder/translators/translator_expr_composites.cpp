@@ -15,23 +15,21 @@ namespace builder {
 
 auto Translator::makeAggregate(vhdlParser::AggregateContext &ctx) -> ast::Expr
 {
-    auto group = make<ast::GroupExpr>(ctx);
-
-    for (auto *elem : ctx.element_association()) {
-        auto assoc = make<ast::BinaryExpr>(*elem);
-        assoc.op = "=>";
-
-        if (elem->choices() != nullptr) {
-            assoc.left = std::make_unique<ast::Expr>(makeChoices(*elem->choices()));
-        }
-        if (elem->expression() != nullptr) {
-            assoc.right = std::make_unique<ast::Expr>(makeExpr(*elem->expression()));
-        }
-
-        group.children.emplace_back(std::move(assoc));
-    }
-
-    return group;
+    return build<ast::GroupExpr>(ctx)
+      .collect(&ast::GroupExpr::children,
+               ctx.element_association(),
+               [&](auto *elem) -> ast::Expr {
+                   return build<ast::BinaryExpr>(*elem)
+                     .set(&ast::BinaryExpr::op, "=>")
+                     .maybeBox(&ast::BinaryExpr::left,
+                               elem->choices(),
+                               [&](auto &ch) { return makeChoices(ch); })
+                     .maybeBox(&ast::BinaryExpr::right,
+                               elem->expression(),
+                               [&](auto &expr) { return makeExpr(expr); })
+                     .build();
+               })
+      .build();
 }
 
 auto Translator::makeChoices(vhdlParser::ChoicesContext &ctx) -> ast::Expr
@@ -40,11 +38,10 @@ auto Translator::makeChoices(vhdlParser::ChoicesContext &ctx) -> ast::Expr
         return makeChoice(*ctx.choice(0));
     }
 
-    auto grp = make<ast::GroupExpr>(ctx);
-    grp.children = ctx.choice()
-                 | std::views::transform([this](auto *ch) { return makeChoice(*ch); })
-                 | std::ranges::to<std::vector>();
-    return grp;
+    return build<ast::GroupExpr>(ctx)
+      .collect(
+        &ast::GroupExpr::children, ctx.choice(), [this](auto *ch) { return makeChoice(*ch); })
+      .build();
 }
 
 auto Translator::makeChoice(vhdlParser::ChoiceContext &ctx) -> ast::Expr
@@ -65,7 +62,7 @@ auto Translator::makeChoice(vhdlParser::ChoiceContext &ctx) -> ast::Expr
             }
         }
     }
-    return makeToken(ctx, ctx.getText());
+    return makeToken(ctx);
 }
 
 // ---------------------- Constraints/Ranges ----------------------
@@ -88,25 +85,24 @@ auto Translator::makeConstraint(vhdlParser::ConstraintContext &ctx)
 auto Translator::makeIndexConstraint(vhdlParser::Index_constraintContext &ctx)
   -> ast::IndexConstraint
 {
-    auto constraint = make<ast::IndexConstraint>(ctx);
-    auto group = make<ast::GroupExpr>(ctx);
-
-    // Collect all discrete ranges into the group
-    for (auto *discrete_r : ctx.discrete_range()) {
-        auto *range_decl = discrete_r->range_decl();
-        if (range_decl == nullptr) {
-            continue;
-        }
-        auto *explicit_r = range_decl->explicit_range();
-        if (explicit_r == nullptr) {
-            continue;
-        }
-        auto range_expr = makeRange(*explicit_r);
-        group.children.emplace_back(std::move(range_expr));
-    }
-
-    constraint.ranges = std::move(group);
-    return constraint;
+    return build<ast::IndexConstraint>(ctx)
+      .set(&ast::IndexConstraint::ranges,
+           build<ast::GroupExpr>(ctx)
+             .collectFiltered(&ast::GroupExpr::children,
+                              ctx.discrete_range(),
+                              [&](auto &discrete_r) -> std::optional<ast::Expr> {
+                                  auto *range_decl = discrete_r.range_decl();
+                                  if (range_decl == nullptr) {
+                                      return std::nullopt;
+                                  }
+                                  auto *explicit_r = range_decl->explicit_range();
+                                  if (explicit_r == nullptr) {
+                                      return std::nullopt;
+                                  }
+                                  return makeRange(*explicit_r);
+                              })
+             .build())
+      .build();
 }
 
 auto Translator::makeRangeConstraint(vhdlParser::Range_constraintContext &ctx)
@@ -125,9 +121,9 @@ auto Translator::makeRangeConstraint(vhdlParser::Range_constraintContext &ctx)
     if (bin == nullptr) {
         return std::nullopt;
     }
-    auto constraint = make<ast::RangeConstraint>(ctx);
-    constraint.range = std::move(*bin);
-    return constraint;
+    return build<ast::RangeConstraint>(ctx)
+      .set(&ast::RangeConstraint::range, std::move(*bin))
+      .build();
 }
 
 auto Translator::makeRange(vhdlParser::Explicit_rangeContext &ctx) -> ast::Expr

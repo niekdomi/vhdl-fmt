@@ -1,4 +1,3 @@
-#include "ast/nodes/expressions.hpp"
 #include "ast/nodes/statements.hpp"
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
@@ -80,14 +79,10 @@ auto Translator::makeForLoop(vhdlParser::Loop_statementContext &ctx) -> ast::For
                             if (auto *explicit_r = range_decl->explicit_range()) {
                                 node.range = makeRange(*explicit_r);
                             } else {
-                                auto tok = make<ast::TokenExpr>(*range_decl);
-                                tok.text = range_decl->getText();
-                                node.range = std::move(tok);
+                                node.range = makeToken(*range_decl);
                             }
                         } else if (auto *subtype = range->subtype_indication()) {
-                            auto tok = make<ast::TokenExpr>(*subtype);
-                            tok.text = subtype->getText();
-                            node.range = std::move(tok);
+                            node.range = makeToken(*subtype);
                         }
                     }
                 }

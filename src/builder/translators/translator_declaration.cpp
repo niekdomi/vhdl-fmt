@@ -119,9 +119,8 @@ auto Translator::makeSignalPort(vhdlParser::Interface_port_declarationContext &c
       .set(&ast::Port::names, extractNames(ctx.identifier_list()))
       .set(&ast::Port::mode, extractMode(ctx.signal_mode()))
       .apply([&](auto &node) {
-          extractSubtypeInfo(node, ctx.subtype_indication(), [&](auto &c) {
-              return makeConstraint(c);
-          });
+          extractSubtypeInfo(
+            node, ctx.subtype_indication(), [&](auto &c) { return makeConstraint(c); });
       })
       .maybe(&ast::Port::default_expr, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })
       .build();
@@ -142,9 +141,8 @@ auto Translator::makeSignalDecl(vhdlParser::Signal_declarationContext &ctx) -> a
     return build<ast::SignalDecl>(ctx)
       .set(&ast::SignalDecl::names, extractNames(ctx.identifier_list()))
       .apply([&](auto &node) {
-          extractSubtypeInfo(node, ctx.subtype_indication(), [&](auto &c) {
-              return makeConstraint(c);
-          });
+          extractSubtypeInfo(
+            node, ctx.subtype_indication(), [&](auto &c) { return makeConstraint(c); });
       })
       .with(ctx.signal_kind(),
             [](auto &node, auto &skind) { node.has_bus_kw = (skind.BUS() != nullptr); })
@@ -159,9 +157,8 @@ auto Translator::makeVariableDecl(vhdlParser::Variable_declarationContext &ctx) 
       .set(&ast::VariableDecl::shared, ctx.SHARED() != nullptr)
       .set(&ast::VariableDecl::names, extractNames(ctx.identifier_list()))
       .apply([&](auto &node) {
-          extractSubtypeInfo(node, ctx.subtype_indication(), [&](auto &c) {
-              return makeConstraint(c);
-          });
+          extractSubtypeInfo(
+            node, ctx.subtype_indication(), [&](auto &c) { return makeConstraint(c); });
       })
       .maybe(
         &ast::VariableDecl::init_expr, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })

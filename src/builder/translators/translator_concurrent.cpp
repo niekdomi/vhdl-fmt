@@ -4,7 +4,6 @@
 #include "vhdlParser.h"
 
 #include <cstddef>
-#include <ranges>
 #include <utility>
 #include <vector>
 
@@ -34,14 +33,11 @@ auto Translator::makeWaveform(vhdlParser::WaveformContext &ctx) -> ast::Waveform
 auto Translator::makeConcurrentAssign(
   vhdlParser::Concurrent_signal_assignment_statementContext &ctx) -> ast::ConcurrentStatement
 {
-    // Dispatch based on concrete assignment type
     if (auto *cond = ctx.conditional_signal_assignment()) {
         return makeConditionalAssign(*cond);
     }
-
-    // Can only be Selected assignment here
-    auto *sel = ctx.selected_signal_assignment();
-    return makeSelectedAssign(*sel);
+    // Can only be selected assignment here
+    return makeSelectedAssign(*ctx.selected_signal_assignment());
 }
 
 auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx)
@@ -84,17 +80,16 @@ auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContex
             [&](auto &node, auto &sel_waves) {
                 const auto waves = sel_waves.waveform();
                 const auto choices = sel_waves.choices();
+                const auto num_waves = waves.size();
 
-                for (const auto i : std::views::iota(std::size_t{ 0 }, waves.size())) {
+                for (std::size_t i = 0; i < num_waves; ++i) {
                     ast::SelectedConcurrentAssign::Selection selection{};
                     if (waves[i] != nullptr) {
                         selection.waveform = makeWaveform(*waves[i]);
                     }
-                    if (i < choices.size()) {
-                        if (auto *ch_ctx = choices[i]) {
-                            for (auto *c : ch_ctx->choice()) {
-                                selection.choices.emplace_back(makeChoice(*c));
-                            }
+                    if (i < choices.size() && choices[i] != nullptr) {
+                        for (auto *c : choices[i]->choice()) {
+                            selection.choices.emplace_back(makeChoice(*c));
                         }
                     }
                     node.selections.emplace_back(std::move(selection));

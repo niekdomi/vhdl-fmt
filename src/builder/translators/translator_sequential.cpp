@@ -19,9 +19,7 @@ auto Translator::makeTarget(vhdlParser::TargetContext &ctx) -> ast::Expr
     }
 
     // Fallback: return token with context text
-    auto token = make<ast::TokenExpr>(ctx);
-    token.text = ctx.getText();
-    return token;
+    return makeToken(ctx);
 }
 
 auto Translator::makeSignalAssign(vhdlParser::Signal_assignment_statementContext &ctx)
@@ -68,13 +66,12 @@ auto Translator::makeSequentialStatement(vhdlParser::Sequential_statementContext
                 return makeWhileLoop(*loop_stmt);
             }
         }
-        // Basic loop without iteration scheme - not yet supported, return empty
+        // Basic loop without iteration scheme - not yet supported
     }
 
     // TODO(someone): Add support for wait_statement, assertion_statement,
     // report_statement, next_statement, exit_statement, return_statement, etc.
 
-    // Fallback: return nullopt
     return std::nullopt;
 }
 

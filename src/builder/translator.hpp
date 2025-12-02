@@ -127,6 +127,10 @@ class Translator final
     [[nodiscard]]
     auto makeLiteral(vhdlParser::LiteralContext &ctx) -> ast::Expr;
     [[nodiscard]]
+    auto makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeAllocator(vhdlParser::AllocatorContext &ctx) -> ast::Expr;
+    [[nodiscard]]
     auto makeShiftExpr(vhdlParser::Shift_expressionContext &ctx) -> ast::Expr;
     [[nodiscard]]
     auto makeChoices(vhdlParser::ChoicesContext &ctx) -> ast::Expr;
@@ -141,8 +145,6 @@ class Translator final
       -> ast::Expr;
     [[nodiscard]]
     auto makeSliceExpr(ast::Expr base, vhdlParser::Slice_name_partContext &ctx) -> ast::Expr;
-    [[nodiscard]]
-    auto makeSelectExpr(ast::Expr base, vhdlParser::Selected_name_partContext &ctx) -> ast::Expr;
     [[nodiscard]]
     auto makeAttributeExpr(ast::Expr base, vhdlParser::Attribute_name_partContext &ctx)
       -> ast::Expr;
@@ -166,50 +168,91 @@ class Translator final
         return NodeBuilder<T>(ctx, trivia_);
     }
 
-    /// @brief Helper to create and bind an AST node with trivia
-    template<typename T, typename Ctx>
-    [[nodiscard]]
-    auto make(const Ctx &ctx) -> T
-    {
-        T node{};
-        trivia_.bind(node, ctx);
-        return node;
-    }
-
     /// @brief Helper to create binary expressions
     template<typename Ctx>
     [[nodiscard]]
-    auto makeBinary(const Ctx &ctx, std::string op, ast::Expr left, ast::Expr right) -> ast::Expr
+    auto makeBinary(Ctx &ctx, std::string op, ast::Expr left, ast::Expr right) -> ast::Expr
     {
-        ast::BinaryExpr bin{};
-        trivia_.bind(bin, ctx);
-        bin.op = std::move(op);
-        bin.left = std::make_unique<ast::Expr>(std::move(left));
-        bin.right = std::make_unique<ast::Expr>(std::move(right));
-        return bin;
+        return build<ast::BinaryExpr>(ctx)
+          .set(&ast::BinaryExpr::op, std::move(op))
+          .setBox(&ast::BinaryExpr::left, std::move(left))
+          .setBox(&ast::BinaryExpr::right, std::move(right))
+          .build();
     }
 
     /// @brief Helper to create unary expressions
     template<typename Ctx>
     [[nodiscard]]
-    auto makeUnary(const Ctx &ctx, std::string op, ast::Expr value) -> ast::Expr
+    auto makeUnary(Ctx &ctx, std::string op, ast::Expr value) -> ast::Expr
     {
-        ast::UnaryExpr un{};
-        trivia_.bind(un, ctx);
-        un.op = std::move(op);
-        un.value = std::make_unique<ast::Expr>(std::move(value));
-        return un;
+        return build<ast::UnaryExpr>(ctx)
+          .set(&ast::UnaryExpr::op, std::move(op))
+          .setBox(&ast::UnaryExpr::value, std::move(value))
+          .build();
     }
 
     /// @brief Helper to create token expressions
     template<typename Ctx>
     [[nodiscard]]
-    auto makeToken(const Ctx &ctx, std::string text) -> ast::Expr
+    auto makeToken(Ctx &ctx, std::string text) -> ast::Expr
     {
-        ast::TokenExpr tok{};
-        trivia_.bind(tok, ctx);
-        tok.text = std::move(text);
-        return tok;
+        return build<ast::TokenExpr>(ctx).set(&ast::TokenExpr::text, std::move(text)).build();
+    }
+
+    /// @brief Helper to create token expressions using ctx.getText()
+    template<typename Ctx>
+    [[nodiscard]]
+    auto makeToken(Ctx &ctx) -> ast::Expr
+    {
+        return makeToken(ctx, ctx.getText());
+    }
+
+    /// @brief Helper to fold binary operators left-associatively.
+    /// Used for expression chains like: a op1 b op2 c → ((a op1 b) op2 c)
+    /// @param ctx The parent context (for trivia binding on intermediate nodes).
+    /// @param operands Range of operand contexts.
+    /// @param operators Range of operator contexts (size = operands.size() - 1).
+    /// @param make_operand Function to transform an operand context to ast::Expr.
+    template<typename Ctx, typename Operands, typename Operators, typename MakeOperand>
+    [[nodiscard]]
+    auto foldBinaryLeft(Ctx &ctx, Operands &&operands, Operators &&operators, MakeOperand &&make_op)
+      -> ast::Expr
+    {
+        auto op_it = std::begin(operators);
+        auto it = std::begin(operands);
+        ast::Expr acc = std::forward<MakeOperand>(make_op)(**it++);
+
+        for (; it != std::end(operands); ++it, ++op_it) {
+            acc = makeBinary(ctx, (*op_it)->getText(), std::move(acc), make_op(**it));
+        }
+        return acc;
+    }
+
+    /// @brief Dispatch helper: tries each (accessor, handler) pair until one matches.
+    /// @param ctx The parent context to dispatch on.
+    /// @param pairs Alternating accessor/handler pairs.
+    /// @return Result of the first matching handler, or std::nullopt if none match.
+    ///
+    /// Example usage:
+    /// @code
+    /// return dispatch(ctx,
+    ///     &CtxType::signal_assign, [&](auto& c) { return makeSignalAssign(c); },
+    ///     &CtxType::var_assign,    [&](auto& c) { return makeVarAssign(c); }
+    /// );
+    /// @endcode
+    template<typename Result, typename Ctx, typename Accessor, typename Handler, typename... Rest>
+    [[nodiscard]]
+    auto dispatch(Ctx &ctx, Accessor accessor, Handler &&handler, Rest &&...rest)
+      -> std::optional<Result>
+    {
+        if (auto *child = (ctx.*accessor)()) {
+            return std::forward<Handler>(handler)(*child);
+        }
+        if constexpr (sizeof...(Rest) >= 2) {
+            return dispatch<Result>(ctx, std::forward<Rest>(rest)...);
+        } else {
+            return std::nullopt;
+        }
     }
 };
 

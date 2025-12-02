@@ -2,31 +2,18 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
-#include <algorithm>
-#include <cstddef>
-#include <memory>
-#include <ranges>
 #include <utility>
 
 namespace builder {
 
 auto Translator::makeExpr(vhdlParser::ExpressionContext &ctx) -> ast::Expr
 {
-    const auto relations = ctx.relation();
-    const auto operators = ctx.logical_operator();
-
+    const auto &relations = ctx.relation();
     if (relations.size() == 1) {
         return makeRelation(*relations[0]);
     }
-
-    return std::ranges::fold_left(std::views::iota(std::size_t{ 0 }, operators.size()),
-                                  makeRelation(*relations[0]),
-                                  [&](ast::Expr acc, std::size_t i) -> ast::Expr {
-                                      return makeBinary(ctx,
-                                                        operators[i]->getText(),
-                                                        std::move(acc),
-                                                        makeRelation(*relations[i + 1]));
-                                  });
+    return foldBinaryLeft(
+      ctx, relations, ctx.logical_operator(), [&](auto &r) { return makeRelation(r); });
 }
 
 auto Translator::makeRelation(vhdlParser::RelationContext &ctx) -> ast::Expr
@@ -53,11 +40,11 @@ auto Translator::makeShiftExpr(vhdlParser::Shift_expressionContext &ctx) -> ast:
 
 auto Translator::makeSimpleExpr(vhdlParser::Simple_expressionContext &ctx) -> ast::Expr
 {
-    const auto terms = ctx.term();
-    const auto operators = ctx.adding_operator();
+    const auto &terms = ctx.term();
+    const auto &operators = ctx.adding_operator();
 
     if (terms.empty()) {
-        return makeToken(ctx, ctx.getText());
+        return makeToken(ctx);
     }
 
     ast::Expr init = makeTerm(*terms[0]);
@@ -69,31 +56,25 @@ auto Translator::makeSimpleExpr(vhdlParser::Simple_expressionContext &ctx) -> as
         init = makeUnary(ctx, "-", std::move(init));
     }
 
-    return std::ranges::fold_left(
-      std::views::iota(std::size_t{ 0 }, operators.size()),
-      std::move(init),
-      [&](ast::Expr acc, std::size_t i) -> ast::Expr {
-          return makeBinary(ctx, operators[i]->getText(), std::move(acc), makeTerm(*terms[i + 1]));
-      });
+    // Fold remaining terms with operators
+    auto op_it = operators.begin();
+    for (std::size_t i = 1; i < terms.size(); ++i, ++op_it) {
+        init = makeBinary(ctx, (*op_it)->getText(), std::move(init), makeTerm(*terms[i]));
+    }
+    return init;
 }
 
 auto Translator::makeTerm(vhdlParser::TermContext &ctx) -> ast::Expr
 {
-    const auto factors = ctx.factor();
-    const auto operators = ctx.multiplying_operator();
-
+    const auto &factors = ctx.factor();
     if (factors.empty()) {
-        return makeToken(ctx, ctx.getText());
+        return makeToken(ctx);
     }
-
-    return std::ranges::fold_left(std::views::iota(std::size_t{ 0 }, operators.size()),
-                                  makeFactor(*factors[0]),
-                                  [&](ast::Expr acc, std::size_t i) -> ast::Expr {
-                                      return makeBinary(ctx,
-                                                        operators[i]->getText(),
-                                                        std::move(acc),
-                                                        makeFactor(*factors[i + 1]));
-                                  });
+    if (factors.size() == 1) {
+        return makeFactor(*factors[0]);
+    }
+    return foldBinaryLeft(
+      ctx, factors, ctx.multiplying_operator(), [&](auto &f) { return makeFactor(f); });
 }
 
 auto Translator::makeFactor(vhdlParser::FactorContext &ctx) -> ast::Expr
@@ -114,26 +95,26 @@ auto Translator::makeLiteral(vhdlParser::LiteralContext &ctx) -> ast::Expr
 {
     auto *num = ctx.numeric_literal();
     if (num == nullptr) {
-        return makeToken(ctx, ctx.getText());
+        return makeToken(ctx);
     }
 
     auto *phys = num->physical_literal();
     if (phys == nullptr) {
-        return makeToken(ctx, ctx.getText());
+        return makeToken(ctx);
     }
 
-    auto phys_node = make<ast::PhysicalLiteral>(ctx);
-    phys_node.value = phys->abstract_literal()->getText();
-    phys_node.unit = phys->identifier()->getText();
-    return phys_node;
+    return build<ast::PhysicalLiteral>(ctx)
+      .set(&ast::PhysicalLiteral::value, phys->abstract_literal()->getText())
+      .set(&ast::PhysicalLiteral::unit, phys->identifier()->getText())
+      .build();
 }
 
 auto Translator::makePrimary(vhdlParser::PrimaryContext &ctx) -> ast::Expr
 {
     if (ctx.expression() != nullptr) {
-        auto paren = make<ast::ParenExpr>(ctx);
-        paren.inner = std::make_unique<ast::Expr>(makeExpr(*ctx.expression()));
-        return paren;
+        return build<ast::ParenExpr>(ctx)
+          .setBox(&ast::ParenExpr::inner, makeExpr(*ctx.expression()))
+          .build();
     }
     if (ctx.aggregate() != nullptr) {
         return makeAggregate(*ctx.aggregate());
@@ -144,7 +125,54 @@ auto Translator::makePrimary(vhdlParser::PrimaryContext &ctx) -> ast::Expr
     if (auto *lit = ctx.literal()) {
         return makeLiteral(*lit);
     }
-    return makeToken(ctx, ctx.getText());
+    if (auto *qual = ctx.qualified_expression()) {
+        return makeQualifiedExpr(*qual);
+    }
+    if (auto *alloc = ctx.allocator()) {
+        return makeAllocator(*alloc);
+    }
+    return makeToken(ctx);
+}
+
+auto Translator::makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx) -> ast::Expr
+{
+    // qualified_expression: subtype_indication APOSTROPHE (aggregate | LPAREN expression RPAREN)
+    // Represented as: type_name'(value)  →  BinaryExpr with op="'"
+    ast::Expr value_expr = [&]() -> ast::Expr {
+        if (auto *agg = ctx.aggregate()) {
+            return makeAggregate(*agg);
+        }
+        if (auto *expr = ctx.expression()) {
+            return build<ast::ParenExpr>(*expr)
+              .setBox(&ast::ParenExpr::inner, makeExpr(*expr))
+              .build();
+        }
+        return makeToken(ctx);
+    }();
+
+    auto *subtype = ctx.subtype_indication();
+    if (subtype == nullptr) {
+        return value_expr;
+    }
+
+    return makeBinary(ctx, "'", makeToken(*subtype), std::move(value_expr));
+}
+
+auto Translator::makeAllocator(vhdlParser::AllocatorContext &ctx) -> ast::Expr
+{
+    // allocator: NEW (qualified_expression | subtype_indication)
+    // Represented as: UnaryExpr with op="new"
+    ast::Expr operand = [&]() -> ast::Expr {
+        if (auto *qual = ctx.qualified_expression()) {
+            return makeQualifiedExpr(*qual);
+        }
+        if (auto *subtype = ctx.subtype_indication()) {
+            return makeToken(*subtype);
+        }
+        return makeToken(ctx);
+    }();
+
+    return makeUnary(ctx, "new", std::move(operand));
 }
 
 } // namespace builder

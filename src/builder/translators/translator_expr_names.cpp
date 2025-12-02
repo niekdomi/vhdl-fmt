@@ -25,7 +25,7 @@ auto Translator::makeName(vhdlParser::NameContext &ctx) -> ast::Expr
 
     if (!has_structure) {
         // Simple name (possibly with dots like "rec.field") - keep as one token
-        return makeToken(ctx, ctx.getText());
+        return makeToken(ctx);
     }
 
     // Has structural parts - build up the base, then apply operations
@@ -37,7 +37,7 @@ auto Translator::makeName(vhdlParser::NameContext &ctx) -> ast::Expr
         base_text = ctx.STRING_LITERAL()->getText();
     } else {
         // Shouldn't happen, but fallback
-        return makeToken(ctx, ctx.getText());
+        return makeToken(ctx);
     }
 
     // Consume consecutive selected_name_parts into base
@@ -68,56 +68,55 @@ auto Translator::makeName(vhdlParser::NameContext &ctx) -> ast::Expr
 
 auto Translator::makeSliceExpr(ast::Expr base, vhdlParser::Slice_name_partContext &ctx) -> ast::Expr
 {
-    auto slice_expr = make<ast::CallExpr>(ctx);
-    slice_expr.callee = std::make_unique<ast::Expr>(std::move(base));
-
-    if (auto *dr = ctx.discrete_range()) {
-        if (auto *rd = dr->range_decl()) {
-            if (auto *er = rd->explicit_range()) {
-                slice_expr.args = std::make_unique<ast::Expr>(makeRange(*er));
-            } else {
-                slice_expr.args = std::make_unique<ast::Expr>(makeToken(*rd, rd->getText()));
-            }
-        } else if (auto *subtype = dr->subtype_indication()) {
-            slice_expr.args = std::make_unique<ast::Expr>(makeToken(*subtype, subtype->getText()));
-        }
-    }
-
-    return slice_expr;
-}
-
-auto Translator::makeSelectExpr(ast::Expr base, vhdlParser::Selected_name_partContext &ctx)
-  -> ast::Expr
-{
-    return makeBinary(ctx, ".", std::move(base), makeToken(ctx, ctx.getText().substr(1)));
+    return build<ast::CallExpr>(ctx)
+      .setBox(&ast::CallExpr::callee, std::move(base))
+      .with(&ctx,
+            [&](auto &node, auto &slice_ctx) {
+                if (auto *dr = slice_ctx.discrete_range()) {
+                    if (auto *rd = dr->range_decl()) {
+                        if (auto *er = rd->explicit_range()) {
+                            node.args = std::make_unique<ast::Expr>(makeRange(*er));
+                        } else {
+                            node.args = std::make_unique<ast::Expr>(makeToken(*rd));
+                        }
+                    } else if (auto *subtype = dr->subtype_indication()) {
+                        node.args = std::make_unique<ast::Expr>(makeToken(*subtype));
+                    }
+                }
+            })
+      .build();
 }
 
 auto Translator::makeCallExpr(ast::Expr base,
                               vhdlParser::Function_call_or_indexed_name_partContext &ctx)
   -> ast::Expr
 {
-    auto call_expr = make<ast::CallExpr>(ctx);
-    call_expr.callee = std::make_unique<ast::Expr>(std::move(base));
-
-    if (auto *assoc_list = ctx.actual_parameter_part()) {
-        if (auto *list_ctx = assoc_list->association_list()) {
-            auto associations = list_ctx->association_element();
-
-            if (associations.size() == 1) {
-                call_expr.args = std::make_unique<ast::Expr>(makeCallArgument(*associations[0]));
-            } else {
-                auto group = make<ast::GroupExpr>(*list_ctx);
-                for (auto *elem : associations) {
-                    group.children.emplace_back(makeCallArgument(*elem));
+    return build<ast::CallExpr>(ctx)
+      .setBox(&ast::CallExpr::callee, std::move(base))
+      .with(&ctx,
+            [&](auto &node, auto &call_ctx) {
+                auto *assoc_list = call_ctx.actual_parameter_part();
+                if (assoc_list == nullptr) {
+                    return;
                 }
-                call_expr.args = std::make_unique<ast::Expr>(ast::Expr{ std::move(group) });
-            }
-        } else {
-            call_expr.args = std::make_unique<ast::Expr>(makeToken(ctx, ctx.getText()));
-        }
-    }
-
-    return call_expr;
+                auto *list_ctx = assoc_list->association_list();
+                if (list_ctx == nullptr) {
+                    node.args = std::make_unique<ast::Expr>(makeToken(call_ctx));
+                    return;
+                }
+                auto associations = list_ctx->association_element();
+                if (associations.size() == 1) {
+                    node.args = std::make_unique<ast::Expr>(makeCallArgument(*associations[0]));
+                } else {
+                    node.args = std::make_unique<ast::Expr>(
+                      build<ast::GroupExpr>(*list_ctx)
+                        .collect(&ast::GroupExpr::children,
+                                 associations,
+                                 [&](auto *elem) { return makeCallArgument(*elem); })
+                        .build());
+                }
+            })
+      .build();
 }
 
 auto Translator::makeAttributeExpr(ast::Expr base, vhdlParser::Attribute_name_partContext &ctx)
@@ -133,11 +132,11 @@ auto Translator::makeCallArgument(vhdlParser::Association_elementContext &ctx) -
             if (auto *expr = designator->expression()) {
                 return makeExpr(*expr);
             }
-            return makeToken(*designator, designator->getText());
+            return makeToken(*designator);
         }
-        return makeToken(*actual, actual->getText());
+        return makeToken(*actual);
     }
-    return makeToken(ctx, ctx.getText());
+    return makeToken(ctx);
 }
 
 } // namespace builder
