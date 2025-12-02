@@ -41,54 +41,37 @@ void Translator::buildDesignFile(ast::DesignFile &dest, vhdlParser::Design_fileC
 
 auto Translator::makeEntity(vhdlParser::Entity_declarationContext &ctx) -> ast::Entity
 {
-    auto entity = make<ast::Entity>(ctx);
-
-    entity.name = ctx.identifier(0)->getText();
-
-    // Check for 'entity' keyword in END statement
-    entity.has_end_entity_keyword = (ctx.ENTITY().size() > 1);
-
-    // Optional end label (ENTITY ... END ENTITY <id>)
-    if (ctx.identifier().size() > 1) {
-        entity.end_label = ctx.identifier(1)->getText();
-    }
-
-    if (auto *header = ctx.entity_header()) {
-        if (auto *gen_clause = header->generic_clause()) {
-            entity.generic_clause = makeGenericClause(*gen_clause);
-        }
-        if (auto *port_clause = header->port_clause()) {
-            entity.port_clause = makePortClause(*port_clause);
-        }
-    }
-
-    return entity;
+    return build<ast::Entity>(ctx)
+      .set(&ast::Entity::name, ctx.identifier(0)->getText())
+      .set(&ast::Entity::has_end_entity_keyword, ctx.ENTITY().size() > 1)
+      .maybe(&ast::Entity::end_label, ctx.identifier(1), [](auto &id) { return id.getText(); })
+      .with(ctx.entity_header(),
+            [&](auto &node, auto &header) {
+                if (auto *gc = header.generic_clause()) {
+                    node.generic_clause = makeGenericClause(*gc);
+                }
+                if (auto *pc = header.port_clause()) {
+                    node.port_clause = makePortClause(*pc);
+                }
+            })
+      .build();
 }
 
 auto Translator::makeArchitecture(vhdlParser::Architecture_bodyContext &ctx) -> ast::Architecture
 {
-    auto arch = make<ast::Architecture>(ctx);
-
-    arch.name = ctx.identifier(0)->getText();
-    arch.entity_name = ctx.identifier(1)->getText();
-
-    // Check for 'architecture' keyword in END statement
-    arch.has_end_architecture_keyword = (ctx.ARCHITECTURE().size() > 1);
-
-    // Optional end label (ARCHITECTURE ... END ARCHITECTURE <id>)
-    if (ctx.identifier().size() > 2) {
-        arch.end_label = ctx.identifier(2)->getText();
-    }
-
-    if (auto *decl_part = ctx.architecture_declarative_part()) {
-        arch.decls = makeArchitectureDeclarativePart(*decl_part);
-    }
-
-    if (auto *stmt_part = ctx.architecture_statement_part()) {
-        arch.stmts = makeArchitectureStatementPart(*stmt_part);
-    }
-
-    return arch;
+    return build<ast::Architecture>(ctx)
+      .set(&ast::Architecture::name, ctx.identifier(0)->getText())
+      .set(&ast::Architecture::entity_name, ctx.identifier(1)->getText())
+      .set(&ast::Architecture::has_end_architecture_keyword, ctx.ARCHITECTURE().size() > 1)
+      .maybe(
+        &ast::Architecture::end_label, ctx.identifier(2), [](auto &id) { return id.getText(); })
+      .maybe(&ast::Architecture::decls,
+             ctx.architecture_declarative_part(),
+             [&](auto &dp) { return makeArchitectureDeclarativePart(dp); })
+      .maybe(&ast::Architecture::stmts,
+             ctx.architecture_statement_part(),
+             [&](auto &sp) { return makeArchitectureStatementPart(sp); })
+      .build();
 }
 
 auto Translator::makeArchitectureDeclarativePart(

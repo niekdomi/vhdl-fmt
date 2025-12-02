@@ -12,33 +12,23 @@ namespace builder {
 
 auto Translator::makeWaveform(vhdlParser::WaveformContext &ctx) -> ast::Waveform
 {
-    auto waveform = make<ast::Waveform>(ctx);
-
-    // Handle 'UNAFFECTED' keyword
-    if (ctx.UNAFFECTED() != nullptr) {
-        waveform.is_unaffected = true;
-        return waveform;
-    }
-
-    // Handle list: waveform_element (COMMA waveform_element)*
-    if (!ctx.waveform_element().empty()) {
-        for (auto *el_ctx : ctx.waveform_element()) {
-            ast::Waveform::Element elem;
-
-            // 1. The Value
-            // Note: expression(0) is the value, expression(1) is the time (if AFTER exists)
-            elem.value = makeExpr(*el_ctx->expression(0));
-
-            // 2. The Optional Delay (AFTER expression)
-            if (el_ctx->AFTER() != nullptr) {
-                elem.after = makeExpr(*el_ctx->expression(1));
-            }
-
-            waveform.elements.emplace_back(std::move(elem));
-        }
-    }
-
-    return waveform;
+    return build<ast::Waveform>(ctx)
+      .set(&ast::Waveform::is_unaffected, ctx.UNAFFECTED() != nullptr)
+      .with(&ctx,
+            [&](auto &node, auto &wave_ctx) {
+                if (node.is_unaffected) {
+                    return;
+                }
+                for (auto *el_ctx : wave_ctx.waveform_element()) {
+                    ast::Waveform::Element elem;
+                    elem.value = makeExpr(*el_ctx->expression(0));
+                    if (el_ctx->AFTER() != nullptr) {
+                        elem.after = makeExpr(*el_ctx->expression(1));
+                    }
+                    node.elements.emplace_back(std::move(elem));
+                }
+            })
+      .build();
 }
 
 auto Translator::makeConcurrentAssign(
@@ -57,78 +47,60 @@ auto Translator::makeConcurrentAssign(
 auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx)
   -> ast::ConditionalConcurrentAssign
 {
-    auto assign = make<ast::ConditionalConcurrentAssign>(ctx);
-
-    if (auto *target_ctx = ctx.target()) {
-        assign.target = makeTarget(*target_ctx);
-    }
-
-    // Flatten the recursive conditional waveforms:
-    // val1 when cond1 else val2 when cond2 else val3
-    auto *current_wave = ctx.conditional_waveforms();
-    while (current_wave != nullptr) {
-        ast::ConditionalConcurrentAssign::ConditionalWaveform wave_item;
-
-        // 1. Waveform (Value + Delay or UNAFFECTED)
-        if (auto *w = current_wave->waveform()) {
-            wave_item.waveform = makeWaveform(*w);
-        }
-
-        // 2. Condition (WHEN ...)
-        if (auto *cond = current_wave->condition()) {
-            wave_item.condition = makeExpr(*cond->expression());
-        }
-
-        assign.waveforms.emplace_back(std::move(wave_item));
-
-        // 3. Recurse (ELSE ...)
-        current_wave = current_wave->conditional_waveforms();
-    }
-
-    return assign;
+    return build<ast::ConditionalConcurrentAssign>(ctx)
+      .maybe(&ast::ConditionalConcurrentAssign::target,
+             ctx.target(),
+             [&](auto &t) { return makeTarget(t); })
+      .with(&ctx,
+            [&](auto &node, auto &assign_ctx) {
+                // Flatten the recursive conditional waveforms
+                auto *current_wave = assign_ctx.conditional_waveforms();
+                while (current_wave != nullptr) {
+                    ast::ConditionalConcurrentAssign::ConditionalWaveform wave_item;
+                    if (auto *w = current_wave->waveform()) {
+                        wave_item.waveform = makeWaveform(*w);
+                    }
+                    if (auto *cond = current_wave->condition()) {
+                        wave_item.condition = makeExpr(*cond->expression());
+                    }
+                    node.waveforms.emplace_back(std::move(wave_item));
+                    current_wave = current_wave->conditional_waveforms();
+                }
+            })
+      .build();
 }
 
 auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx)
   -> ast::SelectedConcurrentAssign
 {
-    auto assign = make<ast::SelectedConcurrentAssign>(ctx);
+    return build<ast::SelectedConcurrentAssign>(ctx)
+      .maybe(&ast::SelectedConcurrentAssign::selector,
+             ctx.expression(),
+             [&](auto &expr) { return makeExpr(expr); })
+      .maybe(&ast::SelectedConcurrentAssign::target,
+             ctx.target(),
+             [&](auto &t) { return makeTarget(t); })
+      .with(ctx.selected_waveforms(),
+            [&](auto &node, auto &sel_waves) {
+                const auto waves = sel_waves.waveform();
+                const auto choices = sel_waves.choices();
 
-    // WITH expression ...
-    if (auto *expr = ctx.expression()) {
-        assign.selector = makeExpr(*expr);
-    }
-
-    if (auto *target_ctx = ctx.target()) {
-        assign.target = makeTarget(*target_ctx);
-    }
-
-    // ... SELECT target <= opts waveforms
-    if (auto *sel_waves = ctx.selected_waveforms()) {
-        const auto waves = sel_waves->waveform();
-        const auto choices = sel_waves->choices();
-
-        for (const auto i : std::views::iota(std::size_t{ 0 }, waves.size())) {
-            ast::SelectedConcurrentAssign::Selection selection{};
-
-            // Value
-            if (waves[i] != nullptr) {
-                selection.waveform = makeWaveform(*waves[i]);
-            }
-
-            // Choices (1 | 2 | others)
-            if (i < choices.size()) {
-                if (auto *ch_ctx = choices[i]) {
-                    for (auto *c : ch_ctx->choice()) {
-                        selection.choices.emplace_back(makeChoice(*c));
+                for (const auto i : std::views::iota(std::size_t{ 0 }, waves.size())) {
+                    ast::SelectedConcurrentAssign::Selection selection{};
+                    if (waves[i] != nullptr) {
+                        selection.waveform = makeWaveform(*waves[i]);
                     }
+                    if (i < choices.size()) {
+                        if (auto *ch_ctx = choices[i]) {
+                            for (auto *c : ch_ctx->choice()) {
+                                selection.choices.emplace_back(makeChoice(*c));
+                            }
+                        }
+                    }
+                    node.selections.emplace_back(std::move(selection));
                 }
-            }
-
-            assign.selections.emplace_back(std::move(selection));
-        }
-    }
-
-    return assign;
+            })
+      .build();
 }
 
 auto Translator::makeProcessDeclarativePart(vhdlParser::Process_declarative_partContext &ctx)
@@ -166,29 +138,25 @@ auto Translator::makeProcessStatementPart(vhdlParser::Process_statement_partCont
 
 auto Translator::makeProcess(vhdlParser::Process_statementContext &ctx) -> ast::Process
 {
-    auto proc = make<ast::Process>(ctx);
-
-    // Extract label if present
-    if (auto *label = ctx.label_colon(); label != nullptr && label->identifier() != nullptr) {
-        proc.label = label->identifier()->getText();
-    }
-
-    // Extract sensitivity list
-    if (auto *sens_list = ctx.sensitivity_list()) {
-        proc.sensitivity_list = sens_list->name()
-                              | std::views::transform([](auto *name) { return name->getText(); })
-                              | std::ranges::to<std::vector>();
-    }
-
-    if (auto *decl_part = ctx.process_declarative_part()) {
-        proc.decls = makeProcessDeclarativePart(*decl_part);
-    }
-
-    if (auto *stmt_part = ctx.process_statement_part()) {
-        proc.body = makeProcessStatementPart(*stmt_part);
-    }
-
-    return proc;
+    return build<ast::Process>(ctx)
+      .with(ctx.label_colon(),
+            [](auto &node, auto &label) {
+                if (auto *id = label.identifier()) {
+                    node.label = id->getText();
+                }
+            })
+      .collectFrom(
+        &ast::Process::sensitivity_list,
+        ctx.sensitivity_list(),
+        [](auto &sl) { return sl.name(); },
+        [](auto *name) { return name->getText(); })
+      .maybe(&ast::Process::decls,
+             ctx.process_declarative_part(),
+             [&](auto &dp) { return makeProcessDeclarativePart(dp); })
+      .maybe(&ast::Process::body,
+             ctx.process_statement_part(),
+             [&](auto &sp) { return makeProcessStatementPart(sp); })
+      .build();
 }
 
 } // namespace builder

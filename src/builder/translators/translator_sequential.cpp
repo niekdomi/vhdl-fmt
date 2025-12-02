@@ -11,7 +11,6 @@ namespace builder {
 
 auto Translator::makeTarget(vhdlParser::TargetContext &ctx) -> ast::Expr
 {
-    // Dispatch based on concrete target type
     if (auto *name = ctx.name()) {
         return makeName(*name);
     }
@@ -28,33 +27,20 @@ auto Translator::makeTarget(vhdlParser::TargetContext &ctx) -> ast::Expr
 auto Translator::makeSignalAssign(vhdlParser::Signal_assignment_statementContext &ctx)
   -> ast::SignalAssign
 {
-    auto assign = make<ast::SignalAssign>(ctx);
-
-    if (auto *target_ctx = ctx.target()) {
-        assign.target = makeTarget(*target_ctx);
-    }
-
-    if (auto *wave = ctx.waveform()) {
-        assign.waveform = makeWaveform(*wave);
-    }
-
-    return assign;
+    return build<ast::SignalAssign>(ctx)
+      .maybe(&ast::SignalAssign::target, ctx.target(), [&](auto &t) { return makeTarget(t); })
+      .maybe(&ast::SignalAssign::waveform, ctx.waveform(), [&](auto &w) { return makeWaveform(w); })
+      .build();
 }
 
 auto Translator::makeVariableAssign(vhdlParser::Variable_assignment_statementContext &ctx)
   -> ast::VariableAssign
 {
-    auto assign = make<ast::VariableAssign>(ctx);
-
-    if (auto *target_ctx = ctx.target()) {
-        assign.target = makeTarget(*target_ctx);
-    }
-
-    if (auto *expr = ctx.expression()) {
-        assign.value = makeExpr(*expr);
-    }
-
-    return assign;
+    return build<ast::VariableAssign>(ctx)
+      .maybe(&ast::VariableAssign::target, ctx.target(), [&](auto &t) { return makeTarget(t); })
+      .maybe(
+        &ast::VariableAssign::value, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })
+      .build();
 }
 
 auto Translator::makeSequentialStatement(vhdlParser::Sequential_statementContext &ctx)

@@ -6,10 +6,10 @@
 #include "ast/nodes/design_units.hpp"
 #include "ast/nodes/expressions.hpp"
 #include "ast/nodes/statements.hpp"
+#include "builder/node_builder.hpp"
 #include "builder/trivia/trivia_binder.hpp"
 #include "vhdlParser.h"
 
-#include <CommonTokenStream.h>
 #include <memory>
 #include <optional>
 #include <string>
@@ -21,10 +21,9 @@ namespace builder {
 class Translator final
 {
     TriviaBinder trivia_;
-    antlr4::CommonTokenStream &tokens_;
 
   public:
-    explicit Translator(antlr4::CommonTokenStream &tokens) : trivia_(tokens), tokens_(tokens) {}
+    explicit Translator(antlr4::CommonTokenStream &tokens) : trivia_(tokens) {}
 
     /// @brief Build the entire design file by walking the CST
     void buildDesignFile(ast::DesignFile &dest, vhdlParser::Design_fileContext *ctx);
@@ -159,6 +158,14 @@ class Translator final
     auto makeRangeConstraint(vhdlParser::Range_constraintContext &ctx)
       -> std::optional<ast::RangeConstraint>;
 
+    /// @brief Factory to create a NodeBuilder with trivia already bound
+    template<typename T, typename Ctx>
+    [[nodiscard]]
+    auto build(Ctx &ctx) -> NodeBuilder<T>
+    {
+        return NodeBuilder<T>(ctx, trivia_);
+    }
+
     /// @brief Helper to create and bind an AST node with trivia
     template<typename T, typename Ctx>
     [[nodiscard]]
@@ -168,11 +175,6 @@ class Translator final
         trivia_.bind(node, ctx);
         return node;
     }
-
-    /// @brief Extract identifier names from an identifier_list context
-    [[nodiscard]]
-    static auto makeIdentifierList(vhdlParser::Identifier_listContext &ctx)
-      -> std::vector<std::string>;
 
     /// @brief Helper to create binary expressions
     template<typename Ctx>
