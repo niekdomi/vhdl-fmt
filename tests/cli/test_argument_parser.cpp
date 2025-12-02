@@ -32,9 +32,9 @@ auto createArgs(const std::vector<std::string_view> &args) -> std::vector<char *
 TEST_CASE("ArgumentParser with valid arguments including all options", "[argument_parser]")
 {
     const std::filesystem::path temp_input
-      = std::filesystem::temp_directory_path() / "test_input.vhd";
+      = std::filesystem::temp_directory_path() / "test_input_all_options.vhd";
     const std::filesystem::path temp_config
-      = std::filesystem::temp_directory_path() / "test_config.yaml";
+      = std::filesystem::temp_directory_path() / "test_config_all_options.yaml";
 
     {
         // Create temporary files
@@ -70,7 +70,7 @@ TEST_CASE("ArgumentParser with valid arguments including all options", "[argumen
 TEST_CASE("ArgumentParser with valid arguments minimal options", "[argument_parser]")
 {
     const std::filesystem::path temp_input
-      = std::filesystem::temp_directory_path() / "test_input.vhd";
+      = std::filesystem::temp_directory_path() / "test_input_minimal.vhd";
 
     {
         // Create temporary file
@@ -112,7 +112,7 @@ TEST_CASE("ArgumentParser with non-existent vhdl file path", "[argument_parser]"
 TEST_CASE("ArgumentParser with non-existent config file path", "[argument_parser]")
 {
     const std::filesystem::path temp_input
-      = std::filesystem::temp_directory_path() / "test_input.vhd";
+      = std::filesystem::temp_directory_path() / "test_input_nonexistent_cfg.vhd";
     const std::filesystem::path non_existent_config
       = std::filesystem::temp_directory_path() / "non_existent.yaml";
 
@@ -139,7 +139,7 @@ TEST_CASE("ArgumentParser with non-existent config file path", "[argument_parser
 TEST_CASE("ArgumentParser with config file path that is not a regular file", "[argument_parser]")
 {
     const std::filesystem::path temp_input
-      = std::filesystem::temp_directory_path() / "test_input.vhd";
+      = std::filesystem::temp_directory_path() / "test_input_cfg_not_file.vhd";
     const std::filesystem::path temp_dir = std::filesystem::temp_directory_path() / "temp_dir";
 
     std::filesystem::create_directories(temp_dir);
@@ -185,7 +185,7 @@ TEST_CASE("ArgumentParser with flags set correctly", "[argument_parser]")
     }));
 
     const std::filesystem::path temp_input
-      = std::filesystem::temp_directory_path() / "test_input.vhd";
+      = std::filesystem::temp_directory_path() / "test_input_flags.vhd";
 
     {
         // Create temporary file
