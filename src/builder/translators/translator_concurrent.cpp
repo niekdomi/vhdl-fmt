@@ -10,28 +10,28 @@
 
 namespace builder {
 
-auto Translator::makeWaveform(vhdlParser::WaveformContext *ctx) -> ast::Waveform
+auto Translator::makeWaveform(vhdlParser::WaveformContext &ctx) -> ast::Waveform
 {
     auto waveform = make<ast::Waveform>(ctx);
 
     // Handle 'UNAFFECTED' keyword
-    if (ctx->UNAFFECTED() != nullptr) {
+    if (ctx.UNAFFECTED() != nullptr) {
         waveform.is_unaffected = true;
         return waveform;
     }
 
     // Handle list: waveform_element (COMMA waveform_element)*
-    if (!ctx->waveform_element().empty()) {
-        for (auto *el_ctx : ctx->waveform_element()) {
+    if (!ctx.waveform_element().empty()) {
+        for (auto *el_ctx : ctx.waveform_element()) {
             ast::Waveform::Element elem;
 
             // 1. The Value
             // Note: expression(0) is the value, expression(1) is the time (if AFTER exists)
-            elem.value = makeExpr(el_ctx->expression(0));
+            elem.value = makeExpr(*el_ctx->expression(0));
 
             // 2. The Optional Delay (AFTER expression)
             if (el_ctx->AFTER() != nullptr) {
-                elem.after = makeExpr(el_ctx->expression(1));
+                elem.after = makeExpr(*el_ctx->expression(1));
             }
 
             waveform.elements.emplace_back(std::move(elem));
@@ -42,41 +42,41 @@ auto Translator::makeWaveform(vhdlParser::WaveformContext *ctx) -> ast::Waveform
 }
 
 auto Translator::makeConcurrentAssign(
-  vhdlParser::Concurrent_signal_assignment_statementContext *ctx) -> ast::ConcurrentStatement
+  vhdlParser::Concurrent_signal_assignment_statementContext &ctx) -> ast::ConcurrentStatement
 {
     // Dispatch based on concrete assignment type
-    if (auto *cond = ctx->conditional_signal_assignment()) {
-        return makeConditionalAssign(cond);
+    if (auto *cond = ctx.conditional_signal_assignment()) {
+        return makeConditionalAssign(*cond);
     }
 
     // Can only be Selected assignment here
-    auto *sel = ctx->selected_signal_assignment();
-    return makeSelectedAssign(sel);
+    auto *sel = ctx.selected_signal_assignment();
+    return makeSelectedAssign(*sel);
 }
 
-auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext *ctx)
+auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx)
   -> ast::ConditionalConcurrentAssign
 {
     auto assign = make<ast::ConditionalConcurrentAssign>(ctx);
 
-    if (auto *target_ctx = ctx->target()) {
-        assign.target = makeTarget(target_ctx);
+    if (auto *target_ctx = ctx.target()) {
+        assign.target = makeTarget(*target_ctx);
     }
 
     // Flatten the recursive conditional waveforms:
     // val1 when cond1 else val2 when cond2 else val3
-    auto *current_wave = ctx->conditional_waveforms();
+    auto *current_wave = ctx.conditional_waveforms();
     while (current_wave != nullptr) {
         ast::ConditionalConcurrentAssign::ConditionalWaveform wave_item;
 
         // 1. Waveform (Value + Delay or UNAFFECTED)
         if (auto *w = current_wave->waveform()) {
-            wave_item.waveform = makeWaveform(w);
+            wave_item.waveform = makeWaveform(*w);
         }
 
         // 2. Condition (WHEN ...)
         if (auto *cond = current_wave->condition()) {
-            wave_item.condition = makeExpr(cond->expression());
+            wave_item.condition = makeExpr(*cond->expression());
         }
 
         assign.waveforms.emplace_back(std::move(wave_item));
@@ -88,22 +88,22 @@ auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignment
     return assign;
 }
 
-auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext *ctx)
+auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx)
   -> ast::SelectedConcurrentAssign
 {
     auto assign = make<ast::SelectedConcurrentAssign>(ctx);
 
     // WITH expression ...
-    if (auto *expr = ctx->expression()) {
-        assign.selector = makeExpr(expr);
+    if (auto *expr = ctx.expression()) {
+        assign.selector = makeExpr(*expr);
     }
 
-    if (auto *target_ctx = ctx->target()) {
-        assign.target = makeTarget(target_ctx);
+    if (auto *target_ctx = ctx.target()) {
+        assign.target = makeTarget(*target_ctx);
     }
 
     // ... SELECT target <= opts waveforms
-    if (auto *sel_waves = ctx->selected_waveforms()) {
+    if (auto *sel_waves = ctx.selected_waveforms()) {
         const auto waves = sel_waves->waveform();
         const auto choices = sel_waves->choices();
 
@@ -112,14 +112,14 @@ auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContex
 
             // Value
             if (waves[i] != nullptr) {
-                selection.waveform = makeWaveform(waves[i]);
+                selection.waveform = makeWaveform(*waves[i]);
             }
 
             // Choices (1 | 2 | others)
             if (i < choices.size()) {
                 if (auto *ch_ctx = choices[i]) {
                     for (auto *c : ch_ctx->choice()) {
-                        selection.choices.emplace_back(makeChoice(c));
+                        selection.choices.emplace_back(makeChoice(*c));
                     }
                 }
             }
@@ -131,16 +131,16 @@ auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContex
     return assign;
 }
 
-auto Translator::makeProcessDeclarativePart(vhdlParser::Process_declarative_partContext *ctx)
+auto Translator::makeProcessDeclarativePart(vhdlParser::Process_declarative_partContext &ctx)
   -> std::vector<ast::Declaration>
 {
     std::vector<ast::Declaration> decls{};
 
-    for (auto *item : ctx->process_declarative_item()) {
+    for (auto *item : ctx.process_declarative_item()) {
         if (auto *var_ctx = item->variable_declaration()) {
-            decls.emplace_back(makeVariableDecl(var_ctx));
+            decls.emplace_back(makeVariableDecl(*var_ctx));
         } else if (auto *const_ctx = item->constant_declaration()) {
-            decls.emplace_back(makeConstantDecl(const_ctx));
+            decls.emplace_back(makeConstantDecl(*const_ctx));
         }
         // TODO(vedivad): Add Types, Files, Aliases here
     }
@@ -148,15 +148,15 @@ auto Translator::makeProcessDeclarativePart(vhdlParser::Process_declarative_part
     return decls;
 }
 
-auto Translator::makeProcessStatementPart(vhdlParser::Process_statement_partContext *ctx)
+auto Translator::makeProcessStatementPart(vhdlParser::Process_statement_partContext &ctx)
   -> std::vector<ast::SequentialStatement>
 {
     std::vector<ast::SequentialStatement> stmts{};
-    const auto &source_stmts = ctx->sequential_statement();
+    const auto &source_stmts = ctx.sequential_statement();
     stmts.reserve(source_stmts.size());
 
     for (auto *stmt_ctx : source_stmts) {
-        if (auto stmt = makeSequentialStatement(stmt_ctx)) {
+        if (auto stmt = makeSequentialStatement(*stmt_ctx)) {
             stmts.emplace_back(std::move(*stmt));
         }
     }
@@ -164,28 +164,28 @@ auto Translator::makeProcessStatementPart(vhdlParser::Process_statement_partCont
     return stmts;
 }
 
-auto Translator::makeProcess(vhdlParser::Process_statementContext *ctx) -> ast::Process
+auto Translator::makeProcess(vhdlParser::Process_statementContext &ctx) -> ast::Process
 {
     auto proc = make<ast::Process>(ctx);
 
     // Extract label if present
-    if (auto *label = ctx->label_colon(); label != nullptr && label->identifier() != nullptr) {
+    if (auto *label = ctx.label_colon(); label != nullptr && label->identifier() != nullptr) {
         proc.label = label->identifier()->getText();
     }
 
     // Extract sensitivity list
-    if (auto *sens_list = ctx->sensitivity_list()) {
+    if (auto *sens_list = ctx.sensitivity_list()) {
         proc.sensitivity_list = sens_list->name()
                               | std::views::transform([](auto *name) { return name->getText(); })
                               | std::ranges::to<std::vector>();
     }
 
-    if (auto *decl_part = ctx->process_declarative_part()) {
-        proc.decls = makeProcessDeclarativePart(decl_part);
+    if (auto *decl_part = ctx.process_declarative_part()) {
+        proc.decls = makeProcessDeclarativePart(*decl_part);
     }
 
-    if (auto *stmt_part = ctx->process_statement_part()) {
-        proc.body = makeProcessStatementPart(stmt_part);
+    if (auto *stmt_part = ctx.process_statement_part()) {
+        proc.body = makeProcessStatementPart(*stmt_part);
     }
 
     return proc;

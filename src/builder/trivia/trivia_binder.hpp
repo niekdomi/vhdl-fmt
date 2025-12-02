@@ -28,7 +28,7 @@ class TriviaBinder final
     auto operator=(TriviaBinder &&) -> TriviaBinder & = delete;
 
     /// @brief Binds collected trivia to the specified AST node.
-    void bind(ast::NodeBase &node, const antlr4::ParserRuleContext *ctx);
+    void bind(ast::NodeBase &node, const antlr4::ParserRuleContext &ctx);
 
   private:
     antlr4::CommonTokenStream &tokens_;
@@ -40,7 +40,7 @@ class TriviaBinder final
 
     // Finds the index of the last meaningful token in the context
     [[nodiscard]]
-    auto findContextEnd(const antlr4::ParserRuleContext *ctx) const -> std::size_t;
+    auto findContextEnd(const antlr4::ParserRuleContext &ctx) const -> std::size_t;
 
     // Checks if a token is already taken
     [[nodiscard]]
