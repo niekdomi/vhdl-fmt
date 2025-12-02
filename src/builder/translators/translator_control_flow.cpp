@@ -56,9 +56,10 @@ auto Translator::makeCaseStatement(vhdlParser::Case_statementContext &ctx) -> as
         ast::CaseStatement::WhenClause when_clause;
 
         if (auto *choices_ctx = alt->choices()) {
-            when_clause.choices = choices_ctx->choice()
-                                | std::views::transform([this](auto *ch) { return makeChoice(*ch); })
-                                | std::ranges::to<std::vector>();
+            when_clause.choices
+              = choices_ctx->choice()
+              | std::views::transform([this](auto *ch) { return makeChoice(*ch); })
+              | std::ranges::to<std::vector>();
         }
 
         if (auto *seq = alt->sequence_of_statements()) {

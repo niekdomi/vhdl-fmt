@@ -5,12 +5,27 @@
 #include "builder/ast_builder.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <format>
 #include <string_view>
 #include <variant>
 
-// Helper to get expression from signal initialization
 namespace {
 
+/// Helper to build a minimal VHDL snippet with a signal initialization
+auto makeVhdl(std::string_view type, std::string_view init_expr) -> std::string
+{
+    return std::format(R"(
+        entity E is end E;
+        architecture A of E is
+            signal x : {} := {};
+        begin
+        end A;
+    )",
+                       type,
+                       init_expr);
+}
+
+/// Extract expression from signal initialization in the architecture
 auto getSignalInitExpr(const ast::DesignFile &design) -> const ast::Expr *
 {
     if (design.units.size() < 2) {
@@ -27,88 +42,114 @@ auto getSignalInitExpr(const ast::DesignFile &design) -> const ast::Expr *
     return &(*signal->init_expr);
 }
 
+/// Parse VHDL and extract the signal init expression
+auto parseExpr(std::string_view type, std::string_view init_expr) -> const ast::Expr *
+{
+    static ast::DesignFile design; // Static to keep alive for returned pointer
+    design = builder::buildFromString(makeVhdl(type, init_expr));
+    return getSignalInitExpr(design);
+}
+
+/// Assert that expr is a BinaryExpr with given operator
+auto requireBinary(const ast::Expr *expr, std::string_view expected_op) -> const ast::BinaryExpr *
+{
+    REQUIRE(expr != nullptr);
+    const auto *binary = std::get_if<ast::BinaryExpr>(expr);
+    REQUIRE(binary != nullptr);
+    REQUIRE(binary->op == expected_op);
+    return binary;
+}
+
+/// Assert that expr is a TokenExpr with given text
+auto requireToken(const ast::Expr *expr, std::string_view expected_text) -> const ast::TokenExpr *
+{
+    REQUIRE(expr != nullptr);
+    const auto *token = std::get_if<ast::TokenExpr>(expr);
+    REQUIRE(token != nullptr);
+    REQUIRE(token->text == expected_text);
+    return token;
+}
+
 } // namespace
 
-TEST_CASE("BinaryExpr: Addition operator", "[expressions][binary]")
+TEST_CASE("BinaryExpr: Simple operators", "[expressions][binary]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-            signal x : integer := 10 + 20;
-        begin
-        end A;
-    )";
+    SECTION("Addition")
+    {
+        const auto *expr = parseExpr("integer", "10 + 20");
+        const auto *binary = requireBinary(expr, "+");
+        requireToken(binary->left.get(), "10");
+        requireToken(binary->right.get(), "20");
+    }
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    const auto *expr = getSignalInitExpr(design);
-    REQUIRE(expr != nullptr);
+    SECTION("Logical AND")
+    {
+        const auto *expr = parseExpr("boolean", "true and false");
+        const auto *binary = requireBinary(expr, "and");
+        requireToken(binary->left.get(), "true");
+        requireToken(binary->right.get(), "false");
+    }
 
-    const auto *binary = std::get_if<ast::BinaryExpr>(expr);
-    REQUIRE(binary != nullptr);
-    REQUIRE(binary->op == "+");
+    SECTION("Equality")
+    {
+        const auto *expr = parseExpr("boolean", "a = b");
+        const auto *binary = requireBinary(expr, "=");
+        requireToken(binary->left.get(), "a");
+        requireToken(binary->right.get(), "b");
+    }
 
-    auto *left = std::get_if<ast::TokenExpr>(binary->left.get());
-    REQUIRE(left != nullptr);
-    REQUIRE(left->text == "10");
-
-    auto *right = std::get_if<ast::TokenExpr>(binary->right.get());
-    REQUIRE(right != nullptr);
-    REQUIRE(right->text == "20");
+    SECTION("Concatenation")
+    {
+        const auto *expr = parseExpr("std_logic_vector(15 downto 0)", "a & b");
+        const auto *binary = requireBinary(expr, "&");
+        requireToken(binary->left.get(), "a");
+        requireToken(binary->right.get(), "b");
+    }
 }
 
-TEST_CASE("BinaryExpr: Logical AND operator", "[expressions][binary]")
+TEST_CASE("BinaryExpr: Chained operators (left-associative)", "[expressions][binary][chained]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-            signal x : boolean := true and false;
-        begin
-        end A;
-    )";
+    SECTION("Chained logical AND: a and b and c -> (a and b) and c")
+    {
+        const auto *expr = parseExpr("boolean", "a and b and c");
+        const auto *outer = requireBinary(expr, "and");
+        requireToken(outer->right.get(), "c");
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    const auto *expr = getSignalInitExpr(design);
-    REQUIRE(expr != nullptr);
+        const auto *inner = requireBinary(outer->left.get(), "and");
+        requireToken(inner->left.get(), "a");
+        requireToken(inner->right.get(), "b");
+    }
 
-    const auto *binary = std::get_if<ast::BinaryExpr>(expr);
-    REQUIRE(binary != nullptr);
-    REQUIRE(binary->op == "and");
-}
+    SECTION("Chained addition: 1 + 2 + 3 -> (1 + 2) + 3")
+    {
+        const auto *expr = parseExpr("integer", "1 + 2 + 3");
+        const auto *outer = requireBinary(expr, "+");
+        requireToken(outer->right.get(), "3");
 
-TEST_CASE("BinaryExpr: Equality operator", "[expressions][binary]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-            signal x : boolean := a = b;
-        begin
-        end A;
-    )";
+        const auto *inner = requireBinary(outer->left.get(), "+");
+        requireToken(inner->left.get(), "1");
+        requireToken(inner->right.get(), "2");
+    }
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    const auto *expr = getSignalInitExpr(design);
-    REQUIRE(expr != nullptr);
+    SECTION("Chained multiplication: 2 * 3 * 4 -> (2 * 3) * 4")
+    {
+        const auto *expr = parseExpr("integer", "2 * 3 * 4");
+        const auto *outer = requireBinary(expr, "*");
+        requireToken(outer->right.get(), "4");
 
-    const auto *binary = std::get_if<ast::BinaryExpr>(expr);
-    REQUIRE(binary != nullptr);
-    REQUIRE(binary->op == "=");
-}
+        const auto *inner = requireBinary(outer->left.get(), "*");
+        requireToken(inner->left.get(), "2");
+        requireToken(inner->right.get(), "3");
+    }
 
-TEST_CASE("BinaryExpr: Concatenation operator", "[expressions][binary]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-            signal x : std_logic_vector(15 downto 0) := a & b;
-        begin
-        end A;
-    )";
+    SECTION("Mixed adding operators: a + b - c -> (a + b) - c")
+    {
+        const auto *expr = parseExpr("integer", "a + b - c");
+        const auto *outer = requireBinary(expr, "-");
+        requireToken(outer->right.get(), "c");
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    const auto *expr = getSignalInitExpr(design);
-    REQUIRE(expr != nullptr);
-
-    const auto *binary = std::get_if<ast::BinaryExpr>(expr);
-    REQUIRE(binary != nullptr);
-    REQUIRE(binary->op == "&");
+        const auto *inner = requireBinary(outer->left.get(), "+");
+        requireToken(inner->left.get(), "a");
+        requireToken(inner->right.get(), "b");
+    }
 }
