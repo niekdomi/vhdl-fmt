@@ -138,7 +138,7 @@ auto Translator::makePrimary(vhdlParser::PrimaryContext &ctx) -> ast::Expr
 auto Translator::makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx) -> ast::Expr
 {
     // qualified_expression: subtype_indication APOSTROPHE (aggregate | LPAREN expression RPAREN)
-    // Represented as: type_name'(value)  →  BinaryExpr with op="'"
+    // Represented as: BinaryExpr with op="'"
     ast::Expr value_expr = [&]() -> ast::Expr {
         if (auto *agg = ctx.aggregate()) {
             return makeAggregate(*agg);
