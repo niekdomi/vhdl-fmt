@@ -46,22 +46,18 @@ void initializeContext(Context &ctx, std::unique_ptr<antlr4::ANTLRInputStream> i
     ctx.parser = std::make_unique<vhdlParser>(ctx.tokens.get());
 }
 
-class ThrowingErrorListener : public antlr4::BaseErrorListener
+class ThrowingErrorListener final : public antlr4::BaseErrorListener
 {
   public:
     void syntaxError(antlr4::Recognizer * /*recognizer*/,
                      antlr4::Token * /*offendingSymbol*/,
-                     const size_t line,
-                     const size_t char_position_in_line,
+                     const std::size_t line,
+                     const std::size_t char_position_in_line,
                      const std::string &msg,
                      std::exception_ptr /*e*/) override
     {
-        throw std::runtime_error("Parser error at line "
-                                 + std::to_string(line)
-                                 + ":"
-                                 + std::to_string(char_position_in_line)
-                                 + " - "
-                                 + msg);
+        throw std::runtime_error(
+          std::format("Parser error at line {}:{} - {}", line, char_position_in_line, msg));
     }
 };
 
