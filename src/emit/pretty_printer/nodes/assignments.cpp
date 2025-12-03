@@ -5,24 +5,24 @@
 
 namespace emit {
 
+auto PrettyPrinter::operator()(const ast::Waveform::Element &node) const -> Doc
+{
+    Doc d = visit(node.value);
+    if (node.after) {
+        d += Doc::text(" after ") + visit(*node.after);
+    }
+    return d;
+}
+
 auto PrettyPrinter::operator()(const ast::Waveform &node) const -> Doc
 {
     if (node.is_unaffected) {
         return Doc::text("unaffected");
     }
 
-    // Helper to format "value [after time]"
-    const auto format_elem = [&](const ast::Waveform::Element &elem) -> Doc {
-        Doc d = visit(elem.value);
-        if (elem.after) {
-            d += Doc::text(" after ") + visit(*elem.after);
-        }
-        return d;
-    };
-
     // Join elements with ", "
     // Using Doc::line() allows wrapping: "1 after 5 ns," / "0 after 10 ns"
-    return joinMap(node.elements, Doc::text(",") + Doc::line(), format_elem, false);
+    return joinMap(node.elements, Doc::text(",") + Doc::line(), toDoc(*this), false);
 }
 
 // Layout:

@@ -39,7 +39,7 @@ struct Waveform : NodeBase
     bool is_unaffected{ false }; ///< True if waveform is UNAFFECTED keyword.
 
     /// @brief Represents a single waveform element.
-    struct Element
+    struct Element : NodeBase
     {
         Expr value;                ///< Value expression to assign.
         std::optional<Expr> after; ///< Optional delay time (AFTER clause).

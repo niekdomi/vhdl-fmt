@@ -12,11 +12,12 @@ namespace builder {
 auto Translator::makeWaveformElement(vhdlParser::Waveform_elementContext &ctx)
   -> ast::Waveform::Element
 {
-    return {
-        .value = makeExpr(*ctx.expression(0)),
-        .after = (ctx.AFTER() != nullptr) ? std::make_optional(makeExpr(*ctx.expression(1)))
-                                          : std::nullopt,
-    };
+    return build<ast::Waveform::Element>(ctx)
+      .set(&ast::Waveform::Element::value, makeExpr(*ctx.expression(0)))
+      .maybe(&ast::Waveform::Element::after,
+             ctx.AFTER(),
+             [&](auto &) { return makeExpr(*ctx.expression(1)); })
+      .build();
 }
 
 auto Translator::makeWaveform(vhdlParser::WaveformContext &ctx) -> ast::Waveform

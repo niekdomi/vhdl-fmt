@@ -130,4 +130,49 @@ TEST_CASE("Waveform Parsing", "[builder][statements][waveforms]")
         CHECK(assign->waveforms[1].waveform.is_unaffected);
         CHECK(assign->waveforms[1].waveform.elements.empty());
     }
+
+    SECTION("Inline Comments Attach to Element (Not Child Expressions)")
+    {
+        constexpr std::string_view VHDL = R"(
+            entity Test is end Test;
+            architecture RTL of Test is
+                signal s : bit;
+            begin
+                process begin
+                    s <= '1' after 5 ns, -- first element
+                         '0' after 10 ns; -- second element
+                end process;
+            end RTL;
+        )";
+
+        const auto design = builder::buildFromString(VHDL);
+        const auto *assign = getFirstSignalAssign(design);
+        REQUIRE(assign != nullptr);
+        REQUIRE(assign->waveform.elements.size() == 2);
+
+        // Element 0 should have the inline comment "-- first element"
+        const auto &el0 = assign->waveform.elements[0];
+        REQUIRE(el0.hasTrivia());
+        REQUIRE(el0.getInlineComment().has_value());
+        CHECK(el0.getInlineComment().value() == "-- first element");
+
+        // The child expressions should NOT have captured the comment
+        const auto *val0 = std::get_if<ast::TokenExpr>(&el0.value);
+        REQUIRE(val0 != nullptr);
+        CHECK_FALSE(val0->getInlineComment().has_value());
+
+        const auto *after0 = std::get_if<ast::PhysicalLiteral>(&*el0.after);
+        REQUIRE(after0 != nullptr);
+        CHECK_FALSE(after0->getInlineComment().has_value());
+
+        // Element 1 should NOT have the comment - it belongs to the SignalAssign
+        // (the comment comes after the semicolon, which is owned by the statement)
+        const auto &el1 = assign->waveform.elements[1];
+        CHECK_FALSE(el1.hasTrivia());
+
+        // The SignalAssign should have captured "-- second element"
+        REQUIRE(assign->hasTrivia());
+        REQUIRE(assign->getInlineComment().has_value());
+        CHECK(assign->getInlineComment().value() == "-- second element");
+    }
 }
