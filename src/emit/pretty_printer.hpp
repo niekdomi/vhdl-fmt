@@ -59,7 +59,9 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     // Concurrent Statements
     auto operator()(const ast::Waveform::Element &node) const -> Doc;
     auto operator()(const ast::Waveform &node) const -> Doc;
+    auto operator()(const ast::ConditionalConcurrentAssign::ConditionalWaveform &node) const -> Doc;
     auto operator()(const ast::ConditionalConcurrentAssign &node) const -> Doc;
+    auto operator()(const ast::SelectedConcurrentAssign::Selection &node) const -> Doc;
     auto operator()(const ast::SelectedConcurrentAssign &node) const -> Doc;
     auto operator()(const ast::Process &node) const -> Doc;
 

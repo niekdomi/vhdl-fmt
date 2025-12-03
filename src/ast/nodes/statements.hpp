@@ -55,7 +55,7 @@ struct ConditionalConcurrentAssign : NodeBase
     Expr target; ///< Target signal of the assignment.
 
     /// @brief Represents a waveform with an optional condition.
-    struct ConditionalWaveform
+    struct ConditionalWaveform : NodeBase
     {
         Waveform waveform;             ///< The waveform to assign.
         std::optional<Expr> condition; ///< Optional WHEN condition (none for final ELSE).
@@ -72,7 +72,7 @@ struct SelectedConcurrentAssign : NodeBase
     Expr selector; ///< Selector expression in WITH clause.
 
     /// @brief Represents a selection branch with choices.
-    struct Selection
+    struct Selection : NodeBase
     {
         Waveform waveform;         ///< The waveform to assign for this selection.
         std::vector<Expr> choices; ///< List of choices (WHEN alternatives).
@@ -122,9 +122,8 @@ struct IfStatement : NodeBase
 struct CaseStatement : NodeBase
 {
     /// @brief Represents a WHEN clause in a CASE statement.
-    struct WhenClause
+    struct WhenClause : NodeBase
     {
-        std::optional<NodeTrivia> trivia;      ///< Leading trivia (comments, whitespace).
         std::vector<Expr> choices;             ///< Choice expressions (alternatives).
         std::vector<SequentialStatement> body; ///< Statements for this clause.
     };

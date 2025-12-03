@@ -13,10 +13,12 @@ auto Translator::makeWaveformElement(vhdlParser::Waveform_elementContext &ctx)
   -> ast::Waveform::Element
 {
     return build<ast::Waveform::Element>(ctx)
-      .set(&ast::Waveform::Element::value, makeExpr(*ctx.expression(0)))
+      .maybe(&ast::Waveform::Element::value,
+             ctx.expression(0),
+             [this](auto &expr) { return makeExpr(expr); })
       .maybe(&ast::Waveform::Element::after,
-             ctx.AFTER(),
-             [&](auto &) { return makeExpr(*ctx.expression(1)); })
+             ctx.expression(1),
+             [this](auto &expr) { return makeExpr(expr); })
       .build();
 }
 
@@ -25,9 +27,8 @@ auto Translator::makeWaveform(vhdlParser::WaveformContext &ctx) -> ast::Waveform
     return build<ast::Waveform>(ctx)
       .set(&ast::Waveform::is_unaffected, ctx.UNAFFECTED() != nullptr)
       .collect(&ast::Waveform::elements,
-               (ctx.UNAFFECTED() != nullptr) ? decltype(ctx.waveform_element()){}
-                                             : ctx.waveform_element(),
-               [&](auto *el) { return makeWaveformElement(*el); })
+               ctx.waveform_element(),
+               [this](auto *el) { return makeWaveformElement(*el); })
       .build();
 }
 
@@ -45,14 +46,15 @@ auto Translator::makeConditionalWaveform(vhdlParser::Conditional_waveformsContex
   -> ast::ConditionalConcurrentAssign::ConditionalWaveform
 {
     auto *cond = ctx.condition();
-    ast::ConditionalConcurrentAssign::ConditionalWaveform result;
-    if (auto *w = ctx.waveform()) {
-        result.waveform = makeWaveform(*w);
-    }
-    if (cond != nullptr) {
-        result.condition = makeExpr(*cond->expression());
-    }
-    return result;
+
+    return build<ast::ConditionalConcurrentAssign::ConditionalWaveform>(ctx)
+      .maybe(&ast::ConditionalConcurrentAssign::ConditionalWaveform::waveform,
+             ctx.waveform(),
+             [this](auto &w) { return makeWaveform(w); })
+      .maybe(&ast::ConditionalConcurrentAssign::ConditionalWaveform::condition,
+             (cond != nullptr) ? cond->expression() : nullptr,
+             [this](auto &expr) { return makeExpr(expr); })
+      .build();
 }
 
 auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx)
@@ -72,20 +74,16 @@ auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignment
       .build();
 }
 
-auto Translator::makeSelection(vhdlParser::WaveformContext *wave,
-                               vhdlParser::ChoicesContext *choices)
+auto Translator::makeSelection(vhdlParser::WaveformContext &wave,
+                               vhdlParser::ChoicesContext &choices)
   -> ast::SelectedConcurrentAssign::Selection
 {
-    ast::SelectedConcurrentAssign::Selection selection;
-    if (wave != nullptr) {
-        selection.waveform = makeWaveform(*wave);
-    }
-    if (choices != nullptr) {
-        for (auto *c : choices->choice()) {
-            selection.choices.emplace_back(makeChoice(*c));
-        }
-    }
-    return selection;
+    return build<ast::SelectedConcurrentAssign::Selection>(wave)
+      .set(&ast::SelectedConcurrentAssign::Selection::waveform, makeWaveform(wave))
+      .collect(&ast::SelectedConcurrentAssign::Selection::choices,
+               choices.choice(),
+               [this](auto *c) { return makeChoice(*c); })
+      .build();
 }
 
 auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx)
@@ -96,15 +94,15 @@ auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContex
     return build<ast::SelectedConcurrentAssign>(ctx)
       .maybe(&ast::SelectedConcurrentAssign::selector,
              ctx.expression(),
-             [&](auto &expr) { return makeExpr(expr); })
+             [this](auto &expr) { return makeExpr(expr); })
       .maybe(&ast::SelectedConcurrentAssign::target,
              ctx.target(),
-             [&](auto &t) { return makeTarget(t); })
+             [this](auto &t) { return makeTarget(t); })
       .collectZipped(
         &ast::SelectedConcurrentAssign::selections,
         (sel_waves != nullptr) ? sel_waves->waveform() : decltype(sel_waves->waveform()){},
         (sel_waves != nullptr) ? sel_waves->choices() : decltype(sel_waves->choices()){},
-        [&](auto *wave, auto *choices) { return makeSelection(wave, choices); })
+        [this](auto *wave, auto *choices) { return makeSelection(*wave, *choices); })
       .build();
 }
 

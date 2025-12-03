@@ -5,7 +5,6 @@
 #include <cstddef>
 #include <ranges>
 #include <utility>
-#include <vector>
 
 namespace builder {
 
@@ -46,26 +45,27 @@ auto Translator::makeIfStatement(vhdlParser::If_statementContext &ctx) -> ast::I
 auto Translator::makeWhenClause(vhdlParser::Case_statement_alternativeContext &ctx)
   -> ast::CaseStatement::WhenClause
 {
-    ast::CaseStatement::WhenClause when_clause{};
-    if (auto *choices_ctx = ctx.choices()) {
-        when_clause.choices = choices_ctx->choice()
-                            | std::views::transform([this](auto *ch) { return makeChoice(*ch); })
-                            | std::ranges::to<std::vector>();
-    }
-    if (auto *seq = ctx.sequence_of_statements()) {
-        when_clause.body = makeSequenceOfStatements(*seq);
-    }
-    return when_clause;
+    return build<ast::CaseStatement::WhenClause>(ctx)
+      .collectFrom(
+        &ast::CaseStatement::WhenClause::choices,
+        ctx.choices(),
+        [](auto &ch) { return ch.choice(); },
+        [this](auto *c) { return makeChoice(*c); })
+      .maybe(&ast::CaseStatement::WhenClause::body,
+             ctx.sequence_of_statements(),
+             [this](auto &seq) { return makeSequenceOfStatements(seq); })
+      .build();
 }
 
 auto Translator::makeCaseStatement(vhdlParser::Case_statementContext &ctx) -> ast::CaseStatement
 {
     return build<ast::CaseStatement>(ctx)
-      .maybe(
-        &ast::CaseStatement::selector, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })
+      .maybe(&ast::CaseStatement::selector,
+             ctx.expression(),
+             [this](auto &expr) { return makeExpr(expr); })
       .collect(&ast::CaseStatement::when_clauses,
                ctx.case_statement_alternative(),
-               [&](auto *alt) { return makeWhenClause(*alt); })
+               [this](auto *alt) { return makeWhenClause(*alt); })
       .build();
 }
 
@@ -80,10 +80,10 @@ auto Translator::makeForLoop(vhdlParser::Loop_statementContext &ctx) -> ast::For
              [](auto &id) { return id.getText(); })
       .maybe(&ast::ForLoop::range,
              (param != nullptr) ? param->discrete_range() : nullptr,
-             [&](auto &dr) { return makeDiscreteRange(dr); })
+             [this](auto &dr) { return makeDiscreteRange(dr); })
       .maybe(&ast::ForLoop::body,
              ctx.sequence_of_statements(),
-             [&](auto &seq) { return makeSequenceOfStatements(seq); })
+             [this](auto &seq) { return makeSequenceOfStatements(seq); })
       .build();
 }
 
@@ -95,10 +95,10 @@ auto Translator::makeWhileLoop(vhdlParser::Loop_statementContext &ctx) -> ast::W
     return build<ast::WhileLoop>(ctx)
       .maybe(&ast::WhileLoop::condition,
              (cond != nullptr) ? cond->expression() : nullptr,
-             [&](auto &expr) { return makeExpr(expr); })
+             [this](auto &expr) { return makeExpr(expr); })
       .maybe(&ast::WhileLoop::body,
              ctx.sequence_of_statements(),
-             [&](auto &seq) { return makeSequenceOfStatements(seq); })
+             [this](auto &seq) { return makeSequenceOfStatements(seq); })
       .build();
 }
 

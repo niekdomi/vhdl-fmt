@@ -84,7 +84,7 @@ class Translator final
     auto makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx)
       -> ast::SelectedConcurrentAssign;
     [[nodiscard]]
-    auto makeSelection(vhdlParser::WaveformContext *wave, vhdlParser::ChoicesContext *choices)
+    auto makeSelection(vhdlParser::WaveformContext &wave, vhdlParser::ChoicesContext &choices)
       -> ast::SelectedConcurrentAssign::Selection;
     [[nodiscard]]
     auto makeTarget(vhdlParser::TargetContext &ctx) -> ast::Expr;
