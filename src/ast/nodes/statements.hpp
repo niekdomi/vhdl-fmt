@@ -22,6 +22,7 @@ struct CaseStatement;
 struct Process;
 struct ForLoop;
 struct WhileLoop;
+struct Loop;
 
 /// @brief Variant type for concurrent statements (outside processes).
 using ConcurrentStatement
@@ -29,7 +30,7 @@ using ConcurrentStatement
 
 /// @brief Variant type for sequential statements (inside processes).
 using SequentialStatement
-  = std::variant<VariableAssign, SignalAssign, IfStatement, CaseStatement, ForLoop, WhileLoop>;
+  = std::variant<VariableAssign, SignalAssign, IfStatement, CaseStatement, ForLoop, WhileLoop, Loop>;
 
 /// @brief Represents the right-hand side of a signal assignment.
 ///
@@ -158,6 +159,15 @@ struct ForLoop : NodeBase
 struct WhileLoop : NodeBase
 {
     Expr condition;                        ///< Loop condition expression.
+    std::vector<SequentialStatement> body; ///< Loop body statements.
+};
+
+/// @brief Represents a basic/infinite loop statement.
+///
+/// Example: `loop stmts; exit when done; end loop;`
+struct Loop : NodeBase
+{
+    std::optional<std::string> label;      ///< Optional loop label.
     std::vector<SequentialStatement> body; ///< Loop body statements.
 };
 

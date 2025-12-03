@@ -76,4 +76,17 @@ auto PrettyPrinter::operator()(const ast::WhileLoop &node) const -> Doc
     return Doc::bracket(head, body, end);
 }
 
+auto PrettyPrinter::operator()(const ast::Loop &node) const -> Doc
+{
+    Doc head = Doc::text("loop");
+    if (node.label) {
+        head = Doc::text(*node.label + ":") & head;
+    }
+
+    const Doc body = joinMap(node.body, Doc::line(), toDoc(*this), false);
+    const Doc end = Doc::text("end loop;");
+
+    return Doc::bracket(head, body, end);
+}
+
 } // namespace emit

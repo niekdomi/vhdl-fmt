@@ -113,6 +113,8 @@ class Translator final
     [[nodiscard]]
     auto makeWhileLoop(vhdlParser::Loop_statementContext &ctx) -> ast::WhileLoop;
     [[nodiscard]]
+    auto makeLoop(vhdlParser::Loop_statementContext &ctx) -> ast::Loop;
+    [[nodiscard]]
     auto makeSequentialStatement(vhdlParser::Sequential_statementContext &ctx)
       -> ast::SequentialStatement;
     [[nodiscard]]

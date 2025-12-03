@@ -23,6 +23,7 @@ add_executable(
     nodes/statements/test_concurrent_assign.cpp
     nodes/statements/test_control_flow.cpp
     nodes/statements/test_for_loop.cpp
+    nodes/statements/test_loop.cpp
     nodes/statements/test_process.cpp
     nodes/statements/test_selected_assign.cpp
     nodes/statements/test_sequential_assign.cpp

@@ -72,6 +72,7 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     auto operator()(const ast::CaseStatement &node) const -> Doc;
     auto operator()(const ast::ForLoop &node) const -> Doc;
     auto operator()(const ast::WhileLoop &node) const -> Doc;
+    auto operator()(const ast::Loop &node) const -> Doc;
 
     /// @brief Wraps the core doc with trivia for the given node.
     template<typename T>

@@ -65,7 +65,7 @@ auto Translator::makeSequentialStatement(vhdlParser::Sequential_statementContext
                 return makeWhileLoop(*loop_stmt);
             }
         }
-        // Basic loop without iteration scheme - not yet supported
+        return makeLoop(*loop_stmt);
     }
 
     // TODO(someone): Add support for wait_statement, assertion_statement,
