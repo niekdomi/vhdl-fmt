@@ -3,7 +3,6 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
-#include <optional>
 #include <utility>
 #include <vector>
 
@@ -42,7 +41,7 @@ auto Translator::makeVariableAssign(vhdlParser::Variable_assignment_statementCon
 }
 
 auto Translator::makeSequentialStatement(vhdlParser::Sequential_statementContext &ctx)
-  -> std::optional<ast::SequentialStatement>
+  -> ast::SequentialStatement
 {
     // Dispatch based on concrete statement type
     if (auto *signal_assign = ctx.signal_assignment_statement()) {
@@ -72,7 +71,7 @@ auto Translator::makeSequentialStatement(vhdlParser::Sequential_statementContext
     // TODO(someone): Add support for wait_statement, assertion_statement,
     // report_statement, next_statement, exit_statement, return_statement, etc.
 
-    return std::nullopt;
+    return {};
 }
 
 auto Translator::makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext &ctx)
@@ -81,9 +80,7 @@ auto Translator::makeSequenceOfStatements(vhdlParser::Sequence_of_statementsCont
     std::vector<ast::SequentialStatement> statements{};
 
     for (auto *stmt : ctx.sequential_statement()) {
-        if (auto result = makeSequentialStatement(*stmt)) {
-            statements.emplace_back(std::move(*result));
-        }
+        statements.emplace_back(std::move(makeSequentialStatement(*stmt)));
     }
 
     return statements;

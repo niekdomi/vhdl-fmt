@@ -103,8 +103,8 @@ class Translator final
     [[nodiscard]]
     auto makeProcess(vhdlParser::Process_statementContext &ctx) -> ast::Process;
     [[nodiscard]]
-    auto makeProcessDeclarativePart(vhdlParser::Process_declarative_partContext &ctx)
-      -> std::vector<ast::Declaration>;
+    auto makeProcessDeclarativeItem(vhdlParser::Process_declarative_itemContext &ctx)
+      -> ast::Declaration;
     [[nodiscard]]
     auto makeProcessStatementPart(vhdlParser::Process_statement_partContext &ctx)
       -> std::vector<ast::SequentialStatement>;
@@ -114,7 +114,7 @@ class Translator final
     auto makeWhileLoop(vhdlParser::Loop_statementContext &ctx) -> ast::WhileLoop;
     [[nodiscard]]
     auto makeSequentialStatement(vhdlParser::Sequential_statementContext &ctx)
-      -> std::optional<ast::SequentialStatement>;
+      -> ast::SequentialStatement;
     [[nodiscard]]
     auto makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext &ctx)
       -> std::vector<ast::SequentialStatement>;

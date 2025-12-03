@@ -25,8 +25,8 @@ auto PrettyPrinter::operator()(const ast::Waveform &node) const -> Doc
     return joinMap(node.elements, Doc::text(",") + Doc::line(), toDoc(*this), false);
 }
 
-auto PrettyPrinter::operator()(const ast::ConditionalConcurrentAssign::ConditionalWaveform &node)
-  const -> Doc
+auto PrettyPrinter::operator()(
+  const ast::ConditionalConcurrentAssign::ConditionalWaveform &node) const -> Doc
 {
     Doc d = visit(node.waveform);
     if (node.condition) {
@@ -68,7 +68,8 @@ auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign &node) const 
     const Doc target = visit(node.target) & Doc::text("<=");
 
     // Join selections with comma + SoftLine
-    const Doc selections = joinMap(node.selections, Doc::text(",") + Doc::line(), toDoc(*this), false);
+    const Doc selections
+      = joinMap(node.selections, Doc::text(",") + Doc::line(), toDoc(*this), false);
 
     // For selected assignment, the target itself is nested under the header,
     // and the selections hang off the target.

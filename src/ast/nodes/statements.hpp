@@ -106,7 +106,6 @@ struct IfStatement : NodeBase
     /// @brief Represents a branch (if, elsif, or else).
     struct Branch
     {
-        std::optional<NodeTrivia> trivia;      ///< Leading trivia (comments, whitespace).
         Expr condition;                        ///< Branch condition (empty for else branch).
         std::vector<SequentialStatement> body; ///< Statements in the branch.
     };

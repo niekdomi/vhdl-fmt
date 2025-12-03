@@ -3,10 +3,7 @@
 #include "nodes/declarations.hpp"
 #include "vhdlParser.h"
 
-#include <optional>
 #include <ranges>
-#include <utility>
-#include <vector>
 
 namespace builder {
 
@@ -107,37 +104,18 @@ auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContex
       .build();
 }
 
-auto Translator::makeProcessDeclarativePart(vhdlParser::Process_declarative_partContext &ctx)
-  -> std::vector<ast::Declaration>
+auto Translator::makeProcessDeclarativeItem(vhdlParser::Process_declarative_itemContext &ctx)
+  -> ast::Declaration
 {
-    std::vector<ast::Declaration> decls{};
-
-    for (auto *item : ctx.process_declarative_item()) {
-        if (auto *var_ctx = item->variable_declaration()) {
-            decls.emplace_back(makeVariableDecl(*var_ctx));
-        } else if (auto *const_ctx = item->constant_declaration()) {
-            decls.emplace_back(makeConstantDecl(*const_ctx));
-        }
-        // TODO(vedivad): Add Types, Files, Aliases here
+    if (auto *var_ctx = ctx.variable_declaration()) {
+        return makeVariableDecl(*var_ctx);
     }
-
-    return decls;
-}
-
-auto Translator::makeProcessStatementPart(vhdlParser::Process_statement_partContext &ctx)
-  -> std::vector<ast::SequentialStatement>
-{
-    std::vector<ast::SequentialStatement> stmts{};
-    const auto &source_stmts = ctx.sequential_statement();
-    stmts.reserve(source_stmts.size());
-
-    for (auto *stmt_ctx : source_stmts) {
-        if (auto stmt = makeSequentialStatement(*stmt_ctx)) {
-            stmts.emplace_back(std::move(*stmt));
-        }
+    if (auto *const_ctx = ctx.constant_declaration()) {
+        return makeConstantDecl(*const_ctx);
     }
+    // TODO(vedivad): Add Types, Files, Aliases here
 
-    return stmts;
+    return {};
 }
 
 auto Translator::makeProcess(vhdlParser::Process_statementContext &ctx) -> ast::Process
@@ -152,12 +130,16 @@ auto Translator::makeProcess(vhdlParser::Process_statementContext &ctx) -> ast::
         ctx.sensitivity_list(),
         [](auto &sl) { return sl.name(); },
         [](auto *name) { return name->getText(); })
-      .maybe(&ast::Process::decls,
-             ctx.process_declarative_part(),
-             [&](auto &dp) { return makeProcessDeclarativePart(dp); })
-      .maybe(&ast::Process::body,
-             ctx.process_statement_part(),
-             [&](auto &sp) { return makeProcessStatementPart(sp); })
+      .collectFrom(
+        &ast::Process::decls,
+        ctx.process_declarative_part(),
+        [](auto &dp) { return dp.process_declarative_item(); },
+        [this](auto *item) { return makeProcessDeclarativeItem(*item); })
+      .collectFrom(
+        &ast::Process::body,
+        ctx.process_statement_part(),
+        [](auto &part) { return part.sequential_statement(); },
+        [this](auto *stmt) { return makeSequentialStatement(*stmt); })
       .build();
 }
 
