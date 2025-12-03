@@ -29,8 +29,8 @@ using ConcurrentStatement
   = std::variant<ConditionalConcurrentAssign, SelectedConcurrentAssign, Process>;
 
 /// @brief Variant type for sequential statements (inside processes).
-using SequentialStatement
-  = std::variant<VariableAssign, SignalAssign, IfStatement, CaseStatement, ForLoop, WhileLoop, Loop>;
+using SequentialStatement = std::
+  variant<VariableAssign, SignalAssign, IfStatement, CaseStatement, ForLoop, WhileLoop, Loop>;
 
 /// @brief Represents the right-hand side of a signal assignment.
 ///

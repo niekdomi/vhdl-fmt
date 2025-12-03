@@ -105,9 +105,8 @@ auto Translator::makeWhileLoop(vhdlParser::Loop_statementContext &ctx) -> ast::W
 auto Translator::makeLoop(vhdlParser::Loop_statementContext &ctx) -> ast::Loop
 {
     return build<ast::Loop>(ctx)
-      .maybe(&ast::Loop::label,
-             ctx.label_colon(),
-             [](auto &lc) { return lc.identifier()->getText(); })
+      .maybe(
+        &ast::Loop::label, ctx.label_colon(), [](auto &lc) { return lc.identifier()->getText(); })
       .maybe(&ast::Loop::body,
              ctx.sequence_of_statements(),
              [this](auto &seq) { return makeSequenceOfStatements(seq); })
