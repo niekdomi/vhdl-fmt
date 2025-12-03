@@ -179,8 +179,8 @@ class NodeBuilder
     auto collectZipped(this Self &&self, Field T::*field, Range1 &&range1, Range2 &&range2, Fn &&fn)
       -> Self &&
     {
-        auto it2 = std::begin(range2);
-        auto end2 = std::end(range2);
+        auto it2 = std::begin(std::forward<Range2>(range2));
+        auto end2 = std::end(std::forward<Range2>(range2));
         for (auto *elem1 : std::forward<Range1>(range1)) {
             auto *elem2 = (it2 != end2) ? *it2++ : nullptr;
             (self.node_.*field).emplace_back(std::forward<Fn>(fn)(elem1, elem2));

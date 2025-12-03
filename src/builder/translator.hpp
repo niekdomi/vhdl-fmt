@@ -98,6 +98,9 @@ class Translator final
     [[nodiscard]]
     auto makeCaseStatement(vhdlParser::Case_statementContext &ctx) -> ast::CaseStatement;
     [[nodiscard]]
+    auto makeWhenClause(vhdlParser::Case_statement_alternativeContext &ctx)
+      -> ast::CaseStatement::WhenClause;
+    [[nodiscard]]
     auto makeProcess(vhdlParser::Process_statementContext &ctx) -> ast::Process;
     [[nodiscard]]
     auto makeProcessDeclarativePart(vhdlParser::Process_declarative_partContext &ctx)

@@ -43,6 +43,21 @@ auto Translator::makeIfStatement(vhdlParser::If_statementContext &ctx) -> ast::I
       .build();
 }
 
+auto Translator::makeWhenClause(vhdlParser::Case_statement_alternativeContext &ctx)
+  -> ast::CaseStatement::WhenClause
+{
+    ast::CaseStatement::WhenClause when_clause{};
+    if (auto *choices_ctx = ctx.choices()) {
+        when_clause.choices = choices_ctx->choice()
+                            | std::views::transform([this](auto *ch) { return makeChoice(*ch); })
+                            | std::ranges::to<std::vector>();
+    }
+    if (auto *seq = ctx.sequence_of_statements()) {
+        when_clause.body = makeSequenceOfStatements(*seq);
+    }
+    return when_clause;
+}
+
 auto Translator::makeCaseStatement(vhdlParser::Case_statementContext &ctx) -> ast::CaseStatement
 {
     return build<ast::CaseStatement>(ctx)
@@ -50,26 +65,14 @@ auto Translator::makeCaseStatement(vhdlParser::Case_statementContext &ctx) -> as
         &ast::CaseStatement::selector, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })
       .collect(&ast::CaseStatement::when_clauses,
                ctx.case_statement_alternative(),
-               [&](auto *alt) {
-                   ast::CaseStatement::WhenClause when_clause;
-                   if (auto *choices_ctx = alt->choices()) {
-                       when_clause.choices
-                         = choices_ctx->choice()
-                         | std::views::transform([this](auto *ch) { return makeChoice(*ch); })
-                         | std::ranges::to<std::vector>();
-                   }
-                   if (auto *seq = alt->sequence_of_statements()) {
-                       when_clause.body = makeSequenceOfStatements(*seq);
-                   }
-                   return when_clause;
-               })
+               [&](auto *alt) { return makeWhenClause(*alt); })
       .build();
 }
 
 auto Translator::makeForLoop(vhdlParser::Loop_statementContext &ctx) -> ast::ForLoop
 {
     auto *iter = ctx.iteration_scheme();
-    auto *param = iter ? iter->parameter_specification() : nullptr;
+    auto *param = (iter != nullptr) ? iter->parameter_specification() : nullptr;
 
     return build<ast::ForLoop>(ctx)
       .maybe(&ast::ForLoop::iterator,
@@ -87,11 +90,11 @@ auto Translator::makeForLoop(vhdlParser::Loop_statementContext &ctx) -> ast::For
 auto Translator::makeWhileLoop(vhdlParser::Loop_statementContext &ctx) -> ast::WhileLoop
 {
     auto *iter = ctx.iteration_scheme();
-    auto *cond = iter ? iter->condition() : nullptr;
+    auto *cond = (iter != nullptr) ? iter->condition() : nullptr;
 
     return build<ast::WhileLoop>(ctx)
       .maybe(&ast::WhileLoop::condition,
-             cond ? cond->expression() : nullptr,
+             (cond != nullptr) ? cond->expression() : nullptr,
              [&](auto &expr) { return makeExpr(expr); })
       .maybe(&ast::WhileLoop::body,
              ctx.sequence_of_statements(),
