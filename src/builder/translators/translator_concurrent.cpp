@@ -40,7 +40,7 @@ auto Translator::makeConcurrentAssign(
         return makeSelectedAssign(*sel);
     }
 
-    throw std::runtime_error("Unknown concurrent signal assignment statement");
+    return {};
 }
 
 auto Translator::makeConditionalWaveform(vhdlParser::Conditional_waveformsContext &ctx)
@@ -117,22 +117,19 @@ auto Translator::makeProcessDeclarativeItem(vhdlParser::Process_declarative_item
         return makeConstantDecl(*const_ctx);
     }
     if (auto *type_ctx = ctx.type_declaration()) {
-        throw std::runtime_error("makeTypeDecl not implemented");
         // TODO(vedivad): Implement makeTypeDecl
         // return makeTypeDecl(*type_ctx);
     }
     if (auto *file_ctx = ctx.file_declaration()) {
-        throw std::runtime_error("makeFileDecl not implemented");
         // TODO(vedivad): Implement makeFileDecl
         // return makeFileDecl(*file_ctx);
     }
     if (auto *alias_ctx = ctx.alias_declaration()) {
-        throw std::runtime_error("makeAliasDecl not implemented");
         // TODO(vedivad): Implement makeAliasDecl
         // return makeAliasDecl(*alias_ctx);
     }
 
-    throw std::runtime_error("Unknown process declarative item");
+    return {};
 }
 
 auto Translator::makeProcess(vhdlParser::Process_statementContext &ctx) -> ast::Process
