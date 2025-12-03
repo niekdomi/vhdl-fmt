@@ -3,6 +3,7 @@
 #include "nodes/declarations.hpp"
 #include "vhdlParser.h"
 
+#include <optional>
 #include <utility>
 #include <vector>
 
