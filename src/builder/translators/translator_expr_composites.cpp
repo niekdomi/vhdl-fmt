@@ -16,17 +16,20 @@ auto Translator::makeAggregate(vhdlParser::AggregateContext &ctx) -> ast::Expr
     return build<ast::GroupExpr>(ctx)
       .collect(&ast::GroupExpr::children,
                ctx.element_association(),
-               [&](auto *elem) -> ast::Expr {
-                   return build<ast::BinaryExpr>(*elem)
-                     .set(&ast::BinaryExpr::op, "=>")
-                     .maybeBox(&ast::BinaryExpr::left,
-                               elem->choices(),
-                               [&](auto &ch) { return makeChoices(ch); })
-                     .maybeBox(&ast::BinaryExpr::right,
-                               elem->expression(),
-                               [&](auto &expr) { return makeExpr(expr); })
-                     .build();
-               })
+               [&](auto *elem) { return makeElementAssociation(*elem); })
+      .build();
+}
+
+auto Translator::makeElementAssociation(vhdlParser::Element_associationContext &ctx) -> ast::Expr
+{
+    return build<ast::BinaryExpr>(ctx)
+      .set(&ast::BinaryExpr::op, "=>")
+      .maybeBox(&ast::BinaryExpr::left,
+                ctx.choices(),
+                [&](auto &ch) { return makeChoices(ch); })
+      .maybeBox(&ast::BinaryExpr::right,
+                ctx.expression(),
+                [&](auto &expr) { return makeExpr(expr); })
       .build();
 }
 

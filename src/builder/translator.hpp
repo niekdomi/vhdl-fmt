@@ -127,6 +127,8 @@ class Translator final
     [[nodiscard]]
     auto makeAggregate(vhdlParser::AggregateContext &ctx) -> ast::Expr;
     [[nodiscard]]
+    auto makeElementAssociation(vhdlParser::Element_associationContext &ctx) -> ast::Expr;
+    [[nodiscard]]
     auto makeRelation(vhdlParser::RelationContext &ctx) -> ast::Expr;
     [[nodiscard]]
     auto makeTerm(vhdlParser::TermContext &ctx) -> ast::Expr;

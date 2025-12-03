@@ -80,20 +80,18 @@ auto Translator::makeGenericClause(vhdlParser::Generic_clauseContext &ctx) -> as
         &ast::GenericClause::generics,
         ctx.generic_list(),
         [](auto &list) { return list.interface_constant_declaration(); },
-        [&](auto *decl) { return makeGenericParam(*decl); })
+        [this](auto *decl) { return makeGenericParam(*decl); })
       .build();
 }
 
 auto Translator::makePortClause(vhdlParser::Port_clauseContext &ctx) -> ast::PortClause
 {
-    auto *port_list = ctx.port_list();
-    auto *iface = (port_list != nullptr) ? port_list->interface_port_list() : nullptr;
-
     return build<ast::PortClause>(ctx)
-      .collect(&ast::PortClause::ports,
-               (iface != nullptr) ? iface->interface_port_declaration()
-                                  : decltype(iface->interface_port_declaration()){},
-               [&](auto *decl) { return makeSignalPort(*decl); })
+      .collectFrom(
+        &ast::PortClause::ports,
+        ctx.port_list(),
+        [](auto &list) { return list.interface_port_declaration(); },
+        [this](auto *decl) { return makeSignalPort(*decl); })
       .build();
 }
 
