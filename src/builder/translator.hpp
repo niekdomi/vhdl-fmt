@@ -239,33 +239,6 @@ class Translator final
         }
         return acc;
     }
-
-    /// @brief Dispatch helper: tries each (accessor, handler) pair until one matches.
-    /// @param ctx The parent context to dispatch on.
-    /// @param pairs Alternating accessor/handler pairs.
-    /// @return Result of the first matching handler, or std::nullopt if none match.
-    ///
-    /// Example usage:
-    /// @code
-    /// return dispatch(ctx,
-    ///     &CtxType::signal_assign, [&](auto& c) { return makeSignalAssign(c); },
-    ///     &CtxType::var_assign,    [&](auto& c) { return makeVarAssign(c); }
-    /// );
-    /// @endcode
-    template<typename Result, typename Ctx, typename Accessor, typename Handler, typename... Rest>
-    [[nodiscard]]
-    auto dispatch(Ctx &ctx, Accessor accessor, Handler &&handler, Rest &&...rest)
-      -> std::optional<Result>
-    {
-        if (auto *child = (ctx.*accessor)()) {
-            return std::forward<Handler>(handler)(*child);
-        }
-        if constexpr (sizeof...(Rest) >= 2) {
-            return dispatch<Result>(ctx, std::forward<Rest>(rest)...);
-        } else {
-            return std::nullopt;
-        }
-    }
 };
 
 } // namespace builder

@@ -153,41 +153,6 @@ class NodeBuilder
         return std::forward<Self>(self);
     }
 
-    /// @brief Collects a range, filters out empty optionals, and unwraps to vector.
-    /// @param self Deduced self reference.
-    /// @param field Pointer-to-member for the target vector field.
-    /// @param range The source range to transform.
-    /// @param fn Transformation function returning std::optional for each element.
-    template<typename Self, typename Field, typename Range, typename Fn>
-    auto collectFiltered(this Self &&self, Field T::*field, Range &&range, Fn &&fn) -> Self &&
-    {
-        for (auto *elem : std::forward<Range>(range)) {
-            if (auto result = std::forward<Fn>(fn)(*elem)) {
-                (self.node_.*field).emplace_back(std::move(*result));
-            }
-        }
-        return std::forward<Self>(self);
-    }
-
-    /// @brief Zips two ranges and collects into a vector field using a transformation.
-    /// @param self Deduced self reference.
-    /// @param field Pointer-to-member for the target vector field.
-    /// @param range1 First source range.
-    /// @param range2 Second source range (must be same size or longer).
-    /// @param fn Transformation function receiving (elem1, elem2*) where elem2 may be null.
-    template<typename Self, typename Field, typename Range1, typename Range2, typename Fn>
-    auto collectZipped(this Self &&self, Field T::*field, Range1 &&range1, Range2 &&range2, Fn &&fn)
-      -> Self &&
-    {
-        auto it2 = std::begin(std::forward<Range2>(range2));
-        auto end2 = std::end(std::forward<Range2>(range2));
-        for (auto *elem1 : std::forward<Range1>(range1)) {
-            auto *elem2 = (it2 != end2) ? *it2++ : nullptr;
-            (self.node_.*field).emplace_back(std::forward<Fn>(fn)(elem1, elem2));
-        }
-        return std::forward<Self>(self);
-    }
-
     /// @brief Finalizes and returns the constructed node.
     [[nodiscard]]
     auto build() && -> T
