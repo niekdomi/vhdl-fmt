@@ -2,9 +2,7 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
-#include <memory>
 #include <optional>
-#include <ranges>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -56,11 +54,7 @@ auto Translator::makeChoice(vhdlParser::ChoiceContext &ctx) -> ast::Expr
         return makeSimpleExpr(*ctx.simple_expression());
     }
     if (auto *dr = ctx.discrete_range()) {
-        if (auto *rd = dr->range_decl()) {
-            if (auto *er = rd->explicit_range()) {
-                return makeRange(*er);
-            }
-        }
+        return makeDiscreteRange(*dr);
     }
     return makeToken(ctx);
 }
@@ -88,19 +82,9 @@ auto Translator::makeIndexConstraint(vhdlParser::Index_constraintContext &ctx)
     return build<ast::IndexConstraint>(ctx)
       .set(&ast::IndexConstraint::ranges,
            build<ast::GroupExpr>(ctx)
-             .collectFiltered(&ast::GroupExpr::children,
-                              ctx.discrete_range(),
-                              [&](auto &discrete_r) -> std::optional<ast::Expr> {
-                                  auto *range_decl = discrete_r.range_decl();
-                                  if (range_decl == nullptr) {
-                                      return std::nullopt;
-                                  }
-                                  auto *explicit_r = range_decl->explicit_range();
-                                  if (explicit_r == nullptr) {
-                                      return std::nullopt;
-                                  }
-                                  return makeRange(*explicit_r);
-                              })
+             .collect(&ast::GroupExpr::children,
+                      ctx.discrete_range(),
+                      [&](auto *dr) { return makeDiscreteRange(*dr); })
              .build())
       .build();
 }
@@ -109,18 +93,17 @@ auto Translator::makeRangeConstraint(vhdlParser::Range_constraintContext &ctx)
   -> std::optional<ast::RangeConstraint>
 {
     auto *range_decl = ctx.range_decl();
-    if (range_decl == nullptr) {
-        return std::nullopt;
-    }
-    auto *explicit_r = range_decl->explicit_range();
+    auto *explicit_r = (range_decl != nullptr) ? range_decl->explicit_range() : nullptr;
     if (explicit_r == nullptr) {
         return std::nullopt;
     }
+
     auto range_expr = makeRange(*explicit_r);
     auto *bin = std::get_if<ast::BinaryExpr>(&range_expr);
     if (bin == nullptr) {
         return std::nullopt;
     }
+
     return build<ast::RangeConstraint>(ctx)
       .set(&ast::RangeConstraint::range, std::move(*bin))
       .build();
@@ -137,6 +120,19 @@ auto Translator::makeRange(vhdlParser::Explicit_rangeContext &ctx) -> ast::Expr
                       ctx.direction()->getText(),
                       makeSimpleExpr(*ctx.simple_expression(0)),
                       makeSimpleExpr(*ctx.simple_expression(1)));
+}
+
+auto Translator::makeDiscreteRange(vhdlParser::Discrete_rangeContext &ctx) -> ast::Expr
+{
+    // discrete_range : range_decl | subtype_indication
+    if (auto *rd = ctx.range_decl()) {
+        if (auto *er = rd->explicit_range()) {
+            return makeRange(*er);
+        }
+        return makeToken(*rd);
+    }
+    // subtype_indication (e.g., "integer range 0 to 7" or just "natural")
+    return makeToken(ctx);
 }
 
 } // namespace builder

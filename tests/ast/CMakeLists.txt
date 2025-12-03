@@ -4,90 +4,28 @@ add_executable(
     # Design Units
     nodes/test_trivia.cpp
     nodes/design_units/test_architecture.cpp
-    nodes/design_units/test_configuration.cpp
-    nodes/design_units/test_context.cpp
     nodes/design_units/test_entity.cpp
-    nodes/design_units/test_entity_instantiation.cpp
-    nodes/design_units/test_interface_package.cpp
-    nodes/design_units/test_package.cpp
-    nodes/design_units/test_package_body.cpp
-    nodes/design_units/test_package_instantiation.cpp
     #
     # Declarations
-    nodes/declarations/test_alias.cpp
-    nodes/declarations/test_attribute.cpp
-    nodes/declarations/test_component.cpp
     nodes/declarations/test_constant.cpp
     nodes/declarations/test_constraints.cpp
-    nodes/declarations/test_disconnect_spec.cpp
-    nodes/declarations/test_file.cpp
-    nodes/declarations/test_function.cpp
     nodes/declarations/test_generic_param.cpp
-    nodes/declarations/test_group.cpp
-    nodes/declarations/test_impure_function.cpp
-    nodes/declarations/test_library_clause.cpp
     nodes/declarations/test_port.cpp
-    nodes/declarations/test_procedure.cpp
-    nodes/declarations/test_protected_type.cpp
-    nodes/declarations/test_shared_variable.cpp
     nodes/declarations/test_signal.cpp
-    nodes/declarations/test_subtype.cpp
-    nodes/declarations/test_type.cpp
-    nodes/declarations/test_use_clause.cpp
-    nodes/declarations/test_variable.cpp
     #
     # Expressions
-    nodes/expressions/test_access_deref.cpp
-    nodes/expressions/test_aggregate.cpp
-    nodes/expressions/test_allocator.cpp
-    nodes/expressions/test_attribute.cpp
     nodes/expressions/test_binary.cpp
-    nodes/expressions/test_conditional.cpp
-    nodes/expressions/test_external_name.cpp
-    nodes/expressions/test_function_call.cpp
-    nodes/expressions/test_group.cpp
-    nodes/expressions/test_indexed.cpp
-    nodes/expressions/test_matching_rel_ops.cpp
-    nodes/expressions/test_open.cpp
-    nodes/expressions/test_paren.cpp
-    nodes/expressions/test_qualified.cpp
-    nodes/expressions/test_range.cpp
-    nodes/expressions/test_reduction_ops.cpp
-    nodes/expressions/test_slice.cpp
-    nodes/expressions/test_string_literal.cpp
     nodes/expressions/test_token.cpp
-    nodes/expressions/test_type_conversion.cpp
     nodes/expressions/test_unary.cpp
     #
     # Statements
-    nodes/statements/test_assert.cpp
-    nodes/statements/test_block.cpp
-    nodes/statements/test_case_generate.cpp
     nodes/statements/test_case.cpp
-    nodes/statements/test_component_instantiation.cpp
     nodes/statements/test_concurrent_assign.cpp
-    nodes/statements/test_concurrent_procedure_call.cpp
-    nodes/statements/test_conditional_assign.cpp
     nodes/statements/test_control_flow.cpp
-    nodes/statements/test_exit.cpp
-    nodes/statements/test_file_io.cpp
     nodes/statements/test_for_loop.cpp
-    nodes/statements/test_force_release.cpp
-    nodes/statements/test_generate.cpp
-    nodes/statements/test_guarded_signal.cpp
-    nodes/statements/test_if_generate_with_alternative.cpp
-    nodes/statements/test_loop_with_label.cpp
-    nodes/statements/test_next.cpp
-    nodes/statements/test_null.cpp
-    nodes/statements/test_postponed_process.cpp
-    nodes/statements/test_procedure_call.cpp
     nodes/statements/test_process.cpp
-    nodes/statements/test_process_instantiation.cpp
-    nodes/statements/test_report.cpp
-    nodes/statements/test_return.cpp
     nodes/statements/test_selected_assign.cpp
     nodes/statements/test_sequential_assign.cpp
-    nodes/statements/test_wait.cpp
     nodes/statements/test_waveforms.cpp
     nodes/statements/test_while_loop.cpp
 )

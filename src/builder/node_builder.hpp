@@ -3,6 +3,7 @@
 
 #include "builder/trivia/trivia_binder.hpp"
 
+#include <memory>
 #include <ranges>
 #include <utility>
 #include <vector>

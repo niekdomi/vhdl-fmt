@@ -70,20 +70,8 @@ auto Translator::makeSliceExpr(ast::Expr base, vhdlParser::Slice_name_partContex
 {
     return build<ast::CallExpr>(ctx)
       .setBox(&ast::CallExpr::callee, std::move(base))
-      .with(&ctx,
-            [&](auto &node, auto &slice_ctx) {
-                if (auto *dr = slice_ctx.discrete_range()) {
-                    if (auto *rd = dr->range_decl()) {
-                        if (auto *er = rd->explicit_range()) {
-                            node.args = std::make_unique<ast::Expr>(makeRange(*er));
-                        } else {
-                            node.args = std::make_unique<ast::Expr>(makeToken(*rd));
-                        }
-                    } else if (auto *subtype = dr->subtype_indication()) {
-                        node.args = std::make_unique<ast::Expr>(makeToken(*subtype));
-                    }
-                }
-            })
+      .maybeBox(
+        &ast::CallExpr::args, ctx.discrete_range(), [&](auto &dr) { return makeDiscreteRange(dr); })
       .build();
 }
 
@@ -91,31 +79,32 @@ auto Translator::makeCallExpr(ast::Expr base,
                               vhdlParser::Function_call_or_indexed_name_partContext &ctx)
   -> ast::Expr
 {
+    auto *assoc_list = ctx.actual_parameter_part();
+    auto *list_ctx = (assoc_list != nullptr) ? assoc_list->association_list() : nullptr;
+    auto associations = (list_ctx != nullptr) ? list_ctx->association_element()
+                                              : decltype(list_ctx->association_element()){};
+
     return build<ast::CallExpr>(ctx)
       .setBox(&ast::CallExpr::callee, std::move(base))
-      .with(&ctx,
-            [&](auto &node, auto &call_ctx) {
-                auto *assoc_list = call_ctx.actual_parameter_part();
-                if (assoc_list == nullptr) {
-                    return;
-                }
-                auto *list_ctx = assoc_list->association_list();
-                if (list_ctx == nullptr) {
-                    node.args = std::make_unique<ast::Expr>(makeToken(call_ctx));
-                    return;
-                }
-                auto associations = list_ctx->association_element();
-                if (associations.size() == 1) {
-                    node.args = std::make_unique<ast::Expr>(makeCallArgument(*associations[0]));
-                } else {
-                    node.args = std::make_unique<ast::Expr>(
-                      build<ast::GroupExpr>(*list_ctx)
-                        .collect(&ast::GroupExpr::children,
-                                 associations,
-                                 [&](auto *elem) { return makeCallArgument(*elem); })
-                        .build());
-                }
-            })
+      .apply([&](auto &node) {
+          if (assoc_list == nullptr) {
+              return;
+          }
+          if (list_ctx == nullptr) {
+              node.args = std::make_unique<ast::Expr>(makeToken(ctx));
+              return;
+          }
+          if (associations.size() == 1) {
+              node.args = std::make_unique<ast::Expr>(makeCallArgument(*associations[0]));
+          } else {
+              node.args = std::make_unique<ast::Expr>(
+                build<ast::GroupExpr>(*list_ctx)
+                  .collect(&ast::GroupExpr::children,
+                           associations,
+                           [&](auto *elem) { return makeCallArgument(*elem); })
+                  .build());
+          }
+      })
       .build();
 }
 
@@ -127,14 +116,10 @@ auto Translator::makeAttributeExpr(ast::Expr base, vhdlParser::Attribute_name_pa
 
 auto Translator::makeCallArgument(vhdlParser::Association_elementContext &ctx) -> ast::Expr
 {
-    if (auto *actual = ctx.actual_part()) {
-        if (auto *designator = actual->actual_designator()) {
-            if (auto *expr = designator->expression()) {
-                return makeExpr(*expr);
-            }
-            return makeToken(*designator);
-        }
-        return makeToken(*actual);
+    auto *actual = ctx.actual_part();
+    auto *designator = (actual != nullptr) ? actual->actual_designator() : nullptr;
+    if (auto *expr = (designator != nullptr) ? designator->expression() : nullptr) {
+        return makeExpr(*expr);
     }
     return makeToken(ctx);
 }

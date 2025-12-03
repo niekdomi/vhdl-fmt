@@ -4,6 +4,8 @@
 #include "vhdlParser.h"
 
 #include <ranges>
+#include <string>
+#include <vector>
 
 namespace builder {
 
@@ -84,16 +86,14 @@ auto Translator::makeGenericClause(vhdlParser::Generic_clauseContext &ctx) -> as
 
 auto Translator::makePortClause(vhdlParser::Port_clauseContext &ctx) -> ast::PortClause
 {
+    auto *port_list = ctx.port_list();
+    auto *iface = (port_list != nullptr) ? port_list->interface_port_list() : nullptr;
+
     return build<ast::PortClause>(ctx)
-      .with(ctx.port_list(),
-            [&](auto &node, auto &list) {
-                if (auto *iface = list.interface_port_list()) {
-                    node.ports
-                      = iface->interface_port_declaration()
-                      | std::views::transform([&](auto *decl) { return makeSignalPort(*decl); })
-                      | std::ranges::to<std::vector>();
-                }
-            })
+      .collect(&ast::PortClause::ports,
+               (iface != nullptr) ? iface->interface_port_declaration()
+                                  : decltype(iface->interface_port_declaration()){},
+               [&](auto *decl) { return makeSignalPort(*decl); })
       .build();
 }
 
@@ -138,14 +138,15 @@ auto Translator::makeConstantDecl(vhdlParser::Constant_declarationContext &ctx) 
 
 auto Translator::makeSignalDecl(vhdlParser::Signal_declarationContext &ctx) -> ast::SignalDecl
 {
+    auto *skind = ctx.signal_kind();
+
     return build<ast::SignalDecl>(ctx)
       .set(&ast::SignalDecl::names, extractNames(ctx.identifier_list()))
       .apply([&](auto &node) {
           extractSubtypeInfo(
             node, ctx.subtype_indication(), [&](auto &c) { return makeConstraint(c); });
       })
-      .with(ctx.signal_kind(),
-            [](auto &node, auto &skind) { node.has_bus_kw = (skind.BUS() != nullptr); })
+      .set(&ast::SignalDecl::has_bus_kw, skind != nullptr && skind->BUS() != nullptr)
       .maybe(
         &ast::SignalDecl::init_expr, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })
       .build();

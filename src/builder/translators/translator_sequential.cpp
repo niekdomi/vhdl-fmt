@@ -78,7 +78,7 @@ auto Translator::makeSequentialStatement(vhdlParser::Sequential_statementContext
 auto Translator::makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext &ctx)
   -> std::vector<ast::SequentialStatement>
 {
-    std::vector<ast::SequentialStatement> statements;
+    std::vector<ast::SequentialStatement> statements{};
 
     for (auto *stmt : ctx.sequential_statement()) {
         if (auto result = makeSequentialStatement(*stmt)) {

@@ -10,7 +10,6 @@
 #include "builder/trivia/trivia_binder.hpp"
 #include "vhdlParser.h"
 
-#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
@@ -71,14 +70,22 @@ class Translator final
     [[nodiscard]]
     auto makeWaveform(vhdlParser::WaveformContext &ctx) -> ast::Waveform;
     [[nodiscard]]
+    auto makeWaveformElement(vhdlParser::Waveform_elementContext &ctx) -> ast::Waveform::Element;
+    [[nodiscard]]
     auto makeConcurrentAssign(vhdlParser::Concurrent_signal_assignment_statementContext &ctx)
       -> ast::ConcurrentStatement;
     [[nodiscard]]
     auto makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx)
       -> ast::ConditionalConcurrentAssign;
     [[nodiscard]]
+    auto makeConditionalWaveform(vhdlParser::Conditional_waveformsContext &ctx)
+      -> ast::ConditionalConcurrentAssign::ConditionalWaveform;
+    [[nodiscard]]
     auto makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx)
       -> ast::SelectedConcurrentAssign;
+    [[nodiscard]]
+    auto makeSelection(vhdlParser::WaveformContext *wave, vhdlParser::ChoicesContext *choices)
+      -> ast::SelectedConcurrentAssign::Selection;
     [[nodiscard]]
     auto makeTarget(vhdlParser::TargetContext &ctx) -> ast::Expr;
     [[nodiscard]]
@@ -138,6 +145,8 @@ class Translator final
     auto makeChoice(vhdlParser::ChoiceContext &ctx) -> ast::Expr;
     [[nodiscard]]
     auto makeRange(vhdlParser::Explicit_rangeContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeDiscreteRange(vhdlParser::Discrete_rangeContext &ctx) -> ast::Expr;
     [[nodiscard]]
     auto makeName(vhdlParser::NameContext &ctx) -> ast::Expr;
     [[nodiscard]]
@@ -218,8 +227,8 @@ class Translator final
     auto foldBinaryLeft(Ctx &ctx, Operands &&operands, Operators &&operators, MakeOperand &&make_op)
       -> ast::Expr
     {
-        auto op_it = std::begin(operators);
-        auto it = std::begin(operands);
+        auto op_it = std::begin(std::forward<Operators>(operators));
+        auto it = std::begin(std::forward<Operands>(operands));
         ast::Expr acc = std::forward<MakeOperand>(make_op)(**it++);
 
         for (; it != std::end(operands); ++it, ++op_it) {

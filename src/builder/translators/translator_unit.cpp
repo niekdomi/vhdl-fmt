@@ -41,19 +41,18 @@ void Translator::buildDesignFile(ast::DesignFile &dest, vhdlParser::Design_fileC
 
 auto Translator::makeEntity(vhdlParser::Entity_declarationContext &ctx) -> ast::Entity
 {
+    auto *header = ctx.entity_header();
+
     return build<ast::Entity>(ctx)
       .set(&ast::Entity::name, ctx.identifier(0)->getText())
       .set(&ast::Entity::has_end_entity_keyword, ctx.ENTITY().size() > 1)
       .maybe(&ast::Entity::end_label, ctx.identifier(1), [](auto &id) { return id.getText(); })
-      .with(ctx.entity_header(),
-            [&](auto &node, auto &header) {
-                if (auto *gc = header.generic_clause()) {
-                    node.generic_clause = makeGenericClause(*gc);
-                }
-                if (auto *pc = header.port_clause()) {
-                    node.port_clause = makePortClause(*pc);
-                }
-            })
+      .maybe(&ast::Entity::generic_clause,
+             (header != nullptr) ? header->generic_clause() : nullptr,
+             [&](auto &gc) { return makeGenericClause(gc); })
+      .maybe(&ast::Entity::port_clause,
+             (header != nullptr) ? header->port_clause() : nullptr,
+             [&](auto &pc) { return makePortClause(pc); })
       .build();
 }
 

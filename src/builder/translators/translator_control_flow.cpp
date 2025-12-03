@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <ranges>
 #include <utility>
+#include <vector>
 
 namespace builder {
 
@@ -67,26 +68,16 @@ auto Translator::makeCaseStatement(vhdlParser::Case_statementContext &ctx) -> as
 
 auto Translator::makeForLoop(vhdlParser::Loop_statementContext &ctx) -> ast::ForLoop
 {
+    auto *iter = ctx.iteration_scheme();
+    auto *param = iter ? iter->parameter_specification() : nullptr;
+
     return build<ast::ForLoop>(ctx)
-      .with(ctx.iteration_scheme(),
-            [&](auto &node, auto &iter) {
-                if (auto *param = iter.parameter_specification()) {
-                    if (auto *id = param->identifier()) {
-                        node.iterator = id->getText();
-                    }
-                    if (auto *range = param->discrete_range()) {
-                        if (auto *range_decl = range->range_decl()) {
-                            if (auto *explicit_r = range_decl->explicit_range()) {
-                                node.range = makeRange(*explicit_r);
-                            } else {
-                                node.range = makeToken(*range_decl);
-                            }
-                        } else if (auto *subtype = range->subtype_indication()) {
-                            node.range = makeToken(*subtype);
-                        }
-                    }
-                }
-            })
+      .maybe(&ast::ForLoop::iterator,
+             (param != nullptr) ? param->identifier() : nullptr,
+             [](auto &id) { return id.getText(); })
+      .maybe(&ast::ForLoop::range,
+             (param != nullptr) ? param->discrete_range() : nullptr,
+             [&](auto &dr) { return makeDiscreteRange(dr); })
       .maybe(&ast::ForLoop::body,
              ctx.sequence_of_statements(),
              [&](auto &seq) { return makeSequenceOfStatements(seq); })
@@ -95,13 +86,13 @@ auto Translator::makeForLoop(vhdlParser::Loop_statementContext &ctx) -> ast::For
 
 auto Translator::makeWhileLoop(vhdlParser::Loop_statementContext &ctx) -> ast::WhileLoop
 {
+    auto *iter = ctx.iteration_scheme();
+    auto *cond = iter ? iter->condition() : nullptr;
+
     return build<ast::WhileLoop>(ctx)
-      .with(ctx.iteration_scheme(),
-            [&](auto &node, auto &iter) {
-                if (auto *cond = iter.condition()) {
-                    node.condition = makeExpr(*cond->expression());
-                }
-            })
+      .maybe(&ast::WhileLoop::condition,
+             cond ? cond->expression() : nullptr,
+             [&](auto &expr) { return makeExpr(expr); })
       .maybe(&ast::WhileLoop::body,
              ctx.sequence_of_statements(),
              [&](auto &seq) { return makeSequenceOfStatements(seq); })

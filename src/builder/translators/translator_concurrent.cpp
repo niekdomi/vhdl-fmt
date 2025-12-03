@@ -3,30 +3,29 @@
 #include "nodes/declarations.hpp"
 #include "vhdlParser.h"
 
-#include <cstddef>
 #include <utility>
 #include <vector>
 
 namespace builder {
 
+auto Translator::makeWaveformElement(vhdlParser::Waveform_elementContext &ctx)
+  -> ast::Waveform::Element
+{
+    return {
+        .value = makeExpr(*ctx.expression(0)),
+        .after = (ctx.AFTER() != nullptr) ? std::make_optional(makeExpr(*ctx.expression(1)))
+                                          : std::nullopt,
+    };
+}
+
 auto Translator::makeWaveform(vhdlParser::WaveformContext &ctx) -> ast::Waveform
 {
     return build<ast::Waveform>(ctx)
       .set(&ast::Waveform::is_unaffected, ctx.UNAFFECTED() != nullptr)
-      .with(&ctx,
-            [&](auto &node, auto &wave_ctx) {
-                if (node.is_unaffected) {
-                    return;
-                }
-                for (auto *el_ctx : wave_ctx.waveform_element()) {
-                    ast::Waveform::Element elem;
-                    elem.value = makeExpr(*el_ctx->expression(0));
-                    if (el_ctx->AFTER() != nullptr) {
-                        elem.after = makeExpr(*el_ctx->expression(1));
-                    }
-                    node.elements.emplace_back(std::move(elem));
-                }
-            })
+      .collect(&ast::Waveform::elements,
+               (ctx.UNAFFECTED() != nullptr) ? decltype(ctx.waveform_element()){}
+                                             : ctx.waveform_element(),
+               [&](auto *el) { return makeWaveformElement(*el); })
       .build();
 }
 
@@ -40,6 +39,20 @@ auto Translator::makeConcurrentAssign(
     return makeSelectedAssign(*ctx.selected_signal_assignment());
 }
 
+auto Translator::makeConditionalWaveform(vhdlParser::Conditional_waveformsContext &ctx)
+  -> ast::ConditionalConcurrentAssign::ConditionalWaveform
+{
+    auto *cond = ctx.condition();
+    ast::ConditionalConcurrentAssign::ConditionalWaveform result;
+    if (auto *w = ctx.waveform()) {
+        result.waveform = makeWaveform(*w);
+    }
+    if (cond != nullptr) {
+        result.condition = makeExpr(*cond->expression());
+    }
+    return result;
+}
+
 auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx)
   -> ast::ConditionalConcurrentAssign
 {
@@ -47,28 +60,37 @@ auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignment
       .maybe(&ast::ConditionalConcurrentAssign::target,
              ctx.target(),
              [&](auto &t) { return makeTarget(t); })
-      .with(&ctx,
-            [&](auto &node, auto &assign_ctx) {
-                // Flatten the recursive conditional waveforms
-                auto *current_wave = assign_ctx.conditional_waveforms();
-                while (current_wave != nullptr) {
-                    ast::ConditionalConcurrentAssign::ConditionalWaveform wave_item;
-                    if (auto *w = current_wave->waveform()) {
-                        wave_item.waveform = makeWaveform(*w);
-                    }
-                    if (auto *cond = current_wave->condition()) {
-                        wave_item.condition = makeExpr(*cond->expression());
-                    }
-                    node.waveforms.emplace_back(std::move(wave_item));
-                    current_wave = current_wave->conditional_waveforms();
-                }
-            })
+      .apply([&](auto &node) {
+          // Flatten the recursive conditional waveforms
+          for (auto *w = ctx.conditional_waveforms(); w != nullptr;
+               w = w->conditional_waveforms()) {
+              node.waveforms.emplace_back(makeConditionalWaveform(*w));
+          }
+      })
       .build();
+}
+
+auto Translator::makeSelection(vhdlParser::WaveformContext *wave,
+                               vhdlParser::ChoicesContext *choices)
+  -> ast::SelectedConcurrentAssign::Selection
+{
+    ast::SelectedConcurrentAssign::Selection selection;
+    if (wave != nullptr) {
+        selection.waveform = makeWaveform(*wave);
+    }
+    if (choices != nullptr) {
+        for (auto *c : choices->choice()) {
+            selection.choices.emplace_back(makeChoice(*c));
+        }
+    }
+    return selection;
 }
 
 auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx)
   -> ast::SelectedConcurrentAssign
 {
+    auto *sel_waves = ctx.selected_waveforms();
+
     return build<ast::SelectedConcurrentAssign>(ctx)
       .maybe(&ast::SelectedConcurrentAssign::selector,
              ctx.expression(),
@@ -76,25 +98,11 @@ auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContex
       .maybe(&ast::SelectedConcurrentAssign::target,
              ctx.target(),
              [&](auto &t) { return makeTarget(t); })
-      .with(ctx.selected_waveforms(),
-            [&](auto &node, auto &sel_waves) {
-                const auto waves = sel_waves.waveform();
-                const auto choices = sel_waves.choices();
-                const auto num_waves = waves.size();
-
-                for (std::size_t i = 0; i < num_waves; ++i) {
-                    ast::SelectedConcurrentAssign::Selection selection{};
-                    if (waves[i] != nullptr) {
-                        selection.waveform = makeWaveform(*waves[i]);
-                    }
-                    if (i < choices.size() && choices[i] != nullptr) {
-                        for (auto *c : choices[i]->choice()) {
-                            selection.choices.emplace_back(makeChoice(*c));
-                        }
-                    }
-                    node.selections.emplace_back(std::move(selection));
-                }
-            })
+      .collectZipped(
+        &ast::SelectedConcurrentAssign::selections,
+        (sel_waves != nullptr) ? sel_waves->waveform() : decltype(sel_waves->waveform()){},
+        (sel_waves != nullptr) ? sel_waves->choices() : decltype(sel_waves->choices()){},
+        [&](auto *wave, auto *choices) { return makeSelection(wave, choices); })
       .build();
 }
 
@@ -133,13 +141,11 @@ auto Translator::makeProcessStatementPart(vhdlParser::Process_statement_partCont
 
 auto Translator::makeProcess(vhdlParser::Process_statementContext &ctx) -> ast::Process
 {
+    auto *label = ctx.label_colon();
+    auto *label_id = (label != nullptr) ? label->identifier() : nullptr;
+
     return build<ast::Process>(ctx)
-      .with(ctx.label_colon(),
-            [](auto &node, auto &label) {
-                if (auto *id = label.identifier()) {
-                    node.label = id->getText();
-                }
-            })
+      .maybe(&ast::Process::label, label_id, [](auto &id) { return id.getText(); })
       .collectFrom(
         &ast::Process::sensitivity_list,
         ctx.sensitivity_list(),
