@@ -24,12 +24,10 @@ auto Translator::makeElementAssociation(vhdlParser::Element_associationContext &
 {
     return build<ast::BinaryExpr>(ctx)
       .set(&ast::BinaryExpr::op, "=>")
-      .maybeBox(&ast::BinaryExpr::left,
-                ctx.choices(),
-                [&](auto &ch) { return makeChoices(ch); })
-      .maybeBox(&ast::BinaryExpr::right,
-                ctx.expression(),
-                [&](auto &expr) { return makeExpr(expr); })
+      .maybeBox(
+        &ast::BinaryExpr::left, ctx.choices(), [&](auto &child) { return makeChoices(child); })
+      .maybeBox(
+        &ast::BinaryExpr::right, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })
       .build();
 }
 
@@ -41,7 +39,7 @@ auto Translator::makeChoices(vhdlParser::ChoicesContext &ctx) -> ast::Expr
 
     return build<ast::GroupExpr>(ctx)
       .collect(
-        &ast::GroupExpr::children, ctx.choice(), [this](auto *ch) { return makeChoice(*ch); })
+        &ast::GroupExpr::children, ctx.choice(), [this](auto *child) { return makeChoice(*child); })
       .build();
 }
 
