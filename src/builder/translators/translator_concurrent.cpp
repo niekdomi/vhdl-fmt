@@ -4,6 +4,7 @@
 #include "vhdlParser.h"
 
 #include <optional>
+#include <ranges>
 #include <utility>
 #include <vector>
 
@@ -89,8 +90,6 @@ auto Translator::makeSelection(vhdlParser::WaveformContext &wave,
 auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx)
   -> ast::SelectedConcurrentAssign
 {
-    auto *sel_waves = ctx.selected_waveforms();
-
     return build<ast::SelectedConcurrentAssign>(ctx)
       .maybe(&ast::SelectedConcurrentAssign::selector,
              ctx.expression(),
@@ -98,11 +97,13 @@ auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContex
       .maybe(&ast::SelectedConcurrentAssign::target,
              ctx.target(),
              [this](auto &t) { return makeTarget(t); })
-      .collectZipped(
-        &ast::SelectedConcurrentAssign::selections,
-        (sel_waves != nullptr) ? sel_waves->waveform() : decltype(sel_waves->waveform()){},
-        (sel_waves != nullptr) ? sel_waves->choices() : decltype(sel_waves->choices()){},
-        [this](auto *wave, auto *choices) { return makeSelection(*wave, *choices); })
+      .with(ctx.selected_waveforms(),
+            [&](auto &node, auto &sel_waves) {
+                for (auto [wave, choice] :
+                     std::views::zip(sel_waves.waveform(), sel_waves.choices())) {
+                    node.selections.emplace_back(makeSelection(*wave, *choice));
+                }
+            })
       .build();
 }
 
