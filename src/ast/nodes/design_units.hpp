@@ -15,9 +15,34 @@ namespace ast {
 // Forward declarations
 struct Entity;
 struct Architecture;
+struct LibraryClause;
+struct UseClause;
 
 /// @brief Variant type for all design units (holds values, not pointers).
+///
+/// Example: `Entity` or `Architecture`
 using DesignUnit = std::variant<Entity, Architecture>;
+
+/// @brief Represents a VHDL LIBRARY clause.
+///
+/// Example: `library ieee;`
+struct LibraryClause : NodeBase
+{
+    std::vector<std::string> logical_names; ///< List of library names.
+};
+
+/// @brief Represents a VHDL USE clause.
+///
+/// Example: `use ieee.std_logic_1164.all;`
+struct UseClause : NodeBase
+{
+    std::vector<std::string> selected_names; ///< List of selected names (dot-separated).
+};
+
+/// @brief Variant type for context items (library and use clauses).
+///
+/// Example: `LibraryClause` or `UseClause`
+using ContextItem = std::variant<LibraryClause, UseClause>;
 
 /// @brief Represents a VHDL GENERIC clause.
 ///
@@ -37,9 +62,10 @@ struct PortClause : NodeBase
 
 /// @brief Represents a VHDL entity declaration.
 ///
-/// Example: `entity counter is port (clk : in std_logic); end entity;`
+/// Example: `entity counter is port (clk : in std_logic); end entity counter;`
 struct Entity : NodeBase
 {
+    std::vector<ContextItem> context;       ///< Library and use clauses.
     std::string name;                       ///< Entity identifier.
     GenericClause generic_clause;           ///< Generic parameters clause.
     PortClause port_clause;                 ///< Port declarations clause.
@@ -51,9 +77,11 @@ struct Entity : NodeBase
 
 /// @brief Represents a VHDL architecture body.
 ///
-/// Example: `architecture rtl of counter is begin end architecture;`
+/// Example: `architecture rtl of counter is begin process(clk) begin end process; end architecture
+/// rtl;`
 struct Architecture : NodeBase
 {
+    std::vector<ContextItem> context;           ///< Library and use clauses.
     std::string name;                           ///< Architecture identifier.
     std::string entity_name;                    ///< Name of the associated entity.
     std::vector<Declaration> decls;             ///< Architecture declarative items.

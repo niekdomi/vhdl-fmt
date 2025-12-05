@@ -20,11 +20,15 @@ struct CallExpr;
 struct PhysicalLiteral;
 
 /// @brief Helper alias for boxed recursive types.
+///
+/// Example: `Box<Expr>` wraps an expression in a unique_ptr
 /// @tparam T The type to wrap in a unique_ptr.
 template<typename T>
 using Box = std::unique_ptr<T>;
 
 /// @brief Variant type for all expressions (holds values, not pointers).
+///
+/// Example: `TokenExpr`, `BinaryExpr`, or `CallExpr`
 using Expr
   = std::variant<TokenExpr, GroupExpr, UnaryExpr, BinaryExpr, ParenExpr, CallExpr, PhysicalLiteral>;
 
@@ -47,7 +51,7 @@ struct PhysicalLiteral : NodeBase
 
 /// @brief Represents an aggregate or grouped list of expressions.
 ///
-/// Example: `(others => '0')`, `(a, b, c)`
+/// Example: `(others => '0')`
 struct GroupExpr : NodeBase
 {
     std::vector<Expr> children; ///< Ordered child expressions.
@@ -94,6 +98,8 @@ struct IndexConstraint;
 struct RangeConstraint;
 
 /// @brief Variant type for constraints used in type declarations.
+///
+/// Example: `IndexConstraint` or `RangeConstraint`
 using Constraint = std::variant<IndexConstraint, RangeConstraint>;
 
 /// @brief Represents an index constraint with parentheses.

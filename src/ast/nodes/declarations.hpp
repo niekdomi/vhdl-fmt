@@ -19,6 +19,8 @@ struct GenericParam;
 struct Port;
 
 /// @brief Variant type for all declarations.
+///
+/// Example: `ConstantDecl`, `SignalDecl`, or `VariableDecl`
 using Declaration = std::variant<ConstantDecl, SignalDecl, VariableDecl, GenericParam, Port>;
 
 /// @brief Represents a VHDL constant declaration.
@@ -33,7 +35,7 @@ struct ConstantDecl : NodeBase
 
 /// @brief Represents a VHDL signal declaration.
 ///
-/// Example: `signal v : std_logic_vector(7 downto 0) := (others => '0');`
+/// Example: `signal clk, reset : std_logic := '0';`
 struct SignalDecl : NodeBase
 {
     std::vector<std::string> names;       ///< List of signal identifiers.
@@ -45,7 +47,7 @@ struct SignalDecl : NodeBase
 
 /// @brief Represents a VHDL variable declaration.
 ///
-/// Example: `variable v : integer := 0;`
+/// Example: `variable counter : integer := 0;`
 struct VariableDecl : NodeBase
 {
     std::vector<std::string> names;       ///< List of variable identifiers.
@@ -57,7 +59,7 @@ struct VariableDecl : NodeBase
 
 /// @brief Represents a generic parameter inside a GENERIC clause.
 ///
-/// Example: `generic (WIDTH : integer := 8);`
+/// Example: `WIDTH : integer := 8`
 struct GenericParam : NodeBase
 {
     std::vector<std::string> names;   ///< List of generic parameter identifiers.
@@ -67,7 +69,7 @@ struct GenericParam : NodeBase
 
 /// @brief Represents a port entry inside a PORT clause.
 ///
-/// Example: `port (clk : in std_logic);`
+/// Example: `clk : in std_logic`
 struct Port : NodeBase
 {
     std::vector<std::string> names;       ///< List of port identifiers.

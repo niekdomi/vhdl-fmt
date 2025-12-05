@@ -10,7 +10,8 @@ namespace ast {
 
 /// @brief Represents the root node of a VHDL design file.
 ///
-/// Example: A file containing an entity and its architecture.
+/// Example: `entity my_entity is end entity; architecture rtl of my_entity is begin end
+/// architecture;`
 struct DesignFile : NodeBase
 {
     std::vector<DesignUnit> units; ///< List of design units in the file.
