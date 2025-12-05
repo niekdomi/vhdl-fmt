@@ -2,7 +2,6 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
-#include <cstddef>
 #include <ranges>
 #include <utility>
 
@@ -25,7 +24,7 @@ auto Translator::makeIfStatement(vhdlParser::If_statementContext &ctx) -> ast::I
                 node.if_branch.body = makeSequenceOfStatements(*sequences[0]);
 
                 // elsif branches
-                for (const auto i : std::views::iota(std::size_t{ 1 }, conditions.size())) {
+                for (const auto i : std::views::iota(1UZ, conditions.size())) {
                     ast::IfStatement::Branch elsif_branch;
                     elsif_branch.condition = makeExpr(*conditions[i]->expression());
                     elsif_branch.body = makeSequenceOfStatements(*sequences[i]);
