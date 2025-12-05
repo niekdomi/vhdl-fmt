@@ -104,4 +104,29 @@ TEST_CASE("Control Flow Rendering", "[pretty_printer][control_flow]")
 
         REQUIRE(emit::test::render(stmt) == EXPECTED);
     }
+
+    SECTION("Basic Loop")
+    {
+        ast::Loop stmt;
+        stmt.body.emplace_back(make_stmt());
+
+        constexpr std::string_view EXPECTED = "loop\n"
+                                              "  x <= '0';\n"
+                                              "end loop;";
+
+        REQUIRE(emit::test::render(stmt) == EXPECTED);
+    }
+
+    SECTION("Labeled Loop")
+    {
+        ast::Loop stmt;
+        stmt.label = "main_loop";
+        stmt.body.emplace_back(make_stmt());
+
+        constexpr std::string_view EXPECTED = "main_loop: loop\n"
+                                              "  x <= '0';\n"
+                                              "end loop;";
+
+        REQUIRE(emit::test::render(stmt) == EXPECTED);
+    }
 }

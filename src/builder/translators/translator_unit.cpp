@@ -23,14 +23,14 @@ void Translator::buildDesignFile(ast::DesignFile &dest, vhdlParser::Design_fileC
         // package_declaration)
         if (auto *primary = lib_unit->primary_unit()) {
             if (auto *entity_ctx = primary->entity_declaration()) {
-                dest.units.emplace_back(makeEntity(entity_ctx));
+                dest.units.emplace_back(makeEntity(*entity_ctx));
             }
             // TODO(someone): Handle configuration_declaration and package_declaration
         }
         // Check secondary units (architecture_body | package_body)
         else if (auto *secondary = lib_unit->secondary_unit()) {
             if (auto *arch_ctx = secondary->architecture_body()) {
-                dest.units.emplace_back(makeArchitecture(arch_ctx));
+                dest.units.emplace_back(makeArchitecture(*arch_ctx));
             }
             // TODO(someone): Handle package_body
         }
@@ -39,68 +39,50 @@ void Translator::buildDesignFile(ast::DesignFile &dest, vhdlParser::Design_fileC
 
 // ---------------------- Design units ----------------------
 
-auto Translator::makeEntity(vhdlParser::Entity_declarationContext *ctx) -> ast::Entity
+auto Translator::makeEntity(vhdlParser::Entity_declarationContext &ctx) -> ast::Entity
 {
-    auto entity = make<ast::Entity>(ctx);
+    auto *header = ctx.entity_header();
 
-    entity.name = ctx->identifier(0)->getText();
-
-    // Check for 'entity' keyword in END statement
-    entity.has_end_entity_keyword = (ctx->ENTITY().size() > 1);
-
-    // Optional end label (ENTITY ... END ENTITY <id>)
-    if (ctx->identifier().size() > 1) {
-        entity.end_label = ctx->identifier(1)->getText();
-    }
-
-    if (auto *header = ctx->entity_header()) {
-        if (auto *gen_clause = header->generic_clause()) {
-            entity.generic_clause = makeGenericClause(gen_clause);
-        }
-        if (auto *port_clause = header->port_clause()) {
-            entity.port_clause = makePortClause(port_clause);
-        }
-    }
-
-    return entity;
+    return build<ast::Entity>(ctx)
+      .set(&ast::Entity::name, ctx.identifier(0)->getText())
+      .set(&ast::Entity::has_end_entity_keyword, ctx.ENTITY().size() > 1)
+      .maybe(&ast::Entity::end_label, ctx.identifier(1), [](auto &id) { return id.getText(); })
+      .maybe(&ast::Entity::generic_clause,
+             (header != nullptr) ? header->generic_clause() : nullptr,
+             [&](auto &gc) { return makeGenericClause(gc); })
+      .maybe(&ast::Entity::port_clause,
+             (header != nullptr) ? header->port_clause() : nullptr,
+             [&](auto &pc) { return makePortClause(pc); })
+      .build();
 }
 
-auto Translator::makeArchitecture(vhdlParser::Architecture_bodyContext *ctx) -> ast::Architecture
+auto Translator::makeArchitecture(vhdlParser::Architecture_bodyContext &ctx) -> ast::Architecture
 {
-    auto arch = make<ast::Architecture>(ctx);
-
-    arch.name = ctx->identifier(0)->getText();
-    arch.entity_name = ctx->identifier(1)->getText();
-
-    // Check for 'architecture' keyword in END statement
-    arch.has_end_architecture_keyword = (ctx->ARCHITECTURE().size() > 1);
-
-    // Optional end label (ARCHITECTURE ... END ARCHITECTURE <id>)
-    if (ctx->identifier().size() > 2) {
-        arch.end_label = ctx->identifier(2)->getText();
-    }
-
-    if (auto *decl_part = ctx->architecture_declarative_part()) {
-        arch.decls = makeArchitectureDeclarativePart(decl_part);
-    }
-
-    if (auto *stmt_part = ctx->architecture_statement_part()) {
-        arch.stmts = makeArchitectureStatementPart(stmt_part);
-    }
-
-    return arch;
+    return build<ast::Architecture>(ctx)
+      .set(&ast::Architecture::name, ctx.identifier(0)->getText())
+      .set(&ast::Architecture::entity_name, ctx.identifier(1)->getText())
+      .set(&ast::Architecture::has_end_architecture_keyword, ctx.ARCHITECTURE().size() > 1)
+      .maybe(
+        &ast::Architecture::end_label, ctx.identifier(2), [](auto &id) { return id.getText(); })
+      .maybe(&ast::Architecture::decls,
+             ctx.architecture_declarative_part(),
+             [&](auto &dp) { return makeArchitectureDeclarativePart(dp); })
+      .maybe(&ast::Architecture::stmts,
+             ctx.architecture_statement_part(),
+             [&](auto &sp) { return makeArchitectureStatementPart(sp); })
+      .build();
 }
 
 auto Translator::makeArchitectureDeclarativePart(
-  vhdlParser::Architecture_declarative_partContext *ctx) -> std::vector<ast::Declaration>
+  vhdlParser::Architecture_declarative_partContext &ctx) -> std::vector<ast::Declaration>
 {
     std::vector<ast::Declaration> decls{};
 
-    for (auto *item : ctx->block_declarative_item()) {
+    for (auto *item : ctx.block_declarative_item()) {
         if (auto *const_ctx = item->constant_declaration()) {
-            decls.emplace_back(makeConstantDecl(const_ctx));
+            decls.emplace_back(makeConstantDecl(*const_ctx));
         } else if (auto *sig_ctx = item->signal_declaration()) {
-            decls.emplace_back(makeSignalDecl(sig_ctx));
+            decls.emplace_back(makeSignalDecl(*sig_ctx));
         }
         // TODO(someone): Add more declaration types as needed (variables, types, subprograms,
         // etc.)
@@ -109,16 +91,16 @@ auto Translator::makeArchitectureDeclarativePart(
     return decls;
 }
 
-auto Translator::makeArchitectureStatementPart(vhdlParser::Architecture_statement_partContext *ctx)
+auto Translator::makeArchitectureStatementPart(vhdlParser::Architecture_statement_partContext &ctx)
   -> std::vector<ast::ConcurrentStatement>
 {
     std::vector<ast::ConcurrentStatement> stmts{};
 
-    for (auto *stmt : ctx->architecture_statement()) {
+    for (auto *stmt : ctx.architecture_statement()) {
         if (auto *proc = stmt->process_statement()) {
-            stmts.emplace_back(makeProcess(proc));
+            stmts.emplace_back(makeProcess(*proc));
         } else if (auto *sig_assign = stmt->concurrent_signal_assignment_statement()) {
-            stmts.emplace_back(makeConcurrentAssign(sig_assign));
+            stmts.emplace_back(makeConcurrentAssign(*sig_assign));
         }
         // TODO(someone): Add more concurrent statement types (component instantiation,
         // generate, etc.)

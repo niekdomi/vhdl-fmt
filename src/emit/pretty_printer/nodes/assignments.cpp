@@ -5,24 +5,34 @@
 
 namespace emit {
 
+auto PrettyPrinter::operator()(const ast::Waveform::Element &node) const -> Doc
+{
+    Doc d = visit(node.value);
+    if (node.after) {
+        d += Doc::text(" after ") + visit(*node.after);
+    }
+    return d;
+}
+
 auto PrettyPrinter::operator()(const ast::Waveform &node) const -> Doc
 {
     if (node.is_unaffected) {
         return Doc::text("unaffected");
     }
 
-    // Helper to format "value [after time]"
-    const auto format_elem = [&](const ast::Waveform::Element &elem) -> Doc {
-        Doc d = visit(elem.value);
-        if (elem.after) {
-            d += Doc::text(" after ") + visit(*elem.after);
-        }
-        return d;
-    };
-
     // Join elements with ", "
     // Using Doc::line() allows wrapping: "1 after 5 ns," / "0 after 10 ns"
-    return joinMap(node.elements, Doc::text(",") + Doc::line(), format_elem, false);
+    return joinMap(node.elements, Doc::text(",") + Doc::line(), toDoc(*this), false);
+}
+
+auto PrettyPrinter::operator()(
+  const ast::ConditionalConcurrentAssign::ConditionalWaveform &node) const -> Doc
+{
+    Doc d = visit(node.waveform);
+    if (node.condition) {
+        d &= Doc::text("when") & visit(*node.condition);
+    }
+    return d;
 }
 
 // Layout:
@@ -33,20 +43,19 @@ auto PrettyPrinter::operator()(const ast::ConditionalConcurrentAssign &node) con
 {
     const Doc target = visit(node.target) & Doc::text("<=");
 
-    const auto make_cond_wave = [&](const auto &item) {
-        Doc d = visit(item.waveform);
-        if (item.condition) {
-            d &= Doc::text("when") & visit(*item.condition);
-        }
-        return d;
-    };
-
     // Join with "else" + SoftLine
     // If it breaks, the next line starts at the hung indent level.
     const Doc waveforms
-      = joinMap(node.waveforms, Doc::text(" else") + Doc::line(), make_cond_wave, false);
+      = joinMap(node.waveforms, Doc::text(" else") + Doc::line(), toDoc(*this), false);
 
     return Doc::group(target & Doc::hang(waveforms)) + Doc::text(";");
+}
+
+auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign::Selection &node) const -> Doc
+{
+    const Doc val = visit(node.waveform);
+    const Doc choices = joinMap(node.choices, Doc::text(" | "), toDoc(*this), false);
+    return val & Doc::text("when") & choices;
 }
 
 // Layout:
@@ -58,14 +67,9 @@ auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign &node) const 
     const Doc header = Doc::text("with") & visit(node.selector) & Doc::text("select");
     const Doc target = visit(node.target) & Doc::text("<=");
 
-    const auto make_sel = [&](const auto &sel) {
-        const Doc val = visit(sel.waveform);
-        const Doc choices = joinMap(sel.choices, Doc::text(" | "), toDoc(*this), false);
-        return val & Doc::text("when") & choices;
-    };
-
     // Join selections with comma + SoftLine
-    const Doc selections = joinMap(node.selections, Doc::text(",") + Doc::line(), make_sel, false);
+    const Doc selections
+      = joinMap(node.selections, Doc::text(",") + Doc::line(), toDoc(*this), false);
 
     // For selected assignment, the target itself is nested under the header,
     // and the selections hang off the target.

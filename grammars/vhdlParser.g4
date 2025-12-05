@@ -659,7 +659,7 @@ interface_signal_list
     : interface_signal_declaration (SEMI interface_signal_declaration)*
     ;
 
-interface_port_list
+port_list
     : interface_port_declaration (SEMI interface_port_declaration)*
     ;
 
@@ -896,10 +896,6 @@ physical_type_definition
 
 port_clause
     : PORT LPAREN port_list RPAREN SEMI
-    ;
-
-port_list
-    : interface_port_list
     ;
 
 port_map_aspect

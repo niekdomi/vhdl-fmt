@@ -3,104 +3,84 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
-#include <optional>
 #include <utility>
 #include <vector>
 
 namespace builder {
 
-auto Translator::makeTarget(vhdlParser::TargetContext *ctx) -> ast::Expr
+auto Translator::makeTarget(vhdlParser::TargetContext &ctx) -> ast::Expr
 {
-    // Dispatch based on concrete target type
-    if (auto *name = ctx->name()) {
-        return makeName(name);
+    if (auto *name = ctx.name()) {
+        return makeName(*name);
     }
-    if (auto *agg = ctx->aggregate()) {
-        return makeAggregate(agg);
+    if (auto *agg = ctx.aggregate()) {
+        return makeAggregate(*agg);
     }
 
     // Fallback: return token with context text
-    auto token = make<ast::TokenExpr>(ctx);
-    token.text = ctx->getText();
-    return token;
+    return makeToken(ctx);
 }
 
-auto Translator::makeSignalAssign(vhdlParser::Signal_assignment_statementContext *ctx)
+auto Translator::makeSignalAssign(vhdlParser::Signal_assignment_statementContext &ctx)
   -> ast::SignalAssign
 {
-    auto assign = make<ast::SignalAssign>(ctx);
-
-    if (auto *target_ctx = ctx->target()) {
-        assign.target = makeTarget(target_ctx);
-    }
-
-    if (auto *wave = ctx->waveform()) {
-        assign.waveform = makeWaveform(wave);
-    }
-
-    return assign;
+    return build<ast::SignalAssign>(ctx)
+      .maybe(&ast::SignalAssign::target, ctx.target(), [&](auto &t) { return makeTarget(t); })
+      .maybe(&ast::SignalAssign::waveform, ctx.waveform(), [&](auto &w) { return makeWaveform(w); })
+      .build();
 }
 
-auto Translator::makeVariableAssign(vhdlParser::Variable_assignment_statementContext *ctx)
+auto Translator::makeVariableAssign(vhdlParser::Variable_assignment_statementContext &ctx)
   -> ast::VariableAssign
 {
-    auto assign = make<ast::VariableAssign>(ctx);
-
-    if (auto *target_ctx = ctx->target()) {
-        assign.target = makeTarget(target_ctx);
-    }
-
-    if (auto *expr = ctx->expression()) {
-        assign.value = makeExpr(expr);
-    }
-
-    return assign;
+    return build<ast::VariableAssign>(ctx)
+      .maybe(&ast::VariableAssign::target, ctx.target(), [&](auto &t) { return makeTarget(t); })
+      .maybe(
+        &ast::VariableAssign::value, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })
+      .build();
 }
 
-auto Translator::makeSequentialStatement(vhdlParser::Sequential_statementContext *ctx)
-  -> std::optional<ast::SequentialStatement>
+auto Translator::makeSequentialStatement(vhdlParser::Sequential_statementContext &ctx)
+  -> ast::SequentialStatement
 {
     // Dispatch based on concrete statement type
-    if (auto *signal_assign = ctx->signal_assignment_statement()) {
-        return makeSignalAssign(signal_assign);
+    if (auto *signal_assign = ctx.signal_assignment_statement()) {
+        return makeSignalAssign(*signal_assign);
     }
-    if (auto *var_assign = ctx->variable_assignment_statement()) {
-        return makeVariableAssign(var_assign);
+    if (auto *var_assign = ctx.variable_assignment_statement()) {
+        return makeVariableAssign(*var_assign);
     }
-    if (auto *if_stmt = ctx->if_statement()) {
-        return makeIfStatement(if_stmt);
+    if (auto *if_stmt = ctx.if_statement()) {
+        return makeIfStatement(*if_stmt);
     }
-    if (auto *case_stmt = ctx->case_statement()) {
-        return makeCaseStatement(case_stmt);
+    if (auto *case_stmt = ctx.case_statement()) {
+        return makeCaseStatement(*case_stmt);
     }
-    if (auto *loop_stmt = ctx->loop_statement()) {
+    if (auto *loop_stmt = ctx.loop_statement()) {
         if (auto *iter = loop_stmt->iteration_scheme()) {
             if (iter->parameter_specification() != nullptr) {
-                return makeForLoop(loop_stmt);
+                return makeForLoop(*loop_stmt);
             }
             if (iter->condition() != nullptr) {
-                return makeWhileLoop(loop_stmt);
+                return makeWhileLoop(*loop_stmt);
             }
         }
-        // Basic loop without iteration scheme - not yet supported, return empty
+        return makeLoop(*loop_stmt);
     }
 
     // TODO(someone): Add support for wait_statement, assertion_statement,
     // report_statement, next_statement, exit_statement, return_statement, etc.
 
-    // Fallback: return nullopt
-    return std::nullopt;
+    return {};
 }
 
-auto Translator::makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext *ctx)
+auto Translator::makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext &ctx)
   -> std::vector<ast::SequentialStatement>
 {
-    std::vector<ast::SequentialStatement> statements;
+    std::vector<ast::SequentialStatement> statements{};
 
-    for (auto *stmt : ctx->sequential_statement()) {
-        if (auto result = makeSequentialStatement(stmt)) {
-            statements.emplace_back(std::move(*result));
-        }
+    for (auto *stmt : ctx.sequential_statement()) {
+        statements.emplace_back(std::move(makeSequentialStatement(*stmt)));
     }
 
     return statements;

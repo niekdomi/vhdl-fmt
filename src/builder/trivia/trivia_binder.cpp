@@ -51,29 +51,26 @@ auto TriviaBinder::extractTrivia(std::span<antlr4::Token *const> range) -> std::
     return result;
 }
 
-auto TriviaBinder::findContextEnd(const antlr4::ParserRuleContext *ctx) const -> std::size_t
+auto TriviaBinder::findContextEnd(const antlr4::ParserRuleContext &ctx) const -> std::size_t
 {
-    const auto stop = ctx->getStop()->getTokenIndex();
+    const auto stop = ctx.getStop()->getTokenIndex();
 
     const auto next = stop + 1;
     if (next >= tokens_.size()) {
         return stop;
     }
 
-    if (const auto tok = tokens_.get(next)->getText(); tok == ";" || tok == ",") {
+    const auto tok = tokens_.get(next)->getText();
+    if (tok == ";" || tok == "," || tok == "else") {
         return next;
     }
 
     return stop;
 }
 
-void TriviaBinder::bind(ast::NodeBase &node, const antlr4::ParserRuleContext *ctx)
+void TriviaBinder::bind(ast::NodeBase &node, const antlr4::ParserRuleContext &ctx)
 {
-    if (ctx == nullptr) {
-        return;
-    }
-
-    const auto start_idx = ctx->getStart()->getTokenIndex();
+    const auto start_idx = ctx.getStart()->getTokenIndex();
     const auto stop_idx = findContextEnd(ctx);
 
     // Extract Inline (Immediate Right of stop)

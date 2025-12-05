@@ -4,175 +4,164 @@
 #include "vhdlParser.h"
 
 #include <ranges>
+#include <string>
+#include <vector>
 
 namespace builder {
 
-// ---------------------- Clauses ----------------------
+// ============================================================================
+// Extraction Helpers
+// ============================================================================
 
-auto Translator::makeGenericClause(vhdlParser::Generic_clauseContext *ctx) -> ast::GenericClause
+namespace {
+
+auto extractNames(vhdlParser::Identifier_listContext *ctx) -> std::vector<std::string>
 {
-    auto clause = make<ast::GenericClause>(ctx);
-
-    auto *list = ctx->generic_list();
-    if (list == nullptr) {
-        return clause;
+    if (ctx == nullptr) {
+        return {};
     }
-
-    const auto &declarations = list->interface_constant_declaration();
-    clause.generics
-      = std::views::transform(declarations, [&](auto *decl) { return makeGenericParam(decl); })
-      | std::ranges::to<std::vector>();
-
-    return clause;
+    return ctx->identifier()
+         | std::views::transform([](auto *id) { return id->getText(); })
+         | std::ranges::to<std::vector>();
 }
 
-auto Translator::makePortClause(vhdlParser::Port_clauseContext *ctx) -> ast::PortClause
+auto extractTypeName(vhdlParser::Subtype_indicationContext *ctx) -> std::string
 {
-    auto clause = make<ast::PortClause>(ctx);
-
-    auto *list = ctx->port_list();
-    if (list == nullptr) {
-        return clause;
+    if (ctx == nullptr || ctx->selected_name().empty()) {
+        return {};
     }
+    return ctx->selected_name(0)->getText();
+}
 
-    auto *iface = list->interface_port_list();
-    if (iface == nullptr) {
-        return clause;
+auto extractTypeFullText(vhdlParser::Subtype_indicationContext *ctx) -> std::string
+{
+    if (ctx == nullptr) {
+        return {};
     }
+    return ctx->getText();
+}
 
-    const auto &declarations = iface->interface_port_declaration();
-    clause.ports
-      = std::views::transform(declarations, [&](auto *decl) { return makeSignalPort(decl); })
-      | std::ranges::to<std::vector>();
+auto extractMode(vhdlParser::Signal_modeContext *ctx) -> std::string
+{
+    if (ctx == nullptr) {
+        return {};
+    }
+    return ctx->getText();
+}
 
-    return clause;
+/// @brief Helper to extract type info from subtype_indication into node fields.
+/// @tparam Node AST node type with type_name and constraint fields.
+template<typename Node>
+void extractSubtypeInfo(Node &node,
+                        vhdlParser::Subtype_indicationContext *stype,
+                        auto &&make_constraint_fn)
+{
+    if (stype == nullptr) {
+        return;
+    }
+    node.type_name = extractTypeName(stype);
+    if (auto *constr = stype->constraint()) {
+        node.constraint = make_constraint_fn(*constr);
+    }
+}
+
+} // namespace
+
+// ============================================================================
+// Translator Implementation
+// ============================================================================
+
+// ---------------------- Clauses ----------------------
+
+auto Translator::makeGenericClause(vhdlParser::Generic_clauseContext &ctx) -> ast::GenericClause
+{
+    return build<ast::GenericClause>(ctx)
+      .collectFrom(
+        &ast::GenericClause::generics,
+        ctx.generic_list(),
+        [](auto &list) { return list.interface_constant_declaration(); },
+        [this](auto *decl) { return makeGenericParam(*decl); })
+      .build();
+}
+
+auto Translator::makePortClause(vhdlParser::Port_clauseContext &ctx) -> ast::PortClause
+{
+    return build<ast::PortClause>(ctx)
+      .collectFrom(
+        &ast::PortClause::ports,
+        ctx.port_list(),
+        [](auto &list) { return list.interface_port_declaration(); },
+        [this](auto *decl) { return makeSignalPort(*decl); })
+      .build();
 }
 
 // ---------------------- Interface declarations ----------------------
 
-auto Translator::makeGenericParam(vhdlParser::Interface_constant_declarationContext *ctx)
+auto Translator::makeGenericParam(vhdlParser::Interface_constant_declarationContext &ctx)
   -> ast::GenericParam
 {
-    auto param = make<ast::GenericParam>(ctx);
-
-    param.names = ctx->identifier_list()->identifier()
-                | std::views::transform([](auto *id) { return id->getText(); })
-                | std::ranges::to<std::vector>();
-
-    if (auto *stype = ctx->subtype_indication()) {
-        param.type_name = stype->getText();
-    }
-
-    if (auto *expr = ctx->expression()) {
-        param.default_expr = makeExpr(expr);
-    }
-
-    return param;
+    return build<ast::GenericParam>(ctx)
+      .set(&ast::GenericParam::names, extractNames(ctx.identifier_list()))
+      .set(&ast::GenericParam::type_name, extractTypeFullText(ctx.subtype_indication()))
+      .maybe(&ast::GenericParam::default_expr,
+             ctx.expression(),
+             [&](auto &expr) { return makeExpr(expr); })
+      .build();
 }
 
 // ---------------------- Object declarations ----------------------
 
-auto Translator::makeSignalPort(vhdlParser::Interface_port_declarationContext *ctx) -> ast::Port
+auto Translator::makeSignalPort(vhdlParser::Interface_port_declarationContext &ctx) -> ast::Port
 {
-    auto port = make<ast::Port>(ctx);
-
-    port.names = ctx->identifier_list()->identifier()
-               | std::views::transform([](auto *id) { return id->getText(); })
-               | std::ranges::to<std::vector>();
-
-    if (auto *mode = ctx->signal_mode()) {
-        port.mode = mode->getText();
-    }
-
-    if (auto *stype = ctx->subtype_indication()) {
-        port.type_name = stype->selected_name(0)->getText();
-
-        if (auto *constraint_ctx = stype->constraint()) {
-            port.constraint = makeConstraint(constraint_ctx);
-        }
-    }
-
-    if (auto *expr = ctx->expression()) {
-        port.default_expr = makeExpr(expr);
-    }
-
-    return port;
+    return build<ast::Port>(ctx)
+      .set(&ast::Port::names, extractNames(ctx.identifier_list()))
+      .set(&ast::Port::mode, extractMode(ctx.signal_mode()))
+      .apply([&](auto &node) {
+          extractSubtypeInfo(
+            node, ctx.subtype_indication(), [&](auto &c) { return makeConstraint(c); });
+      })
+      .maybe(&ast::Port::default_expr, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })
+      .build();
 }
 
-auto Translator::makeConstantDecl(vhdlParser::Constant_declarationContext *ctx) -> ast::ConstantDecl
+auto Translator::makeConstantDecl(vhdlParser::Constant_declarationContext &ctx) -> ast::ConstantDecl
 {
-    auto decl = make<ast::ConstantDecl>(ctx);
-
-    decl.names = ctx->identifier_list()->identifier()
-               | std::views::transform([](auto *id) { return id->getText(); })
-               | std::ranges::to<std::vector>();
-
-    if (auto *stype = ctx->subtype_indication()) {
-        decl.type_name = stype->selected_name(0)->getText();
-    }
-
-    if (auto *expr = ctx->expression()) {
-        decl.init_expr = makeExpr(expr);
-    }
-
-    return decl;
+    return build<ast::ConstantDecl>(ctx)
+      .set(&ast::ConstantDecl::names, extractNames(ctx.identifier_list()))
+      .set(&ast::ConstantDecl::type_name, extractTypeName(ctx.subtype_indication()))
+      .maybe(
+        &ast::ConstantDecl::init_expr, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })
+      .build();
 }
 
-auto Translator::makeSignalDecl(vhdlParser::Signal_declarationContext *ctx) -> ast::SignalDecl
+auto Translator::makeSignalDecl(vhdlParser::Signal_declarationContext &ctx) -> ast::SignalDecl
 {
-    auto decl = make<ast::SignalDecl>(ctx);
+    auto *skind = ctx.signal_kind();
 
-    decl.names = ctx->identifier_list()->identifier()
-               | std::views::transform([](auto *id) { return id->getText(); })
-               | std::ranges::to<std::vector>();
-
-    if (auto *stype = ctx->subtype_indication()) {
-        decl.type_name = stype->selected_name(0)->getText();
-
-        if (auto *constraint_ctx = stype->constraint()) {
-            decl.constraint = makeConstraint(constraint_ctx);
-        }
-    }
-
-    decl.has_bus_kw = false;
-    if (auto *kind = ctx->signal_kind()) {
-        if (kind->BUS() != nullptr) {
-            decl.has_bus_kw = true;
-        }
-    }
-
-    if (auto *expr = ctx->expression()) {
-        decl.init_expr = makeExpr(expr);
-    }
-
-    return decl;
+    return build<ast::SignalDecl>(ctx)
+      .set(&ast::SignalDecl::names, extractNames(ctx.identifier_list()))
+      .apply([&](auto &node) {
+          extractSubtypeInfo(
+            node, ctx.subtype_indication(), [&](auto &c) { return makeConstraint(c); });
+      })
+      .set(&ast::SignalDecl::has_bus_kw, skind != nullptr && skind->BUS() != nullptr)
+      .maybe(
+        &ast::SignalDecl::init_expr, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })
+      .build();
 }
 
-auto Translator::makeVariableDecl(vhdlParser::Variable_declarationContext *ctx) -> ast::VariableDecl
+auto Translator::makeVariableDecl(vhdlParser::Variable_declarationContext &ctx) -> ast::VariableDecl
 {
-    auto decl = make<ast::VariableDecl>(ctx);
-
-    if (ctx->SHARED() != nullptr) {
-        decl.shared = true;
-    }
-
-    decl.names = ctx->identifier_list()->identifier()
-               | std::views::transform([](auto *id) { return id->getText(); })
-               | std::ranges::to<std::vector>();
-
-    if (auto *stype = ctx->subtype_indication()) {
-        decl.type_name = stype->selected_name(0)->getText();
-
-        if (auto *constraint_ctx = stype->constraint()) {
-            decl.constraint = makeConstraint(constraint_ctx);
-        }
-    }
-
-    if (auto *expr = ctx->expression()) {
-        decl.init_expr = makeExpr(expr);
-    }
-
-    return decl;
+    return build<ast::VariableDecl>(ctx)
+      .set(&ast::VariableDecl::shared, ctx.SHARED() != nullptr)
+      .set(&ast::VariableDecl::names, extractNames(ctx.identifier_list()))
+      .apply([&](auto &node) {
+          extractSubtypeInfo(
+            node, ctx.subtype_indication(), [&](auto &c) { return makeConstraint(c); });
+      })
+      .maybe(
+        &ast::VariableDecl::init_expr, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })
+      .build();
 }
 
 } // namespace builder

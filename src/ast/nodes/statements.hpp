@@ -22,14 +22,15 @@ struct CaseStatement;
 struct Process;
 struct ForLoop;
 struct WhileLoop;
+struct Loop;
 
 /// @brief Variant type for concurrent statements (outside processes).
 using ConcurrentStatement
   = std::variant<ConditionalConcurrentAssign, SelectedConcurrentAssign, Process>;
 
 /// @brief Variant type for sequential statements (inside processes).
-using SequentialStatement
-  = std::variant<VariableAssign, SignalAssign, IfStatement, CaseStatement, ForLoop, WhileLoop>;
+using SequentialStatement = std::
+  variant<VariableAssign, SignalAssign, IfStatement, CaseStatement, ForLoop, WhileLoop, Loop>;
 
 /// @brief Represents the right-hand side of a signal assignment.
 ///
@@ -39,7 +40,7 @@ struct Waveform : NodeBase
     bool is_unaffected{ false }; ///< True if waveform is UNAFFECTED keyword.
 
     /// @brief Represents a single waveform element.
-    struct Element
+    struct Element : NodeBase
     {
         Expr value;                ///< Value expression to assign.
         std::optional<Expr> after; ///< Optional delay time (AFTER clause).
@@ -55,7 +56,7 @@ struct ConditionalConcurrentAssign : NodeBase
     Expr target; ///< Target signal of the assignment.
 
     /// @brief Represents a waveform with an optional condition.
-    struct ConditionalWaveform
+    struct ConditionalWaveform : NodeBase
     {
         Waveform waveform;             ///< The waveform to assign.
         std::optional<Expr> condition; ///< Optional WHEN condition (none for final ELSE).
@@ -72,7 +73,7 @@ struct SelectedConcurrentAssign : NodeBase
     Expr selector; ///< Selector expression in WITH clause.
 
     /// @brief Represents a selection branch with choices.
-    struct Selection
+    struct Selection : NodeBase
     {
         Waveform waveform;         ///< The waveform to assign for this selection.
         std::vector<Expr> choices; ///< List of choices (WHEN alternatives).
@@ -106,7 +107,6 @@ struct IfStatement : NodeBase
     /// @brief Represents a branch (if, elsif, or else).
     struct Branch
     {
-        std::optional<NodeTrivia> trivia;      ///< Leading trivia (comments, whitespace).
         Expr condition;                        ///< Branch condition (empty for else branch).
         std::vector<SequentialStatement> body; ///< Statements in the branch.
     };
@@ -122,9 +122,8 @@ struct IfStatement : NodeBase
 struct CaseStatement : NodeBase
 {
     /// @brief Represents a WHEN clause in a CASE statement.
-    struct WhenClause
+    struct WhenClause : NodeBase
     {
-        std::optional<NodeTrivia> trivia;      ///< Leading trivia (comments, whitespace).
         std::vector<Expr> choices;             ///< Choice expressions (alternatives).
         std::vector<SequentialStatement> body; ///< Statements for this clause.
     };
@@ -160,6 +159,15 @@ struct ForLoop : NodeBase
 struct WhileLoop : NodeBase
 {
     Expr condition;                        ///< Loop condition expression.
+    std::vector<SequentialStatement> body; ///< Loop body statements.
+};
+
+/// @brief Represents a basic/infinite loop statement.
+///
+/// Example: `loop stmts; exit when done; end loop;`
+struct Loop : NodeBase
+{
+    std::optional<std::string> label;      ///< Optional loop label.
     std::vector<SequentialStatement> body; ///< Loop body statements.
 };
 
