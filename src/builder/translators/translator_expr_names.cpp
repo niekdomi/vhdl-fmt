@@ -118,9 +118,12 @@ auto Translator::makeCallArgument(vhdlParser::Association_elementContext &ctx) -
 {
     auto *actual = ctx.actual_part();
     auto *designator = (actual != nullptr) ? actual->actual_designator() : nullptr;
-    if (auto *expr = (designator != nullptr) ? designator->expression() : nullptr) {
+    auto *expr = (designator != nullptr) ? designator->expression() : nullptr;
+
+    if (expr != nullptr) {
         return makeExpr(*expr);
     }
+
     return makeToken(ctx);
 }
 

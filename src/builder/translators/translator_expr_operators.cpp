@@ -2,7 +2,9 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
+#include <algorithm>
 #include <cstddef>
+#include <ranges>
 #include <utility>
 
 namespace builder {
@@ -13,6 +15,7 @@ auto Translator::makeExpr(vhdlParser::ExpressionContext &ctx) -> ast::Expr
     if (relations.size() == 1) {
         return makeRelation(*relations[0]);
     }
+
     return foldBinaryLeft(
       ctx, relations, ctx.logical_operator(), [&](auto &r) { return makeRelation(r); });
 }
@@ -22,6 +25,7 @@ auto Translator::makeRelation(vhdlParser::RelationContext &ctx) -> ast::Expr
     if (ctx.relational_operator() == nullptr) {
         return makeShiftExpr(*ctx.shift_expression(0));
     }
+
     return makeBinary(ctx,
                       ctx.relational_operator()->getText(),
                       makeShiftExpr(*ctx.shift_expression(0)),
@@ -33,6 +37,7 @@ auto Translator::makeShiftExpr(vhdlParser::Shift_expressionContext &ctx) -> ast:
     if (ctx.shift_operator() == nullptr) {
         return makeSimpleExpr(*ctx.simple_expression(0));
     }
+
     return makeBinary(ctx,
                       ctx.shift_operator()->getText(),
                       makeSimpleExpr(*ctx.simple_expression(0)),
@@ -57,11 +62,10 @@ auto Translator::makeSimpleExpr(vhdlParser::Simple_expressionContext &ctx) -> as
         init = makeUnary(ctx, "-", std::move(init));
     }
 
-    // Fold remaining terms with operators
-    auto op_it = operators.begin();
-    for (std::size_t i = 1; i < terms.size(); ++i, ++op_it) {
-        init = makeBinary(ctx, (*op_it)->getText(), std::move(init), makeTerm(*terms[i]));
+    for (const auto &[term, op] : std::views::zip(terms | std::views::drop(1), operators)) {
+        init = makeBinary(ctx, op->getText(), std::move(init), makeTerm(*term));
     }
+
     return init;
 }
 
@@ -71,9 +75,11 @@ auto Translator::makeTerm(vhdlParser::TermContext &ctx) -> ast::Expr
     if (factors.empty()) {
         return makeToken(ctx);
     }
+
     if (factors.size() == 1) {
         return makeFactor(*factors[0]);
     }
+
     return foldBinaryLeft(
       ctx, factors, ctx.multiplying_operator(), [&](auto &f) { return makeFactor(f); });
 }
@@ -83,12 +89,15 @@ auto Translator::makeFactor(vhdlParser::FactorContext &ctx) -> ast::Expr
     if (ctx.DOUBLESTAR() != nullptr) {
         return makeBinary(ctx, "**", makePrimary(*ctx.primary(0)), makePrimary(*ctx.primary(1)));
     }
+
     if (ctx.ABS() != nullptr) {
         return makeUnary(ctx, "abs", makePrimary(*ctx.primary(0)));
     }
+
     if (ctx.NOT() != nullptr) {
         return makeUnary(ctx, "not", makePrimary(*ctx.primary(0)));
     }
+
     return makePrimary(*ctx.primary(0));
 }
 
@@ -117,21 +126,27 @@ auto Translator::makePrimary(vhdlParser::PrimaryContext &ctx) -> ast::Expr
           .setBox(&ast::ParenExpr::inner, makeExpr(*ctx.expression()))
           .build();
     }
+
     if (ctx.aggregate() != nullptr) {
         return makeAggregate(*ctx.aggregate());
     }
+
     if (auto *name_ctx = ctx.name()) {
         return makeName(*name_ctx);
     }
+
     if (auto *lit = ctx.literal()) {
         return makeLiteral(*lit);
     }
+
     if (auto *qual = ctx.qualified_expression()) {
         return makeQualifiedExpr(*qual);
     }
+
     if (auto *alloc = ctx.allocator()) {
         return makeAllocator(*alloc);
     }
+
     return makeToken(ctx);
 }
 

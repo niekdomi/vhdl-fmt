@@ -75,9 +75,10 @@ class NodeBuilder
     template<typename Self, typename Field, typename Ctx, typename Fn>
     auto maybe(this Self &&self, Field T::*field, Ctx *ctx, Fn &&fn) -> Self &&
     {
-        if (ctx) {
+        if (ctx != nullptr) {
             self.node_.*field = std::forward<Fn>(fn)(*ctx);
         }
+
         return std::forward<Self>(self);
     }
 
@@ -89,9 +90,10 @@ class NodeBuilder
     template<typename Self, typename Inner, typename Ctx, typename Fn>
     auto maybeBox(this Self &&self, std::unique_ptr<Inner> T::*field, Ctx *ctx, Fn &&fn) -> Self &&
     {
-        if (ctx) {
+        if (ctx != nullptr) {
             self.node_.*field = std::make_unique<Inner>(std::forward<Fn>(fn)(*ctx));
         }
+
         return std::forward<Self>(self);
     }
 
@@ -102,9 +104,10 @@ class NodeBuilder
     template<typename Self, typename Ctx, typename Fn>
     auto with(this Self &&self, Ctx *ctx, Fn &&fn) -> Self &&
     {
-        if (ctx) {
+        if (ctx != nullptr) {
             std::forward<Fn>(fn)(self.node_, *ctx);
         }
+
         return std::forward<Self>(self);
     }
 
@@ -129,6 +132,7 @@ class NodeBuilder
         self.node_.*field = std::forward<Range>(range)
                           | std::views::transform(std::forward<Fn>(fn))
                           | std::ranges::to<std::vector>();
+
         return std::forward<Self>(self);
     }
 
@@ -145,11 +149,12 @@ class NodeBuilder
                      RangeAccessor &&range_accessor,
                      Fn &&fn) -> Self &&
     {
-        if (ctx) {
+        if (ctx != nullptr) {
             self.node_.*field = std::forward<RangeAccessor>(range_accessor)(*ctx)
                               | std::views::transform(std::forward<Fn>(fn))
                               | std::ranges::to<std::vector>();
         }
+
         return std::forward<Self>(self);
     }
 
