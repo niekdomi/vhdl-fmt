@@ -17,12 +17,12 @@ TEST_CASE("ConstantDecl: Simple constant with initialization", "[declarations][c
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    auto *constant = std::get_if<ast::ConstantDecl>(arch->decls.data());
+    const auto *constant = std::get_if<ast::ConstantDecl>(arch->decls.data());
     REQUIRE(constant != nullptr);
     REQUIRE(constant->names.size() == 1);
     REQUIRE(constant->names[0] == "WIDTH");
@@ -40,12 +40,12 @@ TEST_CASE("ConstantDecl: Multiple constants same declaration", "[declarations][c
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    auto *constant = std::get_if<ast::ConstantDecl>(arch->decls.data());
+    const auto *constant = std::get_if<ast::ConstantDecl>(arch->decls.data());
     REQUIRE(constant != nullptr);
     REQUIRE(constant->names.size() == 3);
     REQUIRE(constant->names[0] == "MIN");
@@ -65,12 +65,12 @@ TEST_CASE("ConstantDecl: Boolean constant", "[declarations][constant]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    auto *constant = std::get_if<ast::ConstantDecl>(arch->decls.data());
+    const auto *constant = std::get_if<ast::ConstantDecl>(arch->decls.data());
     REQUIRE(constant != nullptr);
     REQUIRE(constant->names[0] == "ENABLE");
     REQUIRE(constant->type_name == "boolean");

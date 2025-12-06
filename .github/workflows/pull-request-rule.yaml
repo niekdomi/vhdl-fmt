@@ -40,7 +40,7 @@ jobs:
 
           keywords_regex_part=$(IFS="|"; echo "${keywords[*]}")
           pattern="^(${keywords_regex_part}): ([A-Z].+\S)"
-          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_TITLE='${{ github.event.pull_request.title }}'
 
           if ! [[ "$PR_TITLE" =~ $pattern ]]; then
             echo -e "${BOLD_RED}❌ Pull Request title is invalid!${RESET}"

@@ -13,8 +13,8 @@ dictionaries:
 ignorePaths:
   - ".*"
   - "*.vhd"
+  - "*.txt"
   - "example/"
   - "grammars/"
   - "clang.profile"
   - "Dockerfile"
-  - "docker-compose.yml"

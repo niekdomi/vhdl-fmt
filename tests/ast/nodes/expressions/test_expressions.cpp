@@ -39,7 +39,7 @@ TEST_CASE("Token expression: integer literal", "[expressions][token]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -58,7 +58,7 @@ TEST_CASE("Token expression: bit literal", "[expressions][token]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -77,7 +77,7 @@ TEST_CASE("Token expression: identifier", "[expressions][token]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -96,7 +96,7 @@ TEST_CASE("Unary expression: negation", "[expressions][unary]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -104,7 +104,7 @@ TEST_CASE("Unary expression: negation", "[expressions][unary]")
     REQUIRE(unary != nullptr);
     REQUIRE(unary->op == "-");
 
-    auto *val = std::get_if<ast::TokenExpr>(unary->value.get());
+    const auto *val = std::get_if<ast::TokenExpr>(unary->value.get());
     REQUIRE(val != nullptr);
     REQUIRE(val->text == "42");
 }
@@ -119,7 +119,7 @@ TEST_CASE("Unary expression: not operator", "[expressions][unary]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -138,7 +138,7 @@ TEST_CASE("Unary expression: abs operator", "[expressions][unary]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -157,7 +157,7 @@ TEST_CASE("Binary expression: addition", "[expressions][binary][arithmetic]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -165,11 +165,11 @@ TEST_CASE("Binary expression: addition", "[expressions][binary][arithmetic]")
     REQUIRE(bin != nullptr);
     REQUIRE(bin->op == "+");
 
-    auto *left = std::get_if<ast::TokenExpr>(bin->left.get());
+    const auto *left = std::get_if<ast::TokenExpr>(bin->left.get());
     REQUIRE(left != nullptr);
     REQUIRE(left->text == "5");
 
-    auto *right = std::get_if<ast::TokenExpr>(bin->right.get());
+    const auto *right = std::get_if<ast::TokenExpr>(bin->right.get());
     REQUIRE(right != nullptr);
     REQUIRE(right->text == "3");
 }
@@ -184,7 +184,7 @@ TEST_CASE("Binary expression: exponentiation", "[expressions][binary][arithmetic
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -203,7 +203,7 @@ TEST_CASE("Binary expression: or operator", "[expressions][binary][logical]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -222,7 +222,7 @@ TEST_CASE("Binary expression: equality", "[expressions][binary][relational]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -242,17 +242,17 @@ TEST_CASE("Binary expression: downto range", "[expressions][binary][range]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     REQUIRE(design.units.size() == 2);
 
-    auto *entity = std::get_if<ast::Entity>(design.units.data());
+    const auto *entity = std::get_if<ast::Entity>(design.units.data());
     REQUIRE(entity != nullptr);
     REQUIRE(entity->port_clause.ports.size() == 1);
 
-    auto &port = entity->port_clause.ports[0];
+    const auto &port = entity->port_clause.ports[0];
     REQUIRE(port.constraints.size() == 1);
 
-    auto &range = port.constraints[0];
+    const auto &range = port.constraints[0];
     REQUIRE(range.op == "downto");
 }
 
@@ -267,15 +267,15 @@ TEST_CASE("Binary expression: to range", "[expressions][binary][range]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *entity = std::get_if<ast::Entity>(design.units.data());
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *entity = std::get_if<ast::Entity>(design.units.data());
     REQUIRE(entity != nullptr);
     REQUIRE(entity->port_clause.ports.size() == 1);
 
-    auto &port = entity->port_clause.ports[0];
+    const auto &port = entity->port_clause.ports[0];
     REQUIRE(port.constraints.size() == 1);
 
-    auto &range = port.constraints[0];
+    const auto &range = port.constraints[0];
     REQUIRE(range.op == "to");
 }
 
@@ -289,7 +289,7 @@ TEST_CASE("Binary expression: attribute (apostrophe)", "[expressions][binary][at
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -297,11 +297,11 @@ TEST_CASE("Binary expression: attribute (apostrophe)", "[expressions][binary][at
     REQUIRE(bin != nullptr);
     REQUIRE(bin->op == "'");
 
-    auto *left = std::get_if<ast::TokenExpr>(bin->left.get());
+    const auto *left = std::get_if<ast::TokenExpr>(bin->left.get());
     REQUIRE(left != nullptr);
     REQUIRE(left->text == "data");
 
-    auto *right = std::get_if<ast::TokenExpr>(bin->right.get());
+    const auto *right = std::get_if<ast::TokenExpr>(bin->right.get());
     REQUIRE(right != nullptr);
     REQUIRE(right->text == "length");
 }
@@ -316,7 +316,7 @@ TEST_CASE("Binary expression: selected name (dot)", "[expressions][binary][selec
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -338,14 +338,14 @@ TEST_CASE("Parenthesized expression: complex", "[expressions][paren]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
     const auto *paren = std::get_if<ast::ParenExpr>(expr);
     REQUIRE(paren != nullptr);
 
-    auto *inner = std::get_if<ast::BinaryExpr>(paren->inner.get());
+    const auto *inner = std::get_if<ast::BinaryExpr>(paren->inner.get());
     REQUIRE(inner != nullptr);
     REQUIRE(inner->op == "+");
 }
@@ -360,18 +360,18 @@ TEST_CASE("Call expression: single argument", "[expressions][call]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
     const auto *call = std::get_if<ast::CallExpr>(expr);
     REQUIRE(call != nullptr);
 
-    auto *callee = std::get_if<ast::TokenExpr>(call->callee.get());
+    const auto *callee = std::get_if<ast::TokenExpr>(call->callee.get());
     REQUIRE(callee != nullptr);
     REQUIRE(callee->text == "rising_edge");
 
-    auto *arg = std::get_if<ast::TokenExpr>(call->args.get());
+    const auto *arg = std::get_if<ast::TokenExpr>(call->args.get());
     REQUIRE(arg != nullptr);
     REQUIRE(arg->text == "clk");
 }
@@ -386,18 +386,18 @@ TEST_CASE("Call expression: multiple arguments", "[expressions][call]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
     const auto *call = std::get_if<ast::CallExpr>(expr);
     REQUIRE(call != nullptr);
 
-    auto *callee = std::get_if<ast::TokenExpr>(call->callee.get());
+    const auto *callee = std::get_if<ast::TokenExpr>(call->callee.get());
     REQUIRE(callee != nullptr);
     REQUIRE(callee->text == "max");
 
-    auto *args = std::get_if<ast::GroupExpr>(call->args.get());
+    const auto *args = std::get_if<ast::GroupExpr>(call->args.get());
     REQUIRE(args != nullptr);
     REQUIRE(args->children.size() == 2);
 }
@@ -412,18 +412,18 @@ TEST_CASE("Call expression: array indexing", "[expressions][call]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
     const auto *call = std::get_if<ast::CallExpr>(expr);
     REQUIRE(call != nullptr);
 
-    auto *callee = std::get_if<ast::TokenExpr>(call->callee.get());
+    const auto *callee = std::get_if<ast::TokenExpr>(call->callee.get());
     REQUIRE(callee != nullptr);
     REQUIRE(callee->text == "data");
 
-    auto *arg = std::get_if<ast::TokenExpr>(call->args.get());
+    const auto *arg = std::get_if<ast::TokenExpr>(call->args.get());
     REQUIRE(arg != nullptr);
     REQUIRE(arg->text == "5");
 }
@@ -438,18 +438,18 @@ TEST_CASE("Call expression: slice with range", "[expressions][call][slice]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
     const auto *call = std::get_if<ast::CallExpr>(expr);
     REQUIRE(call != nullptr);
 
-    auto *callee = std::get_if<ast::TokenExpr>(call->callee.get());
+    const auto *callee = std::get_if<ast::TokenExpr>(call->callee.get());
     REQUIRE(callee != nullptr);
     REQUIRE(callee->text == "data");
 
-    auto *range_expr = std::get_if<ast::BinaryExpr>(call->args.get());
+    const auto *range_expr = std::get_if<ast::BinaryExpr>(call->args.get());
     REQUIRE(range_expr != nullptr);
     REQUIRE(range_expr->op == "downto");
 }
@@ -464,7 +464,7 @@ TEST_CASE("Group expression: simple aggregate", "[expressions][group]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -487,7 +487,7 @@ TEST_CASE("Group expression: multiple elements", "[expressions][group]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -514,7 +514,7 @@ TEST_CASE("Complex expression: nested binary operations", "[expressions][complex
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -524,7 +524,7 @@ TEST_CASE("Complex expression: nested binary operations", "[expressions][complex
     REQUIRE(add->op == "+");
 
     // Right side should be multiplication
-    auto *mul = std::get_if<ast::BinaryExpr>(add->right.get());
+    const auto *mul = std::get_if<ast::BinaryExpr>(add->right.get());
     REQUIRE(mul != nullptr);
     REQUIRE(mul->op == "*");
 }
@@ -539,7 +539,7 @@ TEST_CASE("Complex expression: chained selections", "[expressions][complex]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -561,18 +561,18 @@ TEST_CASE("Complex expression: function call with arithmetic", "[expressions][co
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
     const auto *call = std::get_if<ast::CallExpr>(expr);
     REQUIRE(call != nullptr);
 
-    auto *callee = std::get_if<ast::TokenExpr>(call->callee.get());
+    const auto *callee = std::get_if<ast::TokenExpr>(call->callee.get());
     REQUIRE(callee != nullptr);
     REQUIRE(callee->text == "func");
 
-    auto *arg = std::get_if<ast::BinaryExpr>(call->args.get());
+    const auto *arg = std::get_if<ast::BinaryExpr>(call->args.get());
     REQUIRE(arg != nullptr);
     REQUIRE(arg->op == "+");
 }

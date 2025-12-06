@@ -12,29 +12,16 @@ CMakeUserPresets.json
 *.obj
 *.exe
 
-# Build system files
-*.ninja
-cmake_install.cmake
-compile_commands.json
-
-# ---------------------------
-# Generated code
-# ---------------------------
-# ANTLR and other generated sources
-build/generated/
-
 # ---------------------------
 # Test output
 # ---------------------------
-/tests/Testing/
 *.log
 
 # ---------------------------
-# Editor / environment files
+# Editor
 # ---------------------------
 .vscode/
 .idea/
-.github/copilot-instructions.md
 
 # ---------------------------
 # Benchmark output

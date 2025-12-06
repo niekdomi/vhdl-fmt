@@ -41,11 +41,18 @@ auto PrettyPrinter::operator()(
 }
 
 // Layout:
-// target <= val1 when cond1 else
-//           val2 when cond2 else
-//           val3;
+// label: target <= val1 when cond1 else
+//                  val2 when cond2 else
+//                  val3;
 auto PrettyPrinter::operator()(const ast::ConditionalConcurrentAssign &node) const -> Doc
 {
+    Doc result = Doc::empty();
+
+    // Label: label:
+    if (node.label) {
+        result = Doc::text(*node.label + ":");
+    }
+
     const Doc target = visit(node.target) & Doc::text("<=");
 
     // Join with "else" + SoftLine
@@ -53,7 +60,9 @@ auto PrettyPrinter::operator()(const ast::ConditionalConcurrentAssign &node) con
     const Doc waveforms
       = joinMap(node.waveforms, Doc::text(" else") + Doc::line(), toDoc(*this), false);
 
-    return Doc::group(target & Doc::hang(waveforms)) + Doc::text(";");
+    const Doc assignment = Doc::group(target & Doc::hang(waveforms)) + Doc::text(";");
+
+    return result.isEmpty() ? assignment : result & assignment;
 }
 
 auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign::Selection &node) const -> Doc
@@ -64,11 +73,18 @@ auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign::Selection &n
 }
 
 // Layout:
-// with selector select
-//   target <= val1 when choice1,
-//             val2 when choice2;
+// label: with selector select
+//          target <= val1 when choice1,
+//                    val2 when choice2;
 auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign &node) const -> Doc
 {
+    Doc result = Doc::empty();
+
+    // Label: label:
+    if (node.label) {
+        result = Doc::text(*node.label + ":");
+    }
+
     const Doc header = Doc::text("with") & visit(node.selector) & Doc::text("select");
     const Doc target = visit(node.target) & Doc::text("<=");
 
@@ -78,7 +94,9 @@ auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign &node) const 
 
     // For selected assignment, the target itself is nested under the header,
     // and the selections hang off the target.
-    return Doc::group(header / (target & Doc::hang(selections)) + Doc::text(";"));
+    const Doc assignment = Doc::group(header / (target & Doc::hang(selections)) + Doc::text(";"));
+
+    return result.isEmpty() ? assignment : result & assignment;
 }
 
 // Layout:

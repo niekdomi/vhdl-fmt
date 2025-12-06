@@ -4,14 +4,17 @@ add_executable(
     # Design Units
     nodes/test_trivia.cpp
     nodes/design_units/test_architecture.cpp
+    nodes/design_units/test_context_clauses.cpp
     nodes/design_units/test_entity.cpp
     #
     # Declarations
+    nodes/declarations/test_component.cpp
     nodes/declarations/test_constant.cpp
     nodes/declarations/test_constraints.cpp
     nodes/declarations/test_generic_param.cpp
     nodes/declarations/test_port.cpp
     nodes/declarations/test_signal.cpp
+    nodes/declarations/test_type.cpp
     #
     # Expressions
     nodes/expressions/test_binary.cpp

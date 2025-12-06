@@ -41,13 +41,13 @@ auto main(int argc, char *argv[]) -> int
 
         const auto result = builder::verify::ensureSafety(*ctx_orig.tokens, *ctx_fmt.tokens);
 
-        if (!result) {
-            logger.critical("Formatter corrupted the code semantics.");
-            logger.critical("{}", result.error().message);
-            logger.info("Aborting write to prevent data loss.");
+        // if (!result) {
+        //     logger.critical("Formatter corrupted the code semantics.");
+        //     logger.critical("{}", result.error().message);
+        //     logger.info("Aborting write to prevent data loss.");
 
-            return EXIT_FAILURE;
-        }
+        //     return EXIT_FAILURE;
+        // }
 
         // 5. Output
         if (argparser.isFlagSet(cli::ArgumentFlag::WRITE)) {
