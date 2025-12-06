@@ -95,11 +95,12 @@ auto Translator::makeArchitectureDeclarativePart(
             items.emplace_back(ast::Declaration(makeConstantDecl(*const_ctx)));
         } else if (auto *sig_ctx = item->signal_declaration()) {
             items.emplace_back(ast::Declaration(makeSignalDecl(*sig_ctx)));
+        } else if (auto *type_ctx = item->type_declaration()) {
+            items.emplace_back(ast::Declaration(makeTypeDecl(*type_ctx)));
         } else if (auto *comp_ctx = item->component_declaration()) {
             items.emplace_back(makeComponentDecl(*comp_ctx));
         }
-        // TODO(someone): Add more declaration types as needed (variables, types, subprograms,
-        // etc.)
+        // TODO(someone): Add more declaration types as needed (variables, subprograms, etc.)
     }
 
     return items;

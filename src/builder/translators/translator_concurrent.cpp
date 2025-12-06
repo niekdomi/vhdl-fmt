@@ -120,8 +120,7 @@ auto Translator::makeProcessDeclarativeItem(vhdlParser::Process_declarative_item
     }
 
     if (auto *type_ctx = ctx.type_declaration()) {
-        // TODO(vedivad): Implement makeTypeDecl
-        // return makeTypeDecl(*type_ctx);
+        return makeTypeDecl(*type_ctx);
     }
 
     if (auto *file_ctx = ctx.file_declaration()) {

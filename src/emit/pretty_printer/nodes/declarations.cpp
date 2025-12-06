@@ -2,6 +2,7 @@
 
 #include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/doc.hpp"
+#include "emit/pretty_printer/doc_utils.hpp"
 
 #include <ranges>
 #include <string>
@@ -120,6 +121,73 @@ auto PrettyPrinter::operator()(const ast::VariableDecl &node) const -> Doc
     // ":= 0"
     if (node.init_expr) {
         result &= Doc::text(":=") & visit(node.init_expr.value());
+    }
+
+    return result + Doc::text(";");
+}
+
+auto PrettyPrinter::operator()(const ast::RecordElement &node) const -> Doc
+{
+    const std::string names = node.names
+                            | std::views::join_with(std::string_view{ ", " })
+                            | std::ranges::to<std::string>();
+
+    Doc result = Doc::alignText(names, AlignmentLevel::NAME)
+               & Doc::text(":")
+               & Doc::alignText(node.type_name, AlignmentLevel::TYPE);
+
+    // Constraint (e.g., (7 downto 0) or range 0 to 255)
+    if (node.constraint) {
+        result += visit(node.constraint.value());
+    }
+
+    return result + Doc::text(";");
+}
+
+auto PrettyPrinter::operator()(const ast::TypeDecl &node) const -> Doc
+{
+    Doc result = Doc::text("type") & Doc::text(node.name);
+
+    // Handle different type kinds
+    switch (node.kind) {
+        case ast::TypeKind::Enumeration: {
+            // type state_t is (IDLE, BUSY, DONE);
+            if (!node.enum_literals.empty()) {
+                const std::string literals = node.enum_literals
+                                           | std::views::join_with(std::string_view{ ", " })
+                                           | std::ranges::to<std::string>();
+
+                result &= Doc::text("is") & Doc::text("(") + Doc::text(literals) + Doc::text(")");
+            }
+
+            break;
+        }
+        case ast::TypeKind::Record: {
+            // type record_t is record ... end record;
+            Doc head = result & Doc::text("is") & Doc::text("record");
+            Doc end = Doc::text("end") & Doc::text("record");
+
+            if (node.end_label) {
+                end &= Doc::text(node.end_label.value());
+            }
+
+            if (node.record_elements.empty()) {
+                result = head / end;
+            } else {
+                const Doc body = joinMap(node.record_elements, Doc::line(), toDoc(*this), false);
+                result = Doc::bracket(head, body, end);
+            }
+
+            break;
+        }
+        case ast::TypeKind::Other: {
+            // For other types (array, access, file, range, etc.), use stored text
+            if (!node.other_definition.empty()) {
+                result &= Doc::text("is") & Doc::text(node.other_definition);
+            }
+
+            break;
+        }
     }
 
     return result + Doc::text(";");
