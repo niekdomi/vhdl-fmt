@@ -42,7 +42,7 @@ auto Translator::makeName(vhdlParser::NameContext &ctx) -> ast::Expr
     }
 
     // Consume consecutive selected_name_parts into base
-    auto selected_parts
+    const auto selected_parts
       = parts | std::views::take_while([](auto *p) { return p->selected_name_part() != nullptr; });
 
     for (auto *part : selected_parts) {
@@ -51,7 +51,7 @@ auto Translator::makeName(vhdlParser::NameContext &ctx) -> ast::Expr
 
     ast::Expr base = makeToken(ctx, std::move(base_text));
 
-    auto structural_parts = parts | std::views::drop(std::ranges::distance(selected_parts));
+    const auto structural_parts = parts | std::views::drop(std::ranges::distance(selected_parts));
 
     // Process remaining structural parts
     for (auto *part : structural_parts) {
