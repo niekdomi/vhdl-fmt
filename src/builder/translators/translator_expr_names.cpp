@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <ranges>
 #include <string>
 #include <utility>
 
@@ -41,18 +42,19 @@ auto Translator::makeName(vhdlParser::NameContext &ctx) -> ast::Expr
     }
 
     // Consume consecutive selected_name_parts into base
-    auto it = parts.begin();
-    while (it != parts.end() && (*it)->selected_name_part() != nullptr) {
-        base_text += (*it)->getText();
-        ++it;
+    auto selected_parts
+      = parts | std::views::take_while([](auto *p) { return p->selected_name_part() != nullptr; });
+
+    for (auto *part : selected_parts) {
+        base_text += part->getText();
     }
 
     ast::Expr base = makeToken(ctx, std::move(base_text));
 
-    // Process remaining structural parts
-    for (; it != parts.end(); ++it) {
-        auto *part = *it;
+    auto structural_parts = parts | std::views::drop(std::ranges::distance(selected_parts));
 
+    // Process remaining structural parts
+    for (auto *part : structural_parts) {
         if (auto *slice = part->slice_name_part()) {
             base = makeSliceExpr(std::move(base), *slice);
         } else if (auto *call = part->function_call_or_indexed_name_part()) {
@@ -90,10 +92,12 @@ auto Translator::makeCallExpr(ast::Expr base,
           if (assoc_list == nullptr) {
               return;
           }
+
           if (list_ctx == nullptr) {
               node.args = std::make_unique<ast::Expr>(makeToken(ctx));
               return;
           }
+
           if (associations.size() == 1) {
               node.args = std::make_unique<ast::Expr>(makeCallArgument(*associations[0]));
           } else {

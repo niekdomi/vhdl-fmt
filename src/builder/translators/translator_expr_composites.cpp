@@ -48,15 +48,19 @@ auto Translator::makeChoice(vhdlParser::ChoiceContext &ctx) -> ast::Expr
     if (ctx.OTHERS() != nullptr) {
         return makeToken(ctx, "others");
     }
+
     if (ctx.identifier() != nullptr) {
         return makeToken(ctx, ctx.identifier()->getText());
     }
+
     if (ctx.simple_expression() != nullptr) {
         return makeSimpleExpr(*ctx.simple_expression());
     }
+
     if (auto *dr = ctx.discrete_range()) {
         return makeDiscreteRange(*dr);
     }
+
     return makeToken(ctx);
 }
 
@@ -69,6 +73,7 @@ auto Translator::makeConstraint(vhdlParser::ConstraintContext &ctx)
     if (auto *index = ctx.index_constraint()) {
         return makeIndexConstraint(*index);
     }
+
     if (auto *range = ctx.range_constraint()) {
         return makeRangeConstraint(*range);
     }
@@ -132,6 +137,7 @@ auto Translator::makeDiscreteRange(vhdlParser::Discrete_rangeContext &ctx) -> as
         }
         return makeToken(*rd);
     }
+
     // subtype_indication (e.g., "integer range 0 to 7" or just "natural")
     return makeToken(ctx);
 }

@@ -13,6 +13,7 @@ auto Translator::makeTarget(vhdlParser::TargetContext &ctx) -> ast::Expr
     if (auto *name = ctx.name()) {
         return makeName(*name);
     }
+
     if (auto *agg = ctx.aggregate()) {
         return makeAggregate(*agg);
     }
@@ -47,20 +48,25 @@ auto Translator::makeSequentialStatement(vhdlParser::Sequential_statementContext
     if (auto *signal_assign = ctx.signal_assignment_statement()) {
         return makeSignalAssign(*signal_assign);
     }
+
     if (auto *var_assign = ctx.variable_assignment_statement()) {
         return makeVariableAssign(*var_assign);
     }
+
     if (auto *if_stmt = ctx.if_statement()) {
         return makeIfStatement(*if_stmt);
     }
+
     if (auto *case_stmt = ctx.case_statement()) {
         return makeCaseStatement(*case_stmt);
     }
+
     if (auto *loop_stmt = ctx.loop_statement()) {
         if (auto *iter = loop_stmt->iteration_scheme()) {
             if (iter->parameter_specification() != nullptr) {
                 return makeForLoop(*loop_stmt);
             }
+
             if (iter->condition() != nullptr) {
                 return makeWhileLoop(*loop_stmt);
             }

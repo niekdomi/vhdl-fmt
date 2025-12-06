@@ -36,6 +36,7 @@ auto Translator::makeConcurrentAssign(
     if (auto *cond = ctx.conditional_signal_assignment()) {
         return makeConditionalAssign(*cond);
     }
+
     if (auto *sel = ctx.selected_signal_assignment()) {
         return makeSelectedAssign(*sel);
     }
@@ -113,17 +114,21 @@ auto Translator::makeProcessDeclarativeItem(vhdlParser::Process_declarative_item
     if (auto *var_ctx = ctx.variable_declaration()) {
         return makeVariableDecl(*var_ctx);
     }
+
     if (auto *const_ctx = ctx.constant_declaration()) {
         return makeConstantDecl(*const_ctx);
     }
+
     if (auto *type_ctx = ctx.type_declaration()) {
         // TODO(vedivad): Implement makeTypeDecl
         // return makeTypeDecl(*type_ctx);
     }
+
     if (auto *file_ctx = ctx.file_declaration()) {
         // TODO(vedivad): Implement makeFileDecl
         // return makeFileDecl(*file_ctx);
     }
+
     if (auto *alias_ctx = ctx.alias_declaration()) {
         // TODO(vedivad): Implement makeAliasDecl
         // return makeAliasDecl(*alias_ctx);

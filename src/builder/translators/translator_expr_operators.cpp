@@ -156,11 +156,13 @@ auto Translator::makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx)
         if (auto *agg = ctx.aggregate()) {
             return makeAggregate(*agg);
         }
+
         if (auto *expr = ctx.expression()) {
             return build<ast::ParenExpr>(*expr)
               .setBox(&ast::ParenExpr::inner, makeExpr(*expr))
               .build();
         }
+
         return makeToken(ctx);
     }();
 
@@ -180,9 +182,11 @@ auto Translator::makeAllocator(vhdlParser::AllocatorContext &ctx) -> ast::Expr
         if (auto *qual = ctx.qualified_expression()) {
             return makeQualifiedExpr(*qual);
         }
+
         if (auto *subtype = ctx.subtype_indication()) {
             return makeToken(*subtype);
         }
+
         return makeToken(ctx);
     }();
 
