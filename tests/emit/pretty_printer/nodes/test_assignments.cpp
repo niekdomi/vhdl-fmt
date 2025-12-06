@@ -191,7 +191,7 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
         assign.selections.emplace_back(std::move(sel2));
 
         constexpr std::string_view EXPECTED
-          = "decoder: with counter select data_out <= x\"00\" when 0, x\"FF\" when others;";
+          = R"(decoder: with counter select data_out <= x"00" when 0, x"FF" when others;)";
         REQUIRE(emit::test::render(assign) == EXPECTED);
     }
 }

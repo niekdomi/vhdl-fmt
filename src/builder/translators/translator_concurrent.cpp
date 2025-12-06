@@ -3,7 +3,9 @@
 #include "nodes/declarations.hpp"
 #include "vhdlParser.h"
 
+#include <optional>
 #include <ranges>
+#include <string>
 
 namespace builder {
 
@@ -37,6 +39,7 @@ auto Translator::makeConcurrentAssign(
     auto *label = ctx.label_colon();
     auto *label_id = (label != nullptr) ? label->identifier() : nullptr;
     std::optional<std::string> label_str;
+
     if (label_id != nullptr) {
         label_str = label_id->getText();
     }
@@ -68,7 +71,7 @@ auto Translator::makeConditionalWaveform(vhdlParser::Conditional_waveformsContex
 }
 
 auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx,
-                                       std::optional<std::string> label)
+                                       const std::optional<std::string> &label)
   -> ast::ConditionalConcurrentAssign
 {
     return build<ast::ConditionalConcurrentAssign>(ctx)
@@ -99,7 +102,7 @@ auto Translator::makeSelection(vhdlParser::WaveformContext &wave,
 }
 
 auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx,
-                                    std::optional<std::string> label)
+                                    const std::optional<std::string> &label)
   -> ast::SelectedConcurrentAssign
 {
     return build<ast::SelectedConcurrentAssign>(ctx)

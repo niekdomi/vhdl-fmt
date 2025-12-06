@@ -66,7 +66,7 @@ class Translator final
     // Statements
     [[nodiscard]] auto makeCaseStatement(vhdlParser::Case_statementContext &ctx) -> ast::CaseStatement;
     [[nodiscard]] auto makeConcurrentAssign(vhdlParser::Concurrent_signal_assignment_statementContext &ctx) -> ast::ConcurrentStatement;
-    [[nodiscard]] auto makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx, std::optional<std::string> label) -> ast::ConditionalConcurrentAssign;
+    [[nodiscard]] auto makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx, const std::optional<std::string> &label) -> ast::ConditionalConcurrentAssign;
     [[nodiscard]] auto makeConditionalWaveform(vhdlParser::Conditional_waveformsContext &ctx) -> ast::ConditionalConcurrentAssign::ConditionalWaveform;
     [[nodiscard]] auto makeForLoop(vhdlParser::Loop_statementContext &ctx) -> ast::ForLoop;
     [[nodiscard]] auto makeIfStatement(vhdlParser::If_statementContext &ctx) -> ast::IfStatement;
@@ -74,7 +74,7 @@ class Translator final
     [[nodiscard]] auto makeProcess(vhdlParser::Process_statementContext &ctx) -> ast::Process;
     [[nodiscard]] auto makeProcessDeclarativeItem(vhdlParser::Process_declarative_itemContext &ctx) -> ast::Declaration;
     [[nodiscard]] auto makeProcessStatementPart(vhdlParser::Process_statement_partContext &ctx) -> std::vector<ast::SequentialStatement>;
-    [[nodiscard]] auto makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx, std::optional<std::string> label) -> ast::SelectedConcurrentAssign;
+    [[nodiscard]] auto makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx, const std::optional<std::string> &label) -> ast::SelectedConcurrentAssign;
     [[nodiscard]] auto makeSelection(vhdlParser::WaveformContext &wave, vhdlParser::ChoicesContext &choices) -> ast::SelectedConcurrentAssign::Selection;
     [[nodiscard]] auto makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext &ctx) -> std::vector<ast::SequentialStatement>;
     [[nodiscard]] auto makeSequentialStatement(vhdlParser::Sequential_statementContext &ctx) -> ast::SequentialStatement;

@@ -11,7 +11,7 @@ TEST_CASE("TypeDecl: Enumeration type rendering", "[pretty_printer][type]")
 {
     ast::TypeDecl type_decl;
     type_decl.name = "ctrl_state_t";
-    type_decl.kind = ast::TypeKind::Enumeration;
+    type_decl.kind = ast::TypeKind::ENUMERATION;
 
     SECTION("Two enumeration literals")
     {
@@ -43,7 +43,7 @@ TEST_CASE("TypeDecl: Record type rendering", "[pretty_printer][type]")
 {
     ast::TypeDecl type_decl;
     type_decl.name = "ctrl_engine_t";
-    type_decl.kind = ast::TypeKind::Record;
+    type_decl.kind = ast::TypeKind::RECORD;
 
     SECTION("Simple record with single elements")
     {
@@ -85,10 +85,10 @@ TEST_CASE("TypeDecl: Record type rendering", "[pretty_printer][type]")
         type_decl.record_elements.push_back(std::move(elem1));
         type_decl.record_elements.push_back(std::move(elem2));
 
-        const std::string expected = R"(type ctrl_engine_t is record
-  ready, valid, done : std_ulogic;
-  data : std_logic_vector;
-end record;)";
+        const std::string expected = "type ctrl_engine_t is record\n"
+                                     "  ready, valid, done : std_ulogic;\n"
+                                     "  data : std_logic_vector;\n"
+                                     "end record;";
 
         REQUIRE(emit::test::render(type_decl) == expected);
     }
@@ -145,7 +145,7 @@ end record;)";
 TEST_CASE("TypeDecl: Other type rendering", "[pretty_printer][type]")
 {
     ast::TypeDecl type_decl;
-    type_decl.kind = ast::TypeKind::Other;
+    type_decl.kind = ast::TypeKind::OTHER;
 
     SECTION("Array type")
     {

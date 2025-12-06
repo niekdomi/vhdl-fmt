@@ -5,6 +5,7 @@
 #include "nodes/statements.hpp"
 #include "vhdlParser.h"
 
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -119,6 +120,7 @@ auto Translator::makeArchitectureStatementPart(vhdlParser::Architecture_statemen
             auto *label = stmt->label_colon();
             auto *label_id = (label != nullptr) ? label->identifier() : nullptr;
             std::optional<std::string> label_str;
+
             if (label_id != nullptr) {
                 label_str = label_id->getText();
             }

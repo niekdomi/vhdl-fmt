@@ -82,6 +82,14 @@ struct VariableDecl : NodeBase
     bool shared{ false };                 ///< Whether the SHARED keyword is present.
 };
 
+/// @brief Type kind enumeration for VHDL type declarations.
+enum class TypeKind : std::uint8_t
+{
+    ENUMERATION, ///< Enumeration type: (VALUE1, VALUE2, ...)
+    RECORD,      ///< Record type: record ... end record
+    OTHER        ///< Other types (array, access, file, range, etc.) - stored as text
+};
+
 /// @brief Represents an element in a VHDL record type definition.
 ///
 /// Example: `state : ctrl_state_t;` inside a record
@@ -92,14 +100,6 @@ struct RecordElement : NodeBase
     std::optional<Constraint> constraint; ///< Optional type constraint.
 };
 
-/// @brief Type kind enumeration for VHDL type declarations.
-enum class TypeKind
-{
-    Enumeration, ///< Enumeration type: (VALUE1, VALUE2, ...)
-    Record,      ///< Record type: record ... end record
-    Other        ///< Other types (array, access, file, range, etc.) - stored as text
-};
-
 /// @brief Represents a VHDL type declaration.
 ///
 /// Example: `type ctrl_state_t is (S_IDLE, S_BUSY);`
@@ -107,7 +107,7 @@ enum class TypeKind
 struct TypeDecl : NodeBase
 {
     std::string name;                           ///< Type identifier.
-    TypeKind kind{ TypeKind::Other };           ///< Kind of type definition.
+    TypeKind kind{ TypeKind::OTHER };           ///< Kind of type definition.
     std::vector<std::string> enum_literals;     ///< For enumeration types.
     std::vector<RecordElement> record_elements; ///< For record types.
     std::string other_definition;               ///< For other types, raw text.

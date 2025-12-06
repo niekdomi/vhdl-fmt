@@ -5,6 +5,7 @@
 
 #include <ranges>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace builder {
@@ -193,7 +194,7 @@ auto Translator::makeTypeDecl(vhdlParser::Type_declarationContext &ctx) -> ast::
     if (type_def == nullptr) {
         return build<ast::TypeDecl>(ctx)
           .set(&ast::TypeDecl::name, name)
-          .set(&ast::TypeDecl::kind, ast::TypeKind::Other)
+          .set(&ast::TypeDecl::kind, ast::TypeKind::OTHER)
           .set(&ast::TypeDecl::other_definition, "")
           .build();
     }
@@ -205,9 +206,10 @@ auto Translator::makeTypeDecl(vhdlParser::Type_declarationContext &ctx) -> ast::
             for (auto *lit : enum_type->enumeration_literal()) {
                 literals.push_back(lit->getText());
             }
+
             return build<ast::TypeDecl>(ctx)
               .set(&ast::TypeDecl::name, name)
-              .set(&ast::TypeDecl::kind, ast::TypeKind::Enumeration)
+              .set(&ast::TypeDecl::kind, ast::TypeKind::ENUMERATION)
               .set(&ast::TypeDecl::enum_literals, std::move(literals))
               .build();
         }
@@ -223,7 +225,7 @@ auto Translator::makeTypeDecl(vhdlParser::Type_declarationContext &ctx) -> ast::
 
             return build<ast::TypeDecl>(ctx)
               .set(&ast::TypeDecl::name, name)
-              .set(&ast::TypeDecl::kind, ast::TypeKind::Record)
+              .set(&ast::TypeDecl::kind, ast::TypeKind::RECORD)
               .set(&ast::TypeDecl::record_elements, std::move(elements))
               .maybe(&ast::TypeDecl::end_label,
                      record_def->identifier(),
@@ -235,7 +237,7 @@ auto Translator::makeTypeDecl(vhdlParser::Type_declarationContext &ctx) -> ast::
     // For all other types (array, access, file, physical, range), store as text
     return build<ast::TypeDecl>(ctx)
       .set(&ast::TypeDecl::name, name)
-      .set(&ast::TypeDecl::kind, ast::TypeKind::Other)
+      .set(&ast::TypeDecl::kind, ast::TypeKind::OTHER)
       .set(&ast::TypeDecl::other_definition, type_def->getText())
       .build();
 }

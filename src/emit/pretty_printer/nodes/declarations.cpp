@@ -150,7 +150,7 @@ auto PrettyPrinter::operator()(const ast::TypeDecl &node) const -> Doc
 
     // Handle different type kinds
     switch (node.kind) {
-        case ast::TypeKind::Enumeration: {
+        case ast::TypeKind::ENUMERATION: {
             // type state_t is (IDLE, BUSY, DONE);
             if (!node.enum_literals.empty()) {
                 const std::string literals = node.enum_literals
@@ -162,9 +162,9 @@ auto PrettyPrinter::operator()(const ast::TypeDecl &node) const -> Doc
 
             break;
         }
-        case ast::TypeKind::Record: {
+        case ast::TypeKind::RECORD: {
             // type record_t is record ... end record;
-            Doc head = result & Doc::text("is") & Doc::text("record");
+            const Doc head = result & Doc::text("is") & Doc::text("record");
             Doc end = Doc::text("end") & Doc::text("record");
 
             if (node.end_label) {
@@ -180,7 +180,7 @@ auto PrettyPrinter::operator()(const ast::TypeDecl &node) const -> Doc
 
             break;
         }
-        case ast::TypeKind::Other: {
+        case ast::TypeKind::OTHER: {
             // For other types (array, access, file, range, etc.), use stored text
             if (!node.other_definition.empty()) {
                 result &= Doc::text("is") & Doc::text(node.other_definition);
