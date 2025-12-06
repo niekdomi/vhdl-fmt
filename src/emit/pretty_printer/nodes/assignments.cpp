@@ -24,7 +24,7 @@ auto PrettyPrinter::operator()(const ast::Waveform &node) const -> Doc
       node.elements,
       Doc::line(),
       [&](const auto &elem) {
-          const bool is_last = &elem == &node.elements.back();
+          const bool is_last = (&elem == &node.elements.back());
           return visit(elem, is_last);
       },
       false);
