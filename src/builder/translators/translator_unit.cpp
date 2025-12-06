@@ -125,12 +125,7 @@ auto Translator::makeArchitectureStatementPart(vhdlParser::Architecture_statemen
                 label_str = label_id->getText();
             }
 
-            // Pass label to makeConcurrentAssign
-            if (auto *cond = sig_assign->conditional_signal_assignment()) {
-                stmts.emplace_back(makeConditionalAssign(*cond, label_str));
-            } else if (auto *sel = sig_assign->selected_signal_assignment()) {
-                stmts.emplace_back(makeSelectedAssign(*sel, label_str));
-            }
+            stmts.emplace_back(makeConcurrentAssign(*sig_assign, label_str));
         }
         // TODO(someone): Add more concurrent statement types (component instantiation,
         // generate, etc.)

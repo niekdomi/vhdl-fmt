@@ -148,7 +148,7 @@ auto PrettyPrinter::operator()(const ast::TypeDecl &node) const -> Doc
 {
     Doc result = Doc::text("type") & Doc::text(node.name);
 
-    // Handle different type kinds
+    // Handle different `type` kinds
     switch (node.kind) {
         case ast::TypeKind::ENUMERATION: {
             // type state_t is (IDLE, BUSY, DONE);
@@ -159,7 +159,6 @@ auto PrettyPrinter::operator()(const ast::TypeDecl &node) const -> Doc
 
                 result &= Doc::text("is") & Doc::text("(") + Doc::text(literals) + Doc::text(")");
             }
-
             break;
         }
         case ast::TypeKind::RECORD: {
@@ -171,13 +170,11 @@ auto PrettyPrinter::operator()(const ast::TypeDecl &node) const -> Doc
                 end &= Doc::text(node.end_label.value());
             }
 
-            if (node.record_elements.empty()) {
-                result = head / end;
-            } else {
-                const Doc body = joinMap(node.record_elements, Doc::line(), toDoc(*this), false);
-                result = Doc::bracket(head, body, end);
-            }
-
+            result = node.record_elements.empty()
+                     ? head / end
+                     : Doc::bracket(head,
+                                    joinMap(node.record_elements, Doc::line(), toDoc(*this), false),
+                                    end);
             break;
         }
         case ast::TypeKind::OTHER: {
@@ -185,7 +182,6 @@ auto PrettyPrinter::operator()(const ast::TypeDecl &node) const -> Doc
             if (!node.other_definition.empty()) {
                 result &= Doc::text("is") & Doc::text(node.other_definition);
             }
-
             break;
         }
     }

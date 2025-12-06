@@ -33,23 +33,15 @@ auto Translator::makeWaveform(vhdlParser::WaveformContext &ctx) -> ast::Waveform
 }
 
 auto Translator::makeConcurrentAssign(
-  vhdlParser::Concurrent_signal_assignment_statementContext &ctx) -> ast::ConcurrentStatement
+  vhdlParser::Concurrent_signal_assignment_statementContext &ctx,
+  const std::optional<std::string> &label) -> ast::ConcurrentStatement
 {
-    // Extract label from the parent context
-    auto *label = ctx.label_colon();
-    auto *label_id = (label != nullptr) ? label->identifier() : nullptr;
-    std::optional<std::string> label_str;
-
-    if (label_id != nullptr) {
-        label_str = label_id->getText();
-    }
-
     if (auto *cond = ctx.conditional_signal_assignment()) {
-        return makeConditionalAssign(*cond, label_str);
+        return makeConditionalAssign(*cond, label);
     }
 
     if (auto *sel = ctx.selected_signal_assignment()) {
-        return makeSelectedAssign(*sel, label_str);
+        return makeSelectedAssign(*sel, label);
     }
 
     return {};

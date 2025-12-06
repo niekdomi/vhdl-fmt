@@ -4,6 +4,7 @@
 #include "ast/node.hpp"
 #include "nodes/expressions.hpp"
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <variant>

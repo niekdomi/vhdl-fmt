@@ -65,7 +65,7 @@ class Translator final
 
     // Statements
     [[nodiscard]] auto makeCaseStatement(vhdlParser::Case_statementContext &ctx) -> ast::CaseStatement;
-    [[nodiscard]] auto makeConcurrentAssign(vhdlParser::Concurrent_signal_assignment_statementContext &ctx) -> ast::ConcurrentStatement;
+    [[nodiscard]] auto makeConcurrentAssign(vhdlParser::Concurrent_signal_assignment_statementContext &ctx, const std::optional<std::string> &label) -> ast::ConcurrentStatement;
     [[nodiscard]] auto makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx, const std::optional<std::string> &label) -> ast::ConditionalConcurrentAssign;
     [[nodiscard]] auto makeConditionalWaveform(vhdlParser::Conditional_waveformsContext &ctx) -> ast::ConditionalConcurrentAssign::ConditionalWaveform;
     [[nodiscard]] auto makeForLoop(vhdlParser::Loop_statementContext &ctx) -> ast::ForLoop;
