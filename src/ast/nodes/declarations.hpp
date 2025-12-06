@@ -13,12 +13,14 @@ namespace ast {
 
 // Forward declarations
 struct ConstantDecl;
-struct SignalDecl;
-struct VariableDecl;
 struct GenericParam;
 struct Port;
+struct SignalDecl;
+struct VariableDecl;
 
 /// @brief Variant type for all declarations.
+///
+/// Example: `ConstantDecl`, `SignalDecl`, or `VariableDecl`
 using Declaration = std::variant<ConstantDecl, SignalDecl, VariableDecl, GenericParam, Port>;
 
 /// @brief Represents a VHDL constant declaration.
@@ -31,9 +33,31 @@ struct ConstantDecl : NodeBase
     std::optional<Expr> init_expr;  ///< Optional initialization expression.
 };
 
+/// @brief Represents a generic parameter inside a GENERIC clause.
+///
+/// Example: `WIDTH : integer := 8`
+struct GenericParam : NodeBase
+{
+    std::vector<std::string> names;   ///< List of generic parameter identifiers.
+    std::string type_name;            ///< Type of the generic parameter.
+    std::optional<Expr> default_expr; ///< Optional default value expression.
+};
+
+/// @brief Represents a port entry inside a PORT clause.
+///
+/// Example: `clk : in std_logic`
+struct Port : NodeBase
+{
+    std::vector<std::string> names;       ///< List of port identifiers.
+    std::string mode;                     ///< Port mode: "in", "out", "inout", or "buffer".
+    std::string type_name;                ///< Type of the port.
+    std::optional<Expr> default_expr;     ///< Optional default value expression.
+    std::optional<Constraint> constraint; ///< Optional type constraint.
+};
+
 /// @brief Represents a VHDL signal declaration.
 ///
-/// Example: `signal v : std_logic_vector(7 downto 0) := (others => '0');`
+/// Example: `signal clk, reset : std_logic := '0';`
 struct SignalDecl : NodeBase
 {
     std::vector<std::string> names;       ///< List of signal identifiers.
@@ -45,7 +69,7 @@ struct SignalDecl : NodeBase
 
 /// @brief Represents a VHDL variable declaration.
 ///
-/// Example: `variable v : integer := 0;`
+/// Example: `variable counter : integer := 0;`
 struct VariableDecl : NodeBase
 {
     std::vector<std::string> names;       ///< List of variable identifiers.
@@ -53,28 +77,6 @@ struct VariableDecl : NodeBase
     std::optional<Constraint> constraint; ///< Optional type constraint.
     std::optional<Expr> init_expr;        ///< Optional initialization expression.
     bool shared{ false };                 ///< Whether the SHARED keyword is present.
-};
-
-/// @brief Represents a generic parameter inside a GENERIC clause.
-///
-/// Example: `generic (WIDTH : integer := 8);`
-struct GenericParam : NodeBase
-{
-    std::vector<std::string> names;   ///< List of generic parameter identifiers.
-    std::string type_name;            ///< Type of the generic parameter.
-    std::optional<Expr> default_expr; ///< Optional default value expression.
-};
-
-/// @brief Represents a port entry inside a PORT clause.
-///
-/// Example: `port (clk : in std_logic);`
-struct Port : NodeBase
-{
-    std::vector<std::string> names;       ///< List of port identifiers.
-    std::string mode;                     ///< Port mode: "in", "out", "inout", or "buffer".
-    std::string type_name;                ///< Type of the port.
-    std::optional<Expr> default_expr;     ///< Optional default value expression.
-    std::optional<Constraint> constraint; ///< Optional type constraint.
 };
 
 } // namespace ast

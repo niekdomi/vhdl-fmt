@@ -21,15 +21,15 @@ TEST_CASE("ForLoop: Simple for loop with to range", "[statements][for_loop]")
         end RTL;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
 
-    auto *proc = std::get_if<ast::Process>(arch->stmts.data());
+    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
     REQUIRE(proc != nullptr);
     REQUIRE_FALSE(proc->body.empty());
 
-    auto *for_loop = std::get_if<ast::ForLoop>(proc->body.data());
+    const auto *for_loop = std::get_if<ast::ForLoop>(proc->body.data());
     REQUIRE(for_loop != nullptr);
     REQUIRE(for_loop->iterator == "i");
 }
@@ -49,15 +49,15 @@ TEST_CASE("ForLoop: For loop with downto range", "[statements][for_loop]")
         end RTL;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
 
-    auto *proc = std::get_if<ast::Process>(arch->stmts.data());
+    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
     REQUIRE(proc != nullptr);
     REQUIRE_FALSE(proc->body.empty());
 
-    auto *for_loop = std::get_if<ast::ForLoop>(proc->body.data());
+    const auto *for_loop = std::get_if<ast::ForLoop>(proc->body.data());
     REQUIRE(for_loop != nullptr);
     REQUIRE(for_loop->iterator == "i");
 }
@@ -77,15 +77,15 @@ TEST_CASE("ForLoop: For loop with attribute range", "[statements][for_loop]")
         end RTL;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
 
-    auto *proc = std::get_if<ast::Process>(arch->stmts.data());
+    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
     REQUIRE(proc != nullptr);
     REQUIRE_FALSE(proc->body.empty());
 
-    auto *for_loop = std::get_if<ast::ForLoop>(proc->body.data());
+    const auto *for_loop = std::get_if<ast::ForLoop>(proc->body.data());
     REQUIRE(for_loop != nullptr);
     REQUIRE(for_loop->iterator == "i");
 }
@@ -107,15 +107,15 @@ TEST_CASE("ForLoop: For loop with multiple statements", "[statements][for_loop]"
         end RTL;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
 
-    auto *proc = std::get_if<ast::Process>(arch->stmts.data());
+    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
     REQUIRE(proc != nullptr);
     REQUIRE_FALSE(proc->body.empty());
 
-    auto *for_loop = std::get_if<ast::ForLoop>(proc->body.data());
+    const auto *for_loop = std::get_if<ast::ForLoop>(proc->body.data());
     REQUIRE(for_loop != nullptr);
     REQUIRE(for_loop->iterator == "i");
     REQUIRE_FALSE(for_loop->body.empty());
@@ -138,20 +138,20 @@ TEST_CASE("ForLoop: Nested for loops", "[statements][for_loop]")
         end RTL;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
 
-    auto *proc = std::get_if<ast::Process>(arch->stmts.data());
+    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
     REQUIRE(proc != nullptr);
     REQUIRE_FALSE(proc->body.empty());
 
-    auto *outer_loop = std::get_if<ast::ForLoop>(proc->body.data());
+    const auto *outer_loop = std::get_if<ast::ForLoop>(proc->body.data());
     REQUIRE(outer_loop != nullptr);
     REQUIRE(outer_loop->iterator == "i");
     REQUIRE_FALSE(outer_loop->body.empty());
 
-    auto *inner_loop = std::get_if<ast::ForLoop>(outer_loop->body.data());
+    const auto *inner_loop = std::get_if<ast::ForLoop>(outer_loop->body.data());
     REQUIRE(inner_loop != nullptr);
     REQUIRE(inner_loop->iterator == "j");
 }
@@ -171,15 +171,15 @@ TEST_CASE("ForLoop: For loop with larger range", "[statements][for_loop]")
         end RTL;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
 
-    auto *proc = std::get_if<ast::Process>(arch->stmts.data());
+    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
     REQUIRE(proc != nullptr);
     REQUIRE_FALSE(proc->body.empty());
 
-    auto *for_loop = std::get_if<ast::ForLoop>(proc->body.data());
+    const auto *for_loop = std::get_if<ast::ForLoop>(proc->body.data());
     REQUIRE(for_loop != nullptr);
     REQUIRE(for_loop->iterator == "idx");
 }
@@ -203,19 +203,19 @@ TEST_CASE("ForLoop: For loop with if statement inside", "[statements][for_loop]"
         end RTL;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
 
-    auto *proc = std::get_if<ast::Process>(arch->stmts.data());
+    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
     REQUIRE(proc != nullptr);
     REQUIRE_FALSE(proc->body.empty());
 
-    auto *for_loop = std::get_if<ast::ForLoop>(proc->body.data());
+    const auto *for_loop = std::get_if<ast::ForLoop>(proc->body.data());
     REQUIRE(for_loop != nullptr);
     REQUIRE(for_loop->iterator == "i");
     REQUIRE_FALSE(for_loop->body.empty());
 
-    auto *if_stmt = std::get_if<ast::IfStatement>(for_loop->body.data());
+    const auto *if_stmt = std::get_if<ast::IfStatement>(for_loop->body.data());
     REQUIRE(if_stmt != nullptr);
 }

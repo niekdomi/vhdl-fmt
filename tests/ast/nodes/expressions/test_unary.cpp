@@ -16,14 +16,22 @@ auto getSignalInitExpr(const ast::DesignFile &design) -> const ast::Expr *
     if (design.units.size() < 2) {
         return nullptr;
     }
+
     const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     if ((arch == nullptr) || arch->decls.empty()) {
         return nullptr;
     }
-    const auto *signal = std::get_if<ast::SignalDecl>(arch->decls.data());
+
+    const auto *decl_item = std::get_if<ast::Declaration>(arch->decls.data());
+    if (decl_item == nullptr) {
+        return nullptr;
+    }
+
+    const auto *signal = std::get_if<ast::SignalDecl>(decl_item);
     if ((signal == nullptr) || !signal->init_expr.has_value()) {
         return nullptr;
     }
+
     return &(*signal->init_expr);
 }
 
@@ -39,7 +47,7 @@ TEST_CASE("UnaryExpr: Negation operator", "[expressions][unary]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -47,7 +55,7 @@ TEST_CASE("UnaryExpr: Negation operator", "[expressions][unary]")
     REQUIRE(unary != nullptr);
     REQUIRE(unary->op == "-");
 
-    auto *val = std::get_if<ast::TokenExpr>(unary->value.get());
+    const auto *val = std::get_if<ast::TokenExpr>(unary->value.get());
     REQUIRE(val != nullptr);
     REQUIRE(val->text == "42");
 }
@@ -62,7 +70,7 @@ TEST_CASE("UnaryExpr: Plus operator", "[expressions][unary]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -70,7 +78,7 @@ TEST_CASE("UnaryExpr: Plus operator", "[expressions][unary]")
     REQUIRE(unary != nullptr);
     REQUIRE(unary->op == "+");
 
-    auto *val = std::get_if<ast::TokenExpr>(unary->value.get());
+    const auto *val = std::get_if<ast::TokenExpr>(unary->value.get());
     REQUIRE(val != nullptr);
     REQUIRE(val->text == "42");
 }
@@ -85,7 +93,7 @@ TEST_CASE("UnaryExpr: Not operator", "[expressions][unary]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -93,7 +101,7 @@ TEST_CASE("UnaryExpr: Not operator", "[expressions][unary]")
     REQUIRE(unary != nullptr);
     REQUIRE(unary->op == "not");
 
-    auto *val = std::get_if<ast::TokenExpr>(unary->value.get());
+    const auto *val = std::get_if<ast::TokenExpr>(unary->value.get());
     REQUIRE(val != nullptr);
     REQUIRE(val->text == "true");
 }
@@ -108,7 +116,7 @@ TEST_CASE("UnaryExpr: Not on identifier", "[expressions][unary]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -116,7 +124,7 @@ TEST_CASE("UnaryExpr: Not on identifier", "[expressions][unary]")
     REQUIRE(unary != nullptr);
     REQUIRE(unary->op == "not");
 
-    auto *val = std::get_if<ast::TokenExpr>(unary->value.get());
+    const auto *val = std::get_if<ast::TokenExpr>(unary->value.get());
     REQUIRE(val != nullptr);
     REQUIRE(val->text == "ready");
 }

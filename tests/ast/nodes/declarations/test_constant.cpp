@@ -17,12 +17,14 @@ TEST_CASE("ConstantDecl: Simple constant with initialization", "[declarations][c
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    auto *constant = std::get_if<ast::ConstantDecl>(arch->decls.data());
+    const auto *decl_item = std::get_if<ast::Declaration>(arch->decls.data());
+    REQUIRE(decl_item != nullptr);
+    const auto *constant = std::get_if<ast::ConstantDecl>(decl_item);
     REQUIRE(constant != nullptr);
     REQUIRE(constant->names.size() == 1);
     REQUIRE(constant->names[0] == "WIDTH");
@@ -40,12 +42,14 @@ TEST_CASE("ConstantDecl: Multiple constants same declaration", "[declarations][c
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    auto *constant = std::get_if<ast::ConstantDecl>(arch->decls.data());
+    const auto *decl_item = std::get_if<ast::Declaration>(arch->decls.data());
+    REQUIRE(decl_item != nullptr);
+    const auto *constant = std::get_if<ast::ConstantDecl>(decl_item);
     REQUIRE(constant != nullptr);
     REQUIRE(constant->names.size() == 3);
     REQUIRE(constant->names[0] == "MIN");
@@ -65,12 +69,14 @@ TEST_CASE("ConstantDecl: Boolean constant", "[declarations][constant]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    auto *constant = std::get_if<ast::ConstantDecl>(arch->decls.data());
+    const auto *decl_item = std::get_if<ast::Declaration>(arch->decls.data());
+    REQUIRE(decl_item != nullptr);
+    const auto *constant = std::get_if<ast::ConstantDecl>(decl_item);
     REQUIRE(constant != nullptr);
     REQUIRE(constant->names[0] == "ENABLE");
     REQUIRE(constant->type_name == "boolean");
@@ -86,12 +92,14 @@ TEST_CASE("ConstantDecl: String constant", "[declarations][constant]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    auto *constant = std::get_if<ast::ConstantDecl>(arch->decls.data());
+    const auto *decl_item = std::get_if<ast::Declaration>(arch->decls.data());
+    REQUIRE(decl_item != nullptr);
+    const auto *constant = std::get_if<ast::ConstantDecl>(decl_item);
     REQUIRE(constant != nullptr);
     REQUIRE(constant->names[0] == "MESSAGE");
     REQUIRE(constant->type_name == "string");
@@ -110,20 +118,26 @@ TEST_CASE("ConstantDecl: Multiple separate constant declarations", "[declaration
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 3);
 
-    auto *const1 = std::get_if<ast::ConstantDecl>(arch->decls.data());
+    const auto *decl_item1 = std::get_if<ast::Declaration>(arch->decls.data());
+    REQUIRE(decl_item1 != nullptr);
+    const auto *const1 = std::get_if<ast::ConstantDecl>(decl_item1);
     REQUIRE(const1 != nullptr);
     REQUIRE(const1->names[0] == "WIDTH");
 
-    auto *const2 = std::get_if<ast::ConstantDecl>(&arch->decls[1]);
+    const auto *decl_item2 = std::get_if<ast::Declaration>(&arch->decls[1]);
+    REQUIRE(decl_item2 != nullptr);
+    const auto *const2 = std::get_if<ast::ConstantDecl>(decl_item2);
     REQUIRE(const2 != nullptr);
     REQUIRE(const2->names[0] == "HEIGHT");
 
-    auto *const3 = std::get_if<ast::ConstantDecl>(&arch->decls[2]);
+    const auto *decl_item3 = std::get_if<ast::Declaration>(&arch->decls[2]);
+    REQUIRE(decl_item3 != nullptr);
+    const auto *const3 = std::get_if<ast::ConstantDecl>(decl_item3);
     REQUIRE(const3 != nullptr);
     REQUIRE(const3->names[0] == "DEPTH");
 }
@@ -138,12 +152,14 @@ TEST_CASE("ConstantDecl: Constant with expression initialization", "[declaration
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    auto *constant = std::get_if<ast::ConstantDecl>(arch->decls.data());
+    const auto *decl_item = std::get_if<ast::Declaration>(arch->decls.data());
+    REQUIRE(decl_item != nullptr);
+    const auto *constant = std::get_if<ast::ConstantDecl>(decl_item);
     REQUIRE(constant != nullptr);
     REQUIRE(constant->names[0] == "RESULT");
     REQUIRE(constant->type_name == "integer");

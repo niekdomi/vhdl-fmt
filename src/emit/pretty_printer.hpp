@@ -30,49 +30,52 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
 {
   private:
     // Node visitors
+    auto operator()(const ast::Architecture &node) const -> Doc;
     auto operator()(const ast::DesignFile &node) const -> Doc;
     auto operator()(const ast::Entity &node) const -> Doc;
-    auto operator()(const ast::Architecture &node) const -> Doc;
     auto operator()(const ast::GenericClause &node) const -> Doc;
-    auto operator()(const ast::PortClause &node) const -> Doc;
     auto operator()(const ast::GenericParam &node) const -> Doc;
     auto operator()(const ast::Port &node) const -> Doc;
+    auto operator()(const ast::PortClause &node) const -> Doc;
+    auto operator()(const ast::LibraryClause &node) const -> Doc;
+    auto operator()(const ast::UseClause &node) const -> Doc;
+    auto operator()(const ast::ComponentDecl &node) const -> Doc;
 
     // Declarations
-    auto operator()(const ast::SignalDecl &node) const -> Doc;
     auto operator()(const ast::ConstantDecl &node) const -> Doc;
+    auto operator()(const ast::SignalDecl &node) const -> Doc;
     auto operator()(const ast::VariableDecl &node) const -> Doc;
 
     // Expressions
-    auto operator()(const ast::TokenExpr &node) const -> Doc;
-    auto operator()(const ast::GroupExpr &node) const -> Doc;
-    auto operator()(const ast::UnaryExpr &node) const -> Doc;
     auto operator()(const ast::BinaryExpr &node) const -> Doc;
-    auto operator()(const ast::ParenExpr &node) const -> Doc;
     auto operator()(const ast::CallExpr &node) const -> Doc;
+    auto operator()(const ast::GroupExpr &node) const -> Doc;
+    auto operator()(const ast::ParenExpr &node) const -> Doc;
     auto operator()(const ast::PhysicalLiteral &node) const -> Doc;
+    auto operator()(const ast::TokenExpr &node) const -> Doc;
+    auto operator()(const ast::UnaryExpr &node) const -> Doc;
 
     // Constraints
     auto operator()(const ast::IndexConstraint &node) const -> Doc;
     auto operator()(const ast::RangeConstraint &node) const -> Doc;
 
     // Concurrent Statements
-    auto operator()(const ast::Waveform::Element &node) const -> Doc;
-    auto operator()(const ast::Waveform &node) const -> Doc;
-    auto operator()(const ast::ConditionalConcurrentAssign::ConditionalWaveform &node) const -> Doc;
     auto operator()(const ast::ConditionalConcurrentAssign &node) const -> Doc;
-    auto operator()(const ast::SelectedConcurrentAssign::Selection &node) const -> Doc;
-    auto operator()(const ast::SelectedConcurrentAssign &node) const -> Doc;
+    auto operator()(const ast::ConditionalConcurrentAssign::ConditionalWaveform &node) const -> Doc;
     auto operator()(const ast::Process &node) const -> Doc;
+    auto operator()(const ast::SelectedConcurrentAssign &node) const -> Doc;
+    auto operator()(const ast::SelectedConcurrentAssign::Selection &node) const -> Doc;
+    auto operator()(const ast::Waveform &node) const -> Doc;
+    auto operator()(const ast::Waveform::Element &node) const -> Doc;
 
     // Sequential Statements
-    auto operator()(const ast::SignalAssign &node) const -> Doc;
-    auto operator()(const ast::VariableAssign &node) const -> Doc;
-    auto operator()(const ast::IfStatement &node) const -> Doc;
     auto operator()(const ast::CaseStatement &node) const -> Doc;
     auto operator()(const ast::ForLoop &node) const -> Doc;
-    auto operator()(const ast::WhileLoop &node) const -> Doc;
+    auto operator()(const ast::IfStatement &node) const -> Doc;
     auto operator()(const ast::Loop &node) const -> Doc;
+    auto operator()(const ast::SignalAssign &node) const -> Doc;
+    auto operator()(const ast::VariableAssign &node) const -> Doc;
+    auto operator()(const ast::WhileLoop &node) const -> Doc;
 
     /// @brief Wraps the core doc with trivia for the given node.
     template<typename T>

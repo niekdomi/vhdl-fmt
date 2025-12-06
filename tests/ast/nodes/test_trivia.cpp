@@ -155,8 +155,8 @@ TEST_CASE("Generic captures paragraph breaks (2 blank lines)", "[design_units][t
                                            "    );\n"
                                            "end ExampleEntity;";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *entity = std::get_if<ast::Entity>(design.units.data());
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *entity = std::get_if<ast::Entity>(design.units.data());
     REQUIRE(entity != nullptr);
 
     const auto &one = entity->generic_clause.generics[0];
@@ -186,8 +186,8 @@ TEST_CASE("Generic with inline comment + paragraph breaks", "[design_units][triv
                                            "    );\n"
                                            "end ExampleEntity;";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *entity = std::get_if<ast::Entity>(design.units.data());
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *entity = std::get_if<ast::Entity>(design.units.data());
     REQUIRE(entity != nullptr);
 
     const auto &one = entity->generic_clause.generics[0];

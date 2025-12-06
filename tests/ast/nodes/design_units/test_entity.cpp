@@ -14,10 +14,10 @@ TEST_CASE("Entity: Basic entity declaration with ports and generics", "[design_u
         end MyEntity;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     REQUIRE(design.units.size() == 1);
 
-    auto *entity = std::get_if<ast::Entity>(design.units.data());
+    const auto *entity = std::get_if<ast::Entity>(design.units.data());
     REQUIRE(entity != nullptr);
     REQUIRE(entity->name == "MyEntity");
     REQUIRE(entity->end_label.has_value());
@@ -39,8 +39,8 @@ TEST_CASE("Entity: Multiple generics", "[design_units][entity]")
         end Counter;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *entity = std::get_if<ast::Entity>(design.units.data());
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *entity = std::get_if<ast::Entity>(design.units.data());
     REQUIRE(entity != nullptr);
     REQUIRE(entity->generic_clause.generics.size() == 3);
     REQUIRE(entity->generic_clause.generics[0].names[0] == "WIDTH");
@@ -55,8 +55,8 @@ TEST_CASE("Entity: Minimal entity without ports or generics", "[design_units][en
         end MinimalEntity;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *entity = std::get_if<ast::Entity>(design.units.data());
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *entity = std::get_if<ast::Entity>(design.units.data());
     REQUIRE(entity != nullptr);
     REQUIRE(entity->name == "MinimalEntity");
     REQUIRE(entity->generic_clause.generics.empty());

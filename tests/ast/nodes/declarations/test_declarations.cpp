@@ -20,8 +20,8 @@ TEST_CASE("Multiple declaration types in architecture", "[declarations][mixed]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 4);
 
@@ -30,16 +30,16 @@ TEST_CASE("Multiple declaration types in architecture", "[declarations][mixed]")
     REQUIRE(std::holds_alternative<ast::SignalDecl>(arch->decls[2]));
     REQUIRE(std::holds_alternative<ast::ConstantDecl>(arch->decls[3]));
 
-    auto *sig1 = std::get_if<ast::SignalDecl>(arch->decls.data());
+    const auto *sig1 = std::get_if<ast::SignalDecl>(arch->decls.data());
     REQUIRE(sig1->names[0] == "clk");
 
-    auto *const1 = std::get_if<ast::ConstantDecl>(&arch->decls[1]);
+    const auto *const1 = std::get_if<ast::ConstantDecl>(&arch->decls[1]);
     REQUIRE(const1->names[0] == "MAX");
 
-    auto *sig2 = std::get_if<ast::SignalDecl>(&arch->decls[2]);
+    const auto *sig2 = std::get_if<ast::SignalDecl>(&arch->decls[2]);
     REQUIRE(sig2->names[0] == "data");
 
-    auto *const2 = std::get_if<ast::ConstantDecl>(&arch->decls[3]);
+    const auto *const2 = std::get_if<ast::ConstantDecl>(&arch->decls[3]);
     REQUIRE(const2->names[0] == "MIN");
 }
 
@@ -52,8 +52,8 @@ TEST_CASE("Architecture with no declarations", "[declarations][empty]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.empty());
 }

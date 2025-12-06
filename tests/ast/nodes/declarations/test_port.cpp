@@ -15,12 +15,12 @@ TEST_CASE("Port: Single input port", "[declarations][port]")
         end E;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *entity = std::get_if<ast::Entity>(design.units.data());
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *entity = std::get_if<ast::Entity>(design.units.data());
     REQUIRE(entity != nullptr);
     REQUIRE(entity->port_clause.ports.size() == 1);
 
-    auto &port = entity->port_clause.ports[0];
+    const auto &port = entity->port_clause.ports[0];
     REQUIRE(port.names.size() == 1);
     REQUIRE(port.names[0] == "clk");
     REQUIRE(port.mode == "in");
@@ -35,12 +35,12 @@ TEST_CASE("Port: Single output port", "[declarations][port]")
         end E;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *entity = std::get_if<ast::Entity>(design.units.data());
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *entity = std::get_if<ast::Entity>(design.units.data());
     REQUIRE(entity != nullptr);
     REQUIRE(entity->port_clause.ports.size() == 1);
 
-    auto &port = entity->port_clause.ports[0];
+    const auto &port = entity->port_clause.ports[0];
     REQUIRE(port.names[0] == "valid");
     REQUIRE(port.mode == "out");
     REQUIRE(port.type_name == "std_logic");
@@ -54,12 +54,12 @@ TEST_CASE("Port: Multiple ports same declaration", "[declarations][port]")
         end E;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *entity = std::get_if<ast::Entity>(design.units.data());
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *entity = std::get_if<ast::Entity>(design.units.data());
     REQUIRE(entity != nullptr);
     REQUIRE(entity->port_clause.ports.size() == 1);
 
-    auto &port = entity->port_clause.ports[0];
+    const auto &port = entity->port_clause.ports[0];
     REQUIRE(port.names.size() == 3);
     REQUIRE(port.names[0] == "clk");
     REQUIRE(port.names[1] == "rst");

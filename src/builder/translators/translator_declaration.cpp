@@ -20,6 +20,7 @@ auto extractNames(vhdlParser::Identifier_listContext *ctx) -> std::vector<std::s
     if (ctx == nullptr) {
         return {};
     }
+
     return ctx->identifier()
          | std::views::transform([](auto *id) { return id->getText(); })
          | std::ranges::to<std::vector>();
@@ -30,6 +31,7 @@ auto extractTypeName(vhdlParser::Subtype_indicationContext *ctx) -> std::string
     if (ctx == nullptr || ctx->selected_name().empty()) {
         return {};
     }
+
     return ctx->selected_name(0)->getText();
 }
 
@@ -38,6 +40,7 @@ auto extractTypeFullText(vhdlParser::Subtype_indicationContext *ctx) -> std::str
     if (ctx == nullptr) {
         return {};
     }
+
     return ctx->getText();
 }
 
@@ -46,6 +49,7 @@ auto extractMode(vhdlParser::Signal_modeContext *ctx) -> std::string
     if (ctx == nullptr) {
         return {};
     }
+
     return ctx->getText();
 }
 
@@ -59,6 +63,7 @@ void extractSubtypeInfo(Node &node,
     if (stype == nullptr) {
         return;
     }
+
     node.type_name = extractTypeName(stype);
     if (auto *constr = stype->constraint()) {
         node.constraint = make_constraint_fn(*constr);
@@ -161,6 +166,25 @@ auto Translator::makeVariableDecl(vhdlParser::Variable_declarationContext &ctx) 
       })
       .maybe(
         &ast::VariableDecl::init_expr, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })
+      .build();
+}
+
+// ---------------------- Component declarations ----------------------
+
+auto Translator::makeComponentDecl(vhdlParser::Component_declarationContext &ctx)
+  -> ast::ComponentDecl
+{
+    return build<ast::ComponentDecl>(ctx)
+      .set(&ast::ComponentDecl::name, ctx.identifier(0)->getText())
+      .set(&ast::ComponentDecl::has_is_keyword, ctx.IS() != nullptr)
+      .maybe(
+        &ast::ComponentDecl::end_label, ctx.identifier(1), [](auto &id) { return id.getText(); })
+      .maybe(&ast::ComponentDecl::generic_clause,
+             ctx.generic_clause(),
+             [&](auto &gc) { return makeGenericClause(gc); })
+      .maybe(&ast::ComponentDecl::port_clause,
+             ctx.port_clause(),
+             [&](auto &pc) { return makePortClause(pc); })
       .build();
 }
 

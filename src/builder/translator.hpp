@@ -40,7 +40,7 @@ class Translator final
 
     // Design units
     [[nodiscard]] auto makeArchitecture(vhdlParser::Architecture_bodyContext &ctx) -> ast::Architecture;
-    [[nodiscard]] auto makeArchitectureDeclarativePart(vhdlParser::Architecture_declarative_partContext &ctx) -> std::vector<ast::Declaration>;
+    [[nodiscard]] auto makeArchitectureDeclarativePart(vhdlParser::Architecture_declarative_partContext &ctx) -> std::vector<ast::DeclarativeItem>;
     [[nodiscard]] auto makeArchitectureStatementPart(vhdlParser::Architecture_statement_partContext &ctx) -> std::vector<ast::ConcurrentStatement>;
     [[nodiscard]] auto makeEntity(vhdlParser::Entity_declarationContext &ctx) -> ast::Entity;
 
@@ -48,7 +48,13 @@ class Translator final
     [[nodiscard]] auto makeGenericClause(vhdlParser::Generic_clauseContext &ctx) -> ast::GenericClause;
     [[nodiscard]] auto makePortClause(vhdlParser::Port_clauseContext &ctx) -> ast::PortClause;
 
+    // Context clauses
+    [[nodiscard]] auto makeContextClause(vhdlParser::Context_clauseContext &ctx) -> std::vector<ast::ContextItem>;
+    [[nodiscard]] auto makeLibraryClause(vhdlParser::Library_clauseContext &ctx) -> ast::LibraryClause;
+    [[nodiscard]] auto makeUseClause(vhdlParser::Use_clauseContext &ctx) -> ast::UseClause;
+
     // Declarations
+    [[nodiscard]] auto makeComponentDecl(vhdlParser::Component_declarationContext &ctx) -> ast::ComponentDecl;
     [[nodiscard]] auto makeConstantDecl(vhdlParser::Constant_declarationContext &ctx) -> ast::ConstantDecl;
     [[nodiscard]] auto makeGenericParam(vhdlParser::Interface_constant_declarationContext &ctx) -> ast::GenericParam;
     [[nodiscard]] auto makeSignalDecl(vhdlParser::Signal_declarationContext &ctx) -> ast::SignalDecl;

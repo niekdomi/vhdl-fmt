@@ -11,56 +11,26 @@
 namespace ast {
 
 // Forward declarations
-struct TokenExpr;
-struct GroupExpr;
-struct UnaryExpr;
 struct BinaryExpr;
-struct ParenExpr;
 struct CallExpr;
+struct GroupExpr;
+struct ParenExpr;
 struct PhysicalLiteral;
+struct TokenExpr;
+struct UnaryExpr;
 
 /// @brief Helper alias for boxed recursive types.
+///
+/// Example: `Box<Expr>` wraps an expression in a unique_ptr
 /// @tparam T The type to wrap in a unique_ptr.
 template<typename T>
 using Box = std::unique_ptr<T>;
 
 /// @brief Variant type for all expressions (holds values, not pointers).
+///
+/// Example: `TokenExpr`, `BinaryExpr`, or `CallExpr`
 using Expr
   = std::variant<TokenExpr, GroupExpr, UnaryExpr, BinaryExpr, ParenExpr, CallExpr, PhysicalLiteral>;
-
-/// @brief Represents a single token expression.
-///
-/// Example: `WIDTH`, `'1'`, `123`
-struct TokenExpr : NodeBase
-{
-    std::string text; ///< Literal text of the token.
-};
-
-/// @brief Represents a physical literal with value and unit.
-///
-/// Example: `10 ns`, `5 us`
-struct PhysicalLiteral : NodeBase
-{
-    std::string value; ///< Numeric value (e.g., "10").
-    std::string unit;  ///< Unit identifier (e.g., "ns").
-};
-
-/// @brief Represents an aggregate or grouped list of expressions.
-///
-/// Example: `(others => '0')`, `(a, b, c)`
-struct GroupExpr : NodeBase
-{
-    std::vector<Expr> children; ///< Ordered child expressions.
-};
-
-/// @brief Represents a unary expression.
-///
-/// Example: `-a`, `not ready`, `abs x`
-struct UnaryExpr : NodeBase
-{
-    std::string op;  ///< Unary operator symbol.
-    Box<Expr> value; ///< Operand expression (boxed for recursion).
-};
 
 /// @brief Represents a binary expression.
 ///
@@ -72,14 +42,6 @@ struct BinaryExpr : NodeBase
     Box<Expr> right; ///< Right operand (boxed for recursion).
 };
 
-/// @brief Represents explicit parentheses around an expression.
-///
-/// Example: `(a + b)`
-struct ParenExpr : NodeBase
-{
-    Box<Expr> inner; ///< Inner expression inside parentheses (boxed for recursion).
-};
-
 /// @brief Represents a function call or indexed name.
 ///
 /// Example: `rising_edge(clk)`, `data(7 downto 0)`
@@ -89,11 +51,58 @@ struct CallExpr : NodeBase
     Box<Expr> args;   ///< Arguments (single expr or GroupExpr for multiple args).
 };
 
-// Forward declarations for constraints
+/// @brief Represents an aggregate or grouped list of expressions.
+///
+/// Example: `(others => '0')`
+struct GroupExpr : NodeBase
+{
+    std::vector<Expr> children; ///< Ordered child expressions.
+};
+
+/// @brief Represents explicit parentheses around an expression.
+///
+/// Example: `(a + b)`
+struct ParenExpr : NodeBase
+{
+    Box<Expr> inner; ///< Inner expression inside parentheses (boxed for recursion).
+};
+
+/// @brief Represents a physical literal with value and unit.
+///
+/// Example: `10 ns`, `5 us`
+struct PhysicalLiteral : NodeBase
+{
+    std::string value; ///< Numeric value (e.g., "10").
+    std::string unit;  ///< Unit identifier (e.g., "ns").
+};
+
+/// @brief Represents a single token expression.
+///
+/// Example: `WIDTH`, `'1'`, `123`
+struct TokenExpr : NodeBase
+{
+    std::string text; ///< Literal text of the token.
+};
+
+/// @brief Represents a unary expression.
+///
+/// Example: `-a`, `not ready`, `abs x`
+struct UnaryExpr : NodeBase
+{
+    std::string op;  ///< Unary operator symbol.
+    Box<Expr> value; ///< Operand expression (boxed for recursion).
+};
+
+// -------------------------------------------------------
+// Forward declarations
 struct IndexConstraint;
 struct RangeConstraint;
 
 /// @brief Variant type for constraints used in type declarations.
+struct IndexConstraint;
+struct RangeConstraint;
+///
+/// Example: `IndexConstraint` or `RangeConstraint`
 using Constraint = std::variant<IndexConstraint, RangeConstraint>;
 
 /// @brief Represents an index constraint with parentheses.
