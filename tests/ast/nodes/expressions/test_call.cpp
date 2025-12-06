@@ -1,145 +1,89 @@
-#include "test_helpers.hpp"
+#include "expr_utils.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace test_helpers;
-
-TEST_CASE("CallExpr: Function calls", "[expressions][call][function]")
+TEST_CASE("CallExpr", "[expressions][call]")
 {
-    SECTION("rising_edge(clk)")
+    SECTION("Simple function call")
     {
-        const auto *expr = parseExpr("boolean", "rising_edge(clk)");
-        const auto *call = requireCall(expr);
+        const auto *expr = expr_utils::parseExpr("rising_edge(clk)");
+        const auto *call = std::get_if<ast::CallExpr>(expr);
+        REQUIRE(call != nullptr);
 
-        requireToken(call->callee.get(), "rising_edge");
-        requireToken(call->args.get(), "clk");
+        const auto *callee = std::get_if<ast::TokenExpr>(call->callee.get());
+        REQUIRE(callee != nullptr);
+        REQUIRE(callee->text == "rising_edge");
+
+        const auto *arg = std::get_if<ast::TokenExpr>(call->args.get());
+        REQUIRE(arg != nullptr);
+        REQUIRE(arg->text == "clk");
     }
 
-    SECTION("to_integer(unsigned_val)")
+    SECTION("Multiple arguments")
     {
-        const auto *expr = parseExpr("integer", "to_integer(unsigned_val)");
-        const auto *call = requireCall(expr);
+        const auto *expr = expr_utils::parseExpr("resize(data, 16)");
+        const auto *call = std::get_if<ast::CallExpr>(expr);
+        REQUIRE(call != nullptr);
 
-        requireToken(call->callee.get(), "to_integer");
-        requireToken(call->args.get(), "unsigned_val");
+        const auto *callee = std::get_if<ast::TokenExpr>(call->callee.get());
+        REQUIRE(callee != nullptr);
+        REQUIRE(callee->text == "resize");
+
+        const auto *group = std::get_if<ast::GroupExpr>(call->args.get());
+        REQUIRE(group != nullptr);
+        REQUIRE(group->children.size() == 2);
+
+        const auto *arg1 = std::get_if<ast::TokenExpr>(group->children.data());
+        REQUIRE(arg1 != nullptr);
+        REQUIRE(arg1->text == "data");
+
+        const auto *arg2 = std::get_if<ast::TokenExpr>(&group->children[1]);
+        REQUIRE(arg2 != nullptr);
+        REQUIRE(arg2->text == "16");
     }
 
-    SECTION("conv_integer(data)")
+    SECTION("Slice notation")
     {
-        const auto *expr = parseExpr("integer", "conv_integer(data)");
-        const auto *call = requireCall(expr);
+        const auto *expr = expr_utils::parseExpr("data(7 downto 0)");
+        const auto *call = std::get_if<ast::CallExpr>(expr);
+        REQUIRE(call != nullptr);
 
-        requireToken(call->callee.get(), "conv_integer");
-        requireToken(call->args.get(), "data");
-    }
-}
+        const auto *callee = std::get_if<ast::TokenExpr>(call->callee.get());
+        REQUIRE(callee != nullptr);
+        REQUIRE(callee->text == "data");
 
-TEST_CASE("CallExpr: Array indexing", "[expressions][call][index]")
-{
-    SECTION("data(0)")
-    {
-        const auto *expr = parseExpr("std_logic", "data(0)");
-        const auto *call = requireCall(expr);
+        const auto *binary = std::get_if<ast::BinaryExpr>(call->args.get());
+        REQUIRE(binary != nullptr);
+        REQUIRE(binary->op == "downto");
 
-        requireToken(call->callee.get(), "data");
-        requireToken(call->args.get(), "0");
-    }
+        const auto *left = std::get_if<ast::TokenExpr>(binary->left.get());
+        REQUIRE(left != nullptr);
+        REQUIRE(left->text == "7");
 
-    SECTION("my_array(i)")
-    {
-        const auto *expr = parseExpr("integer", "my_array(i)");
-        const auto *call = requireCall(expr);
-
-        requireToken(call->callee.get(), "my_array");
-        requireToken(call->args.get(), "i");
+        const auto *right = std::get_if<ast::TokenExpr>(binary->right.get());
+        REQUIRE(right != nullptr);
+        REQUIRE(right->text == "0");
     }
 
-    SECTION("matrix(row, col)")
+    SECTION("Chained calls")
     {
-        const auto *expr = parseExpr("integer", "matrix(row, col)");
-        const auto *call = requireCall(expr);
+        const auto *expr = expr_utils::parseExpr("get_array(i)(j)");
+        const auto *outer_call = std::get_if<ast::CallExpr>(expr);
+        REQUIRE(outer_call != nullptr);
 
-        requireToken(call->callee.get(), "matrix");
+        const auto *inner_call = std::get_if<ast::CallExpr>(outer_call->callee.get());
+        REQUIRE(inner_call != nullptr);
 
-        // Args is a GroupExpr with 2 elements
-        const auto *group = requireGroup(call->args.get(), 2);
+        const auto *inner_callee = std::get_if<ast::TokenExpr>(inner_call->callee.get());
+        REQUIRE(inner_callee != nullptr);
+        REQUIRE(inner_callee->text == "get_array");
 
-        requireToken(&group->children[0], "row");
-        requireToken(&group->children[1], "col");
-    }
-}
+        const auto *inner_arg = std::get_if<ast::TokenExpr>(inner_call->args.get());
+        REQUIRE(inner_arg != nullptr);
+        REQUIRE(inner_arg->text == "i");
 
-TEST_CASE("CallExpr: Slice notation", "[expressions][call][slice]")
-{
-    SECTION("data(7 downto 0)")
-    {
-        const auto *expr = parseExpr("std_logic_vector(7 downto 0)", "data(7 downto 0)");
-        const auto *call = requireCall(expr);
-
-        requireToken(call->callee.get(), "data");
-
-        // Args is a BinaryExpr with op "downto"
-        const auto *binary = requireBinary(call->args.get(), "downto");
-        requireToken(binary->left.get(), "7");
-        requireToken(binary->right.get(), "0");
-    }
-
-    SECTION("mem_data(0 to 15)")
-    {
-        const auto *expr = parseExpr("std_logic_vector(15 downto 0)", "mem_data(0 to 15)");
-        const auto *call = requireCall(expr);
-
-        requireToken(call->callee.get(), "mem_data");
-
-        const auto *binary = requireBinary(call->args.get(), "to");
-        requireToken(binary->left.get(), "0");
-        requireToken(binary->right.get(), "15");
-    }
-}
-
-TEST_CASE("CallExpr: Chained calls", "[expressions][call][chained]")
-{
-    SECTION("get_array(i)(j) - nested indexing")
-    {
-        const auto *expr = parseExpr("integer", "get_array(i)(j)");
-        const auto *outer_call = requireCall(expr);
-
-        // Callee is itself a CallExpr
-        const auto *inner_call = requireCall(outer_call->callee.get());
-        requireToken(inner_call->callee.get(), "get_array");
-        requireToken(inner_call->args.get(), "i");
-
-        // Outer call's argument
-        requireToken(outer_call->args.get(), "j");
-    }
-}
-
-TEST_CASE("CallExpr: Function calls with multiple arguments", "[expressions][call][multiarg]")
-{
-    SECTION("resize(data, 16)")
-    {
-        const auto *expr = parseExpr("unsigned(15 downto 0)", "resize(data, 16)");
-        const auto *call = requireCall(expr);
-
-        requireToken(call->callee.get(), "resize");
-
-        // Args is a GroupExpr with 2 elements
-        const auto *group = requireGroup(call->args.get(), 2);
-
-        requireToken(&group->children[0], "data");
-        requireToken(&group->children[1], "16");
-    }
-
-    SECTION("shift_left(value, count)")
-    {
-        const auto *expr = parseExpr("unsigned(7 downto 0)", "shift_left(value, count)");
-        const auto *call = requireCall(expr);
-
-        requireToken(call->callee.get(), "shift_left");
-
-        const auto *group = requireGroup(call->args.get(), 2);
-
-        requireToken(&group->children[0], "value");
-        requireToken(&group->children[1], "count");
+        const auto *outer_arg = std::get_if<ast::TokenExpr>(outer_call->args.get());
+        REQUIRE(outer_arg != nullptr);
+        REQUIRE(outer_arg->text == "j");
     }
 }

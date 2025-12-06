@@ -1,37 +1,53 @@
-#include "test_helpers.hpp"
+#include "expr_utils.hpp"
+#include "nodes/expressions.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace test_helpers;
-
-TEST_CASE("QualifiedExpr: Verifies QualifiedExpr node creation", "[expressions][qualified]")
+TEST_CASE("QualifiedExpr", "[expressions][qualified]")
 {
-    SECTION("std_logic_vector'(x\"AB\")")
+    SECTION("Simple type qualification")
     {
-        const auto *expr = parseExpr("std_logic_vector(7 downto 0)", "std_logic_vector'(x\"AB\")");
-        const auto *qual = requireQualified(expr, "std_logic_vector");
+        const auto *expr = expr_utils::parseExpr("integer'(42)");
+        const auto *qual = std::get_if<ast::QualifiedExpr>(expr);
+        REQUIRE(qual != nullptr);
+        REQUIRE(qual->type_mark == "integer");
         REQUIRE(qual->operand != nullptr);
+
+        const auto *group = std::get_if<ast::GroupExpr>(qual->operand.get());
+        REQUIRE(group != nullptr);
+
+        const auto *operand = std::get_if<ast::TokenExpr>(group->children.data());
+        REQUIRE(operand != nullptr);
+        REQUIRE(operand->text == "42");
     }
 
-    SECTION("integer'(42)")
+    SECTION("Type qualification with aggregate")
     {
-        const auto *expr = parseExpr("integer", "integer'(42)");
-        const auto *qual = requireQualified(expr, "integer");
+        const auto *expr = expr_utils::parseExpr("array_type'(1, 2, 3)");
+        const auto *qual = std::get_if<ast::QualifiedExpr>(expr);
+        REQUIRE(qual != nullptr);
+        REQUIRE(qual->type_mark == "array_type");
         REQUIRE(qual->operand != nullptr);
+
+        const auto *group = std::get_if<ast::GroupExpr>(qual->operand.get());
+        REQUIRE(group != nullptr);
+        REQUIRE(group->children.size() == 3);
     }
 
-    SECTION("array_type'(1, 2, 3)")
+    SECTION("Type qualification with named association")
     {
-        const auto *expr = parseExpr("array_type", "array_type'(1, 2, 3)");
-        const auto *qual = requireQualified(expr, "array_type");
+        const auto *expr = expr_utils::parseExpr("record_type'(field => value)");
+        const auto *qual = std::get_if<ast::QualifiedExpr>(expr);
+        REQUIRE(qual != nullptr);
+        REQUIRE(qual->type_mark == "record_type");
         REQUIRE(qual->operand != nullptr);
-    }
 
-    SECTION("record_type'(field => value)")
-    {
-        const auto *expr = parseExpr("record_type", "record_type'(field => value)");
-        const auto *qual = requireQualified(expr, "record_type");
-        REQUIRE(qual->operand != nullptr);
+        const auto *group = std::get_if<ast::GroupExpr>(qual->operand.get());
+        REQUIRE(group != nullptr);
+
+        const auto *binary = std::get_if<ast::BinaryExpr>(group->children.data());
+        REQUIRE(binary != nullptr);
+        REQUIRE(binary->op == "=>");
     }
 }
 

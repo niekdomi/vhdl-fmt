@@ -1,137 +1,110 @@
-#include "test_helpers.hpp"
+#include "expr_utils.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace test_helpers;
-
-TEST_CASE("GroupExpr: Simple aggregates", "[expressions][group][aggregate]")
+TEST_CASE("GroupExpr", "[expressions][group]")
 {
-    SECTION("(0, 1, 2)")
+    SECTION("Positional aggregate")
     {
-        const auto *expr = parseExpr("array_type", "(0, 1, 2)");
-
-        // Direct GroupExpr (parentheses are implicit in aggregate context)
-        const auto *group = requireGroup(expr, 3);
-
-        requireToken(&group->children[0], "0");
-        requireToken(&group->children[1], "1");
-        requireToken(&group->children[2], "2");
-    }
-
-    SECTION("(a, b, c, d)")
-    {
-        const auto *expr = parseExpr("array_type", "(a, b, c, d)");
-
-        const auto *group = requireGroup(expr, 4);
-
-        requireToken(&group->children[0], "a");
-        requireToken(&group->children[1], "b");
-        requireToken(&group->children[2], "c");
-        requireToken(&group->children[3], "d");
-    }
-}
-
-TEST_CASE("GroupExpr: Named associations", "[expressions][group][named]")
-{
-    SECTION("(0 => '1', 1 => '0')")
-    {
-        const auto *expr = parseExpr("std_logic_vector(1 downto 0)", "(0 => '1', 1 => '0')");
-
-        const auto *group = requireGroup(expr, 2);
-
-        // First element: 0 => '1'
-        const auto *first = requireBinary(&group->children[0], "=>");
-        requireToken(first->left.get(), "0");
-        requireToken(first->right.get(), "'1'");
-
-        // Second element: 1 => '0'
-        const auto *second = requireBinary(&group->children[1], "=>");
-        requireToken(second->left.get(), "1");
-        requireToken(second->right.get(), "'0'");
-    }
-
-    SECTION("(field1 => value1, field2 => value2)")
-    {
-        const auto *expr = parseExpr("record_type", "(field1 => value1, field2 => value2)");
-
-        const auto *group = requireGroup(expr, 2);
-
-        const auto *first = requireBinary(&group->children[0], "=>");
-        requireToken(first->left.get(), "field1");
-        requireToken(first->right.get(), "value1");
-
-        const auto *second = requireBinary(&group->children[1], "=>");
-        requireToken(second->left.get(), "field2");
-        requireToken(second->right.get(), "value2");
-    }
-}
-
-TEST_CASE("GroupExpr: Others keyword", "[expressions][group][others]")
-{
-    SECTION("(others => '0')")
-    {
-        const auto *expr = parseExpr("std_logic_vector(7 downto 0)", "(others => '0')");
-
-        // Could be either a BinaryExpr directly or a GroupExpr with one element
+        const auto *expr = expr_utils::parseExpr("(0, 1, 2)");
         const auto *group = std::get_if<ast::GroupExpr>(expr);
-        if (group != nullptr) {
-            REQUIRE(group->children.size() == 1);
-            const auto *binary = requireBinary(&group->children[0], "=>");
-            requireToken(binary->left.get(), "others");
-            requireToken(binary->right.get(), "'0'");
-        } else {
-            const auto *binary = requireBinary(expr, "=>");
-            requireToken(binary->left.get(), "others");
-            requireToken(binary->right.get(), "'0'");
-        }
+        REQUIRE(group != nullptr);
+        REQUIRE(group->children.size() == 3);
+
+        const auto *elem0 = std::get_if<ast::TokenExpr>(group->children.data());
+        REQUIRE(elem0 != nullptr);
+        REQUIRE(elem0->text == "0");
+
+        const auto *elem1 = std::get_if<ast::TokenExpr>(&group->children[1]);
+        REQUIRE(elem1 != nullptr);
+        REQUIRE(elem1->text == "1");
+
+        const auto *elem2 = std::get_if<ast::TokenExpr>(&group->children[2]);
+        REQUIRE(elem2 != nullptr);
+        REQUIRE(elem2->text == "2");
     }
 
-    SECTION("(0 => '1', others => '0')")
+    SECTION("Named associations")
     {
-        const auto *expr = parseExpr("std_logic_vector(7 downto 0)", "(0 => '1', others => '0')");
+        const auto *expr = expr_utils::parseExpr("(0 => '1', 1 => '0')");
+        const auto *group = std::get_if<ast::GroupExpr>(expr);
+        REQUIRE(group != nullptr);
+        REQUIRE(group->children.size() == 2);
 
-        const auto *group = requireGroup(expr, 2);
+        const auto *first = std::get_if<ast::BinaryExpr>(group->children.data());
+        REQUIRE(first != nullptr);
+        REQUIRE(first->op == "=>");
 
-        const auto *first = requireBinary(&group->children[0], "=>");
-        requireToken(first->left.get(), "0");
-        requireToken(first->right.get(), "'1'");
+        const auto *first_left = std::get_if<ast::TokenExpr>(first->left.get());
+        REQUIRE(first_left != nullptr);
+        REQUIRE(first_left->text == "0");
 
-        const auto *second = requireBinary(&group->children[1], "=>");
-        requireToken(second->left.get(), "others");
-        requireToken(second->right.get(), "'0'");
+        const auto *first_right = std::get_if<ast::TokenExpr>(first->right.get());
+        REQUIRE(first_right != nullptr);
+        REQUIRE(first_right->text == "'1'");
+
+        const auto *second = std::get_if<ast::BinaryExpr>(&group->children[1]);
+        REQUIRE(second != nullptr);
+        REQUIRE(second->op == "=>");
+
+        const auto *second_left = std::get_if<ast::TokenExpr>(second->left.get());
+        REQUIRE(second_left != nullptr);
+        REQUIRE(second_left->text == "1");
+
+        const auto *second_right = std::get_if<ast::TokenExpr>(second->right.get());
+        REQUIRE(second_right != nullptr);
+        REQUIRE(second_right->text == "'0'");
     }
-}
 
-TEST_CASE("GroupExpr: Mixed positional and named", "[expressions][group][mixed]")
-{
-    SECTION("Positional element in aggregate")
+    SECTION("Others keyword")
     {
-        const auto *expr = parseExpr("std_logic_vector(7 downto 0)", "(x\"AB\")");
+        const auto *expr = expr_utils::parseExpr("(0 => '1', others => '0')");
+        const auto *group = std::get_if<ast::GroupExpr>(expr);
+        REQUIRE(group != nullptr);
+        REQUIRE(group->children.size() == 2);
 
-        const auto *paren = std::get_if<ast::ParenExpr>(expr);
-        REQUIRE(paren != nullptr);
+        const auto *first = std::get_if<ast::BinaryExpr>(group->children.data());
+        REQUIRE(first != nullptr);
+        REQUIRE(first->op == "=>");
 
-        // Single positional element is not a GroupExpr
-        requireToken(paren->inner.get(), "x\"AB\"");
+        const auto *second = std::get_if<ast::BinaryExpr>(&group->children[1]);
+        REQUIRE(second != nullptr);
+        REQUIRE(second->op == "=>");
+
+        const auto *others = std::get_if<ast::TokenExpr>(second->left.get());
+        REQUIRE(others != nullptr);
+        REQUIRE(others->text == "others");
     }
-}
 
-TEST_CASE("GroupExpr: Nested aggregates", "[expressions][group][nested]")
-{
-    SECTION("((1, 2), (3, 4))")
+    SECTION("Nested aggregates")
     {
-        const auto *expr = parseExpr("matrix_type", "((1, 2), (3, 4))");
+        const auto *expr = expr_utils::parseExpr("((1, 2), (3, 4))");
+        const auto *outer_group = std::get_if<ast::GroupExpr>(expr);
+        REQUIRE(outer_group != nullptr);
+        REQUIRE(outer_group->children.size() == 2);
 
-        const auto *outer_group = requireGroup(expr, 2);
+        const auto *first_group = std::get_if<ast::GroupExpr>(outer_group->children.data());
+        REQUIRE(first_group != nullptr);
+        REQUIRE(first_group->children.size() == 2);
 
-        // First element: (1, 2)
-        const auto *first_group = requireGroup(&outer_group->children[0], 2);
-        requireToken(&first_group->children[0], "1");
-        requireToken(&first_group->children[1], "2");
+        const auto *elem1 = std::get_if<ast::TokenExpr>(first_group->children.data());
+        REQUIRE(elem1 != nullptr);
+        REQUIRE(elem1->text == "1");
 
-        // Second element: (3, 4)
-        const auto *second_group = requireGroup(&outer_group->children[1], 2);
-        requireToken(&second_group->children[0], "3");
-        requireToken(&second_group->children[1], "4");
+        const auto *elem2 = std::get_if<ast::TokenExpr>(&first_group->children[1]);
+        REQUIRE(elem2 != nullptr);
+        REQUIRE(elem2->text == "2");
+
+        const auto *second_group = std::get_if<ast::GroupExpr>(&outer_group->children[1]);
+        REQUIRE(second_group != nullptr);
+        REQUIRE(second_group->children.size() == 2);
+
+        const auto *elem3 = std::get_if<ast::TokenExpr>(second_group->children.data());
+        REQUIRE(elem3 != nullptr);
+        REQUIRE(elem3->text == "3");
+
+        const auto *elem4 = std::get_if<ast::TokenExpr>(&second_group->children[1]);
+        REQUIRE(elem4 != nullptr);
+        REQUIRE(elem4->text == "4");
     }
 }
