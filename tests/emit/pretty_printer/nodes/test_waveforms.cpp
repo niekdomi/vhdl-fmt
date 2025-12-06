@@ -1,3 +1,4 @@
+#include "ast/node.hpp"
 #include "ast/nodes/expressions.hpp"
 #include "ast/nodes/statements.hpp"
 #include "common/config.hpp"
