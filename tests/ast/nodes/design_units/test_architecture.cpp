@@ -5,7 +5,35 @@
 #include <string_view>
 #include <variant>
 
-TEST_CASE("Architecture: Basic architecture body", "[design_units][architecture]")
+TEST_CASE("Architecture: With component declarations", "[design_units][architecture][component]")
+{
+    constexpr std::string_view VHDL_FILE = R"(
+        entity test_ent is
+        end test_ent;
+
+        architecture rtl of test_ent is
+            component my_comp
+                generic (WIDTH : integer := 8);
+                port (clk : in std_logic);
+            end component;
+        begin
+        end architecture rtl;
+    )";
+
+    auto design = builder::buildFromString(VHDL_FILE);
+    REQUIRE(design.units.size() == 2);
+
+    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    REQUIRE(arch != nullptr);
+    REQUIRE(arch->components.size() == 1);
+
+    const auto &comp = arch->components[0];
+    REQUIRE(comp.name == "my_comp");
+    REQUIRE(comp.generic_clause.generics.size() == 1);
+    REQUIRE(comp.port_clause.ports.size() == 1);
+}
+
+TEST_CASE("Architecture: Basic architecture without statements", "[design_units][architecture]")
 {
     constexpr std::string_view VHDL_FILE = R"(
         architecture RTL of MyEntity is

@@ -17,6 +17,7 @@ struct Entity;
 struct Architecture;
 struct LibraryClause;
 struct UseClause;
+struct ComponentDecl;
 
 /// @brief Variant type for all design units (holds values, not pointers).
 ///
@@ -84,6 +85,7 @@ struct Architecture : NodeBase
     std::vector<ContextItem> context;           ///< Library and use clauses.
     std::string name;                           ///< Architecture identifier.
     std::string entity_name;                    ///< Name of the associated entity.
+    std::vector<ComponentDecl> components;      ///< Component declarations.
     std::vector<Declaration> decls;             ///< Architecture declarative items.
     std::vector<ConcurrentStatement> stmts;     ///< Architecture concurrent statements.
     std::optional<std::string> end_label;       ///< Optional label after END keyword.

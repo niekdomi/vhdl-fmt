@@ -86,6 +86,10 @@ auto PrettyPrinter::operator()(const ast::Architecture &node) const -> Doc
         *result /= arch_line;
     }
 
+    // Components
+    *result = std::ranges::fold_left(
+      node.components, *result, [this](auto acc, const auto &comp) { return acc <<= visit(comp); });
+
     // Declarations
     *result = std::ranges::fold_left(
       node.decls, *result, [this](auto acc, const auto &decl) { return acc <<= visit(decl); });
@@ -138,6 +142,31 @@ auto PrettyPrinter::operator()(const ast::UseClause &node) const -> Doc
     result += Doc::text(";");
 
     return result;
+}
+
+auto PrettyPrinter::operator()(const ast::ComponentDecl &node) const -> Doc
+{
+    Doc result = Doc::text("component") & Doc::text(node.name);
+
+    if (node.has_is_keyword) {
+        result &= Doc::text("is");
+    }
+
+    if (!std::ranges::empty(node.generic_clause.generics)) {
+        result <<= visit(node.generic_clause);
+    }
+
+    if (!std::ranges::empty(node.port_clause.ports)) {
+        result <<= visit(node.port_clause);
+    }
+
+    Doc end_line = Doc::text("end") & Doc::text("component");
+    if (node.end_label.has_value()) {
+        end_line &= Doc::text(*node.end_label);
+    }
+    end_line += Doc::text(";");
+
+    return result / end_line;
 }
 
 } // namespace emit

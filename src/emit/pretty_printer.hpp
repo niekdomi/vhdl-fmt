@@ -35,10 +35,11 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     auto operator()(const ast::Entity &node) const -> Doc;
     auto operator()(const ast::GenericClause &node) const -> Doc;
     auto operator()(const ast::GenericParam &node) const -> Doc;
-    auto operator()(const ast::LibraryClause &node) const -> Doc;
     auto operator()(const ast::Port &node) const -> Doc;
     auto operator()(const ast::PortClause &node) const -> Doc;
+    auto operator()(const ast::LibraryClause &node) const -> Doc;
     auto operator()(const ast::UseClause &node) const -> Doc;
+    auto operator()(const ast::ComponentDecl &node) const -> Doc;
 
     // Declarations
     auto operator()(const ast::ConstantDecl &node) const -> Doc;

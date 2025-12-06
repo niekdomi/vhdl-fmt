@@ -179,14 +179,14 @@ TEST_CASE("Library Clause Rendering", "[pretty_printer][design_units][context]")
 {
     SECTION("Single library name")
     {
-        ast::LibraryClause lib{ .logical_names = { "ieee" } };
+        const ast::LibraryClause lib{ .logical_names = { "ieee" } };
         const std::string result = emit::test::render(lib);
         REQUIRE(result == "library ieee;");
     }
 
     SECTION("Multiple library names")
     {
-        ast::LibraryClause lib{
+        const ast::LibraryClause lib{
             .logical_names = { "ieee", "std", "work" }
         };
         const std::string result = emit::test::render(lib);
@@ -198,14 +198,14 @@ TEST_CASE("Use Clause Rendering", "[pretty_printer][design_units][context]")
 {
     SECTION("Single use clause")
     {
-        ast::UseClause use{ .selected_names = { "ieee.std_logic_1164.all" } };
+        const ast::UseClause use{ .selected_names = { "ieee.std_logic_1164.all" } };
         const std::string result = emit::test::render(use);
         REQUIRE(result == "use ieee.std_logic_1164.all;");
     }
 
     SECTION("Multiple use clauses in one statement")
     {
-        ast::UseClause use{
+        const ast::UseClause use{
             .selected_names = { "ieee.std_logic_1164.all", "ieee.numeric_std.all" }
         };
         const std::string result = emit::test::render(use);
@@ -282,7 +282,7 @@ TEST_CASE("Architecture with Context Clauses", "[pretty_printer][design_units][c
 
     SECTION("Architecture without context clauses")
     {
-        ast::Architecture arch{ .name = "rtl", .entity_name = "test_unit" };
+        const ast::Architecture arch{ .name = "rtl", .entity_name = "test_unit" };
 
         const std::string result = emit::test::render(arch);
         constexpr std::string_view EXPECTED = "architecture rtl of test_unit is\n"
