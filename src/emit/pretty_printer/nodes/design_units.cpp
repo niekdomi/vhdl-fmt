@@ -4,6 +4,7 @@
 #include "emit/pretty_printer/doc.hpp"
 
 #include <algorithm>
+#include <optional>
 #include <ranges>
 
 namespace emit {
@@ -22,7 +23,7 @@ auto PrettyPrinter::operator()(const ast::Entity &node) const -> Doc
     }
 
     // Emit entity declaration
-    Doc entity_line = Doc::text("entity") & Doc::text(node.name) & Doc::text("is");
+    const Doc entity_line = Doc::text("entity") & Doc::text(node.name) & Doc::text("is");
     if (!result.has_value()) {
         result = entity_line;
     } else {
@@ -74,11 +75,11 @@ auto PrettyPrinter::operator()(const ast::Architecture &node) const -> Doc
     }
 
     // Emit architecture declaration
-    Doc arch_line = Doc::text("architecture")
-                  & Doc::text(node.name)
-                  & Doc::text("of")
-                  & Doc::text(node.entity_name)
-                  & Doc::text("is");
+    const Doc arch_line = Doc::text("architecture")
+                        & Doc::text(node.name)
+                        & Doc::text("of")
+                        & Doc::text(node.entity_name)
+                        & Doc::text("is");
 
     if (!result.has_value()) {
         result = arch_line;

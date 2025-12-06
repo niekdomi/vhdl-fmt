@@ -1,5 +1,6 @@
 #include "ast/nodes/design_units.hpp"
 #include "emit/test_utils.hpp"
+#include "nodes/declarations.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <string>
@@ -7,7 +8,7 @@
 
 TEST_CASE("LibraryClause: Single library", "[pretty_printer][context][library]")
 {
-    ast::LibraryClause lib_clause{ .logical_names = { "ieee" } };
+    const ast::LibraryClause lib_clause{ .logical_names = { "ieee" } };
 
     const std::string result = emit::test::render(lib_clause);
     constexpr std::string_view EXPECTED = "library ieee;";
@@ -16,7 +17,7 @@ TEST_CASE("LibraryClause: Single library", "[pretty_printer][context][library]")
 
 TEST_CASE("LibraryClause: Multiple libraries in one clause", "[pretty_printer][context][library]")
 {
-    ast::LibraryClause lib_clause{
+    const ast::LibraryClause lib_clause{
         .logical_names = { "ieee", "std", "work" }
     };
 
@@ -27,7 +28,7 @@ TEST_CASE("LibraryClause: Multiple libraries in one clause", "[pretty_printer][c
 
 TEST_CASE("UseClause: Single use statement", "[pretty_printer][context][use]")
 {
-    ast::UseClause use_clause{ .selected_names = { "ieee.std_logic_1164.all" } };
+    const ast::UseClause use_clause{ .selected_names = { "ieee.std_logic_1164.all" } };
 
     const std::string result = emit::test::render(use_clause);
     constexpr std::string_view EXPECTED = "use ieee.std_logic_1164.all;";
@@ -36,7 +37,7 @@ TEST_CASE("UseClause: Single use statement", "[pretty_printer][context][use]")
 
 TEST_CASE("UseClause: Multiple use statements in one clause", "[pretty_printer][context][use]")
 {
-    ast::UseClause use_clause{
+    const ast::UseClause use_clause{
         .selected_names = { "ieee.std_logic_1164.all", "ieee.numeric_std.all" }
     };
 

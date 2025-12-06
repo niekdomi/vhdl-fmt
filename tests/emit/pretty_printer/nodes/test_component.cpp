@@ -1,10 +1,12 @@
 #include "ast/nodes/declarations.hpp"
 #include "ast/nodes/design_units.hpp"
 #include "emit/test_utils.hpp"
+#include "nodes/expressions.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <string>
 #include <string_view>
+#include <utility>
 
 TEST_CASE("ComponentDecl: Simple component without generics or ports",
           "[pretty_printer][component]")

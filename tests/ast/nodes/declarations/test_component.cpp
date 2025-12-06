@@ -23,7 +23,7 @@ TEST_CASE("ComponentDecl: Simple component without generics or ports", "[declara
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    const auto *comp = std::get_if<ast::ComponentDecl>(&arch->decls[0]);
+    const auto *comp = std::get_if<ast::ComponentDecl>(arch->decls.data());
     REQUIRE(comp != nullptr);
     REQUIRE(comp->name == "simple_comp");
     REQUIRE_FALSE(comp->has_is_keyword);
@@ -48,7 +48,7 @@ TEST_CASE("ComponentDecl: Component with IS keyword", "[declarations][component]
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    const auto *comp = std::get_if<ast::ComponentDecl>(&arch->decls[0]);
+    const auto *comp = std::get_if<ast::ComponentDecl>(arch->decls.data());
     REQUIRE(comp != nullptr);
     REQUIRE(comp->name == "my_comp");
     REQUIRE(comp->has_is_keyword);
@@ -70,7 +70,7 @@ TEST_CASE("ComponentDecl: Component with end label", "[declarations][component]"
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    const auto *comp = std::get_if<ast::ComponentDecl>(&arch->decls[0]);
+    const auto *comp = std::get_if<ast::ComponentDecl>(arch->decls.data());
     REQUIRE(comp != nullptr);
     REQUIRE(comp->name == "my_comp");
     REQUIRE(comp->end_label.has_value());
@@ -96,7 +96,7 @@ TEST_CASE("ComponentDecl: Component with generic clause", "[declarations][compon
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    const auto *comp = std::get_if<ast::ComponentDecl>(&arch->decls[0]);
+    const auto *comp = std::get_if<ast::ComponentDecl>(arch->decls.data());
     REQUIRE(comp != nullptr);
     REQUIRE(comp->name == "adder");
     REQUIRE(comp->generic_clause.generics.size() == 1);
@@ -125,7 +125,7 @@ TEST_CASE("ComponentDecl: Component with port clause", "[declarations][component
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    const auto *comp = std::get_if<ast::ComponentDecl>(&arch->decls[0]);
+    const auto *comp = std::get_if<ast::ComponentDecl>(arch->decls.data());
     REQUIRE(comp != nullptr);
     REQUIRE(comp->name == "buffer_comp");
     REQUIRE(comp->port_clause.ports.size() == 2);
@@ -161,7 +161,7 @@ TEST_CASE("ComponentDecl: Component with both generic and port clauses",
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    const auto *comp = std::get_if<ast::ComponentDecl>(&arch->decls[0]);
+    const auto *comp = std::get_if<ast::ComponentDecl>(arch->decls.data());
     REQUIRE(comp != nullptr);
     REQUIRE(comp->name == "full_adder");
     REQUIRE(comp->has_is_keyword);
@@ -204,7 +204,7 @@ TEST_CASE("ComponentDecl: Multiple components in architecture", "[declarations][
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 3);
 
-    const auto *comp1 = std::get_if<ast::ComponentDecl>(&arch->decls[0]);
+    const auto *comp1 = std::get_if<ast::ComponentDecl>(arch->decls.data());
     REQUIRE(comp1 != nullptr);
     REQUIRE(comp1->name == "comp1");
 
@@ -240,7 +240,7 @@ TEST_CASE("ComponentDecl: Order preserved - constant, component, signal",
     REQUIRE(arch->decls.size() == 3);
 
     // First item should be constant
-    const auto *decl1 = std::get_if<ast::Declaration>(&arch->decls[0]);
+    const auto *decl1 = std::get_if<ast::Declaration>(arch->decls.data());
     REQUIRE(decl1 != nullptr);
     const auto *const1 = std::get_if<ast::ConstantDecl>(decl1);
     REQUIRE(const1 != nullptr);
@@ -282,7 +282,7 @@ TEST_CASE("ComponentDecl: Order preserved - signal, component, constant",
     REQUIRE(arch->decls.size() == 3);
 
     // First item should be signal
-    const auto *decl1 = std::get_if<ast::Declaration>(&arch->decls[0]);
+    const auto *decl1 = std::get_if<ast::Declaration>(arch->decls.data());
     REQUIRE(decl1 != nullptr);
     const auto *sig = std::get_if<ast::SignalDecl>(decl1);
     REQUIRE(sig != nullptr);
@@ -332,14 +332,14 @@ TEST_CASE("ComponentDecl: Complex interleaved declarations", "[declarations][com
 
     // Verify exact order
     auto get_const = [](const ast::DeclarativeItem &item) -> const ast::ConstantDecl * {
-        if (auto *decl = std::get_if<ast::Declaration>(&item)) {
+        if (const auto *decl = std::get_if<ast::Declaration>(&item)) {
             return std::get_if<ast::ConstantDecl>(decl);
         }
         return nullptr;
     };
 
     auto get_signal = [](const ast::DeclarativeItem &item) -> const ast::SignalDecl * {
-        if (auto *decl = std::get_if<ast::Declaration>(&item)) {
+        if (const auto *decl = std::get_if<ast::Declaration>(&item)) {
             return std::get_if<ast::SignalDecl>(decl);
         }
         return nullptr;

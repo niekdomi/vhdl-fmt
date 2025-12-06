@@ -5,6 +5,8 @@
 #include "nodes/statements.hpp"
 #include "vhdlParser.h"
 
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace builder {

@@ -97,7 +97,7 @@ TEST_CASE("ConstantDecl: String constant", "[declarations][constant]")
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    const auto *decl_item = std::get_if<ast::Declaration>(&arch->decls[0]);
+    const auto *decl_item = std::get_if<ast::Declaration>(arch->decls.data());
     REQUIRE(decl_item != nullptr);
     const auto *constant = std::get_if<ast::ConstantDecl>(decl_item);
     REQUIRE(constant != nullptr);

@@ -27,9 +27,11 @@ target_compile_options(
         -Wall
         -Wcast-align
         -Wconversion
+        -Wcovered-switch-default
         -Wdeprecated
         -Wdouble-promotion
         -Werror
+        -Wexperimental-lifetime-safety
         -Wextra
         -Wfloat-conversion
         -Wfloat-equal
@@ -47,5 +49,8 @@ target_compile_options(
         -Wsuggest-destructor-override
         -Wsuggest-override
         -Wsuper-class-method-mismatch
+        -Wthread-safety
+        -Wunreachable-code-aggressive
         -Wunused
+        -Wzero-as-null-pointer-constant
 )

@@ -36,7 +36,7 @@ auto getSignalInitExpr(const ast::DesignFile &design) -> const ast::Expr *
     if ((arch == nullptr) || arch->decls.empty()) {
         return nullptr;
     }
-    const auto *decl_item = std::get_if<ast::Declaration>(&arch->decls[0]);
+    const auto *decl_item = std::get_if<ast::Declaration>(arch->decls.data());
     if (decl_item == nullptr) {
         return nullptr;
     }

@@ -27,7 +27,7 @@ TEST_CASE("Architecture: With component declarations", "[design_units][architect
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    auto *comp = std::get_if<ast::ComponentDecl>(&arch->decls[0]);
+    auto *comp = std::get_if<ast::ComponentDecl>(arch->decls.data());
     REQUIRE(comp != nullptr);
     REQUIRE(comp->name == "my_comp");
     REQUIRE(comp->generic_clause.generics.size() == 1);
