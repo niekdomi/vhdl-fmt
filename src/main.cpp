@@ -20,35 +20,45 @@ auto formatFile(const std::filesystem::path &file,
                 const auto &config,
                 const cli::ArgumentParser &argparser) -> void
 {
-    // 1. Create Context (keeps tokens alive)
-    auto ctx_orig = builder::createContext(file);
+    auto &logger = common::Logger::instance();
 
-    // 2. Build AST
-    const auto root = builder::build(ctx_orig);
+    try {
+        logger.info("Processing file: {}", file.string());
 
-    // 3. Format
-    const emit::PrettyPrinter printer{};
-    const auto doc = printer.visit(root);
-    const std::string formatted_code = doc.render(config);
+        // 1. Create Context (keeps tokens alive)
+        auto ctx_orig = builder::createContext(file);
 
-    // 4. Verify Safety
-    const auto ctx_fmt = builder::createContext(std::string_view{ formatted_code });
-    const auto result = builder::verify::ensureSafety(*ctx_orig.tokens, *ctx_fmt.tokens);
+        // 2. Build AST
+        const auto root = builder::build(ctx_orig);
 
-    // if (!result) {
-    //     logger.critical("Formatter corrupted the code semantics.");
-    //     logger.critical("{}", result.error().message);
-    //     logger.info("Aborting write to prevent data loss.");
+        // 3. Format
+        const emit::PrettyPrinter printer{};
+        const auto doc = printer.visit(root);
+        const std::string formatted_code = doc.render(config);
 
-    //     return EXIT_FAILURE;
-    // }
+        // 4. Verify Safety
+        const auto ctx_fmt = builder::createContext(std::string_view{ formatted_code });
+        const auto result = builder::verify::ensureSafety(*ctx_orig.tokens, *ctx_fmt.tokens);
 
-    // 5. Output
-    if (argparser.isFlagSet(cli::ArgumentFlag::WRITE)) {
-        std::ofstream out_file(file);
-        out_file << formatted_code;
-    } else {
-        std::cout << formatted_code;
+        // if (!result) {
+        //     logger.critical("Formatter corrupted the code semantics.");
+        //     logger.critical("{}", result.error().message);
+        //     logger.info("Aborting write to prevent data loss.");
+
+        //     return;
+        // }
+
+        // 5. Output
+        if (argparser.isFlagSet(cli::ArgumentFlag::WRITE)) {
+            std::ofstream out_file(file);
+            out_file << formatted_code;
+        } else {
+            std::cout << formatted_code;
+        }
+    } catch (const std::exception &e) {
+        logger.error("Error processing file '{}': {}", file.string(), e.what());
+        logger.warn("Skipping file due to error");
+        // Don't throw - just skip this file and continue with others
     }
 }
 } // namespace
