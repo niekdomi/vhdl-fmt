@@ -56,4 +56,28 @@ TEST_CASE("Process Rendering", "[pretty_printer][process]")
 
         REQUIRE(emit::test::render(proc) == EXPECTED);
     }
+
+    SECTION("Process with Label")
+    {
+        proc.label = "csr_write";
+        proc.sensitivity_list = { "clk", "rst" };
+
+        const auto result = emit::test::render(proc);
+        REQUIRE(result == "csr_write: process(clk, rst)\nbegin\nend process;");
+    }
+
+    SECTION("Process with Label and Body")
+    {
+        proc.label = "state_machine";
+        proc.sensitivity_list = { "clk" };
+        proc.body.emplace_back(ast::VariableAssign{ .target = ast::TokenExpr{ .text = "state" },
+                                                    .value = ast::TokenExpr{ .text = "IDLE" } });
+
+        constexpr std::string_view EXPECTED = "state_machine: process(clk)\n"
+                                              "begin\n"
+                                              "  state := IDLE;\n"
+                                              "end process;";
+
+        REQUIRE(emit::test::render(proc) == EXPECTED);
+    }
 }

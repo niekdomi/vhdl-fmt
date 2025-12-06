@@ -79,7 +79,8 @@ struct CaseStatement : NodeBase
 /// Example: `data_out <= input1 when sel = '1' else input2;`
 struct ConditionalConcurrentAssign : NodeBase
 {
-    Expr target; ///< Target signal of the assignment.
+    std::optional<std::string> label; ///< Optional statement label.
+    Expr target;                      ///< Target signal of the assignment.
 
     /// @brief Represents a waveform with an optional condition.
     ///
@@ -148,8 +149,9 @@ struct Process : NodeBase
 /// Example: `with sel select output <= "00" when "00", "11" when others;`
 struct SelectedConcurrentAssign : NodeBase
 {
-    Expr target;   ///< Target signal of the assignment.
-    Expr selector; ///< Selector expression in WITH clause.
+    std::optional<std::string> label; ///< Optional statement label.
+    Expr target;                      ///< Target signal of the assignment.
+    Expr selector;                    ///< Selector expression in WITH clause.
 
     /// @brief Represents a selection branch with choices.
     ///

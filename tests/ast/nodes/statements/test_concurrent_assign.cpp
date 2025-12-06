@@ -107,3 +107,91 @@ TEST_CASE("Concurrent Assignments", "[statements][concurrent_assign]")
         }
     }
 }
+
+TEST_CASE("Conditional assignment with label", "[statements][concurrent_assign][label]")
+{
+    constexpr std::string_view VHDL_FILE
+      = "entity E is end E;\n"
+        "architecture A of E is\n"
+        "    signal data_out, data_in : bit;\n"
+        "    signal sel : bit;\n"
+        "begin\n"
+        "    mux_select: data_out <= data_in when sel = '1' else '0';\n"
+        "end A;";
+
+    const auto design = builder::buildFromString(VHDL_FILE);
+
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    REQUIRE(arch != nullptr);
+    REQUIRE(arch->stmts.size() == 1);
+
+    const auto *assign = std::get_if<ast::ConditionalConcurrentAssign>(arch->stmts.data());
+    REQUIRE(assign != nullptr);
+
+    SECTION("Label is captured")
+    {
+        REQUIRE(assign->label.has_value());
+        CHECK(assign->label.value() == "mux_select");
+    }
+
+    SECTION("Target and waveforms are correct")
+    {
+        CHECK(std::get<ast::TokenExpr>(assign->target).text == "data_out");
+        REQUIRE(assign->waveforms.size() == 2);
+    }
+}
+
+TEST_CASE("Selected assignment with label", "[statements][concurrent_assign][label]")
+{
+    constexpr std::string_view VHDL_FILE = "entity E is end E;\n"
+                                           "architecture A of E is\n"
+                                           "    signal data_out : bit;\n"
+                                           "    signal counter : bit;\n"
+                                           "begin\n"
+                                           "    decoder: with counter select\n"
+                                           "        data_out <= '0' when '0',\n"
+                                           "                    '1' when others;\n"
+                                           "end A;";
+
+    const auto design = builder::buildFromString(VHDL_FILE);
+
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    REQUIRE(arch != nullptr);
+    REQUIRE(arch->stmts.size() == 1);
+
+    const auto *assign = std::get_if<ast::SelectedConcurrentAssign>(arch->stmts.data());
+    REQUIRE(assign != nullptr);
+
+    SECTION("Label is captured")
+    {
+        REQUIRE(assign->label.has_value());
+        CHECK(assign->label.value() == "decoder");
+    }
+
+    SECTION("Selector and target are correct")
+    {
+        CHECK(std::get<ast::TokenExpr>(assign->selector).text == "counter");
+        CHECK(std::get<ast::TokenExpr>(assign->target).text == "data_out");
+        REQUIRE(assign->selections.size() == 2);
+    }
+}
+
+TEST_CASE("Concurrent assignment without label", "[statements][concurrent_assign][label]")
+{
+    constexpr std::string_view VHDL_FILE = "entity E is end E;\n"
+                                           "architecture A of E is\n"
+                                           "    signal a, b : bit;\n"
+                                           "begin\n"
+                                           "    a <= b;\n"
+                                           "end A;";
+
+    const auto design = builder::buildFromString(VHDL_FILE);
+
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    REQUIRE(arch != nullptr);
+
+    const auto *assign = std::get_if<ast::ConditionalConcurrentAssign>(arch->stmts.data());
+    REQUIRE(assign != nullptr);
+
+    CHECK_FALSE(assign->label.has_value());
+}

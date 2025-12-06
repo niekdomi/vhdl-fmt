@@ -5,6 +5,7 @@
 #include "nodes/statements.hpp"
 #include "vhdlParser.h"
 
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -95,11 +96,12 @@ auto Translator::makeArchitectureDeclarativePart(
             items.emplace_back(ast::Declaration(makeConstantDecl(*const_ctx)));
         } else if (auto *sig_ctx = item->signal_declaration()) {
             items.emplace_back(ast::Declaration(makeSignalDecl(*sig_ctx)));
+        } else if (auto *type_ctx = item->type_declaration()) {
+            items.emplace_back(ast::Declaration(makeTypeDecl(*type_ctx)));
         } else if (auto *comp_ctx = item->component_declaration()) {
             items.emplace_back(makeComponentDecl(*comp_ctx));
         }
-        // TODO(someone): Add more declaration types as needed (variables, types, subprograms,
-        // etc.)
+        // TODO(someone): Add more declaration types as needed (variables, subprograms, etc.)
     }
 
     return items;
@@ -114,7 +116,16 @@ auto Translator::makeArchitectureStatementPart(vhdlParser::Architecture_statemen
         if (auto *proc = stmt->process_statement()) {
             stmts.emplace_back(makeProcess(*proc));
         } else if (auto *sig_assign = stmt->concurrent_signal_assignment_statement()) {
-            stmts.emplace_back(makeConcurrentAssign(*sig_assign));
+            // Extract label from architecture_statement level
+            auto *label = stmt->label_colon();
+            auto *label_id = (label != nullptr) ? label->identifier() : nullptr;
+            std::optional<std::string> label_str;
+
+            if (label_id != nullptr) {
+                label_str = label_id->getText();
+            }
+
+            stmts.emplace_back(makeConcurrentAssign(*sig_assign, label_str));
         }
         // TODO(someone): Add more concurrent statement types (component instantiation,
         // generate, etc.)

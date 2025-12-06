@@ -14,6 +14,7 @@ add_executable(
     nodes/declarations/test_generic_param.cpp
     nodes/declarations/test_port.cpp
     nodes/declarations/test_signal.cpp
+    nodes/declarations/test_type.cpp
     #
     # Expressions
     nodes/expressions/test_binary.cpp
