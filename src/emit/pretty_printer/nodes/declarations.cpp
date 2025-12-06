@@ -15,7 +15,7 @@ struct AlignmentLevel
     static constexpr int TYPE = 1; ///< Column 1: Used for mode/type (port mode, type name)
 };
 
-auto PrettyPrinter::operator()(const ast::GenericParam &node, std::string_view delimiter) const -> Doc
+auto PrettyPrinter::operator()(const ast::GenericParam &node, const bool is_last) const -> Doc
 {
     const std::string names = node.names
                             | std::views::join_with(std::string_view{ ", " })
@@ -29,10 +29,14 @@ auto PrettyPrinter::operator()(const ast::GenericParam &node, std::string_view d
         result &= Doc::text(":=") & visit(node.default_expr.value());
     }
 
+    if (!is_last) {
+        result += Doc::text(";");
+    }
+
     return result;
 }
 
-auto PrettyPrinter::operator()(const ast::Port &node, std::string_view delimiter) const -> Doc
+auto PrettyPrinter::operator()(const ast::Port &node, const bool is_last) const -> Doc
 {
     const std::string names = node.names
                             | std::views::join_with(std::string_view{ ", " })
@@ -50,6 +54,10 @@ auto PrettyPrinter::operator()(const ast::Port &node, std::string_view delimiter
 
     if (node.default_expr) {
         result &= Doc::text(":=") & visit(node.default_expr.value());
+    }
+
+    if (!is_last) {
+        result += Doc::text(";");
     }
 
     return result;

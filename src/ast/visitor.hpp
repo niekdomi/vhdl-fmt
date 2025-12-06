@@ -22,7 +22,7 @@ class VisitorBase
         if constexpr (std::is_void_v<ReturnType>) {
             self(node, std::forward<Args>(args)...);
         } else {
-            return self.wrapResult(node, self(node, std::forward<Args>(args)...), std::forward<Args>(args)...);
+            return self.wrapResult(node, self(node, std::forward<Args>(args)...));
         }
     }
 

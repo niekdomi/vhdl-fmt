@@ -16,19 +16,16 @@ auto PrettyPrinter::operator()(const ast::GenericClause &node) const -> Doc
     const Doc opener = Doc::text("generic") & Doc::text("(");
     const Doc closer = Doc::text(");");
 
-    // Build generic list with semicolon delimiters
-    Doc doc = Doc::empty();
-    for (size_t i = 0; i < node.generics.size(); ++i) {
-        if (i > 0) {
-            doc += Doc::line();
-        }
+    const Doc generics = joinMap(
+      node.generics,
+      Doc::line(),
+      [&](const auto &param) {
+          const bool is_last = &param == &node.generics.back();
+          return visit(param, is_last);
+      },
+      false);
 
-        // Pass ";" delimiter for all generics except the last one
-        const bool is_last = (i == node.generics.size() - 1);
-        doc += visit(node.generics[i], is_last ? "" : ";");
-    }
-
-    const Doc result = Doc::align(doc);
+    const Doc result = Doc::align(generics);
 
     return Doc::group(Doc::bracket(opener, result, closer));
 }
@@ -42,19 +39,16 @@ auto PrettyPrinter::operator()(const ast::PortClause &node) const -> Doc
     const Doc opener = Doc::text("port") & Doc::text("(");
     const Doc closer = Doc::text(");");
 
-    // Build port list with semicolon delimiters
-    Doc doc = Doc::empty();
-    for (size_t i = 0; i < node.ports.size(); ++i) {
-        if (i > 0) {
-            doc += Doc::line();
-        }
+    const Doc ports = joinMap(
+      node.ports,
+      Doc::line(),
+      [&](const auto &port) {
+          const bool is_last = &port == &node.ports.back();
+          return visit(port, is_last);
+      },
+      false);
 
-        // Pass ";" delimiter for all ports except the last one
-        const bool is_last = (i == node.ports.size() - 1);
-        doc += visit(node.ports[i], is_last ? "" : ";");
-    }
-
-    const Doc result = Doc::align(doc);
+    const Doc result = Doc::align(ports);
 
     return Doc::group(Doc::bracket(opener, result, closer));
 }
