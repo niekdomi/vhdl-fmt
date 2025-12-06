@@ -64,16 +64,14 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     auto operator()(const ast::RangeConstraint &node) const -> Doc;
 
     // Concurrent Statements
+    auto operator()(const ast::Process &node) const -> Doc;
+    auto operator()(const ast::Waveform &node) const -> Doc;
     auto operator()(const ast::Waveform::Element &node, bool is_last) const -> Doc;
     auto operator()(const ast::Waveform::Element &node) const -> Doc { return (*this)(node, true); }
-    auto operator()(const ast::Waveform &node) const -> Doc;
     auto operator()(const ast::ConditionalConcurrentAssign &node) const -> Doc;
     auto operator()(const ast::ConditionalConcurrentAssign::ConditionalWaveform &node) const -> Doc;
-    auto operator()(const ast::Process &node) const -> Doc;
     auto operator()(const ast::SelectedConcurrentAssign &node) const -> Doc;
     auto operator()(const ast::SelectedConcurrentAssign::Selection &node) const -> Doc;
-    auto operator()(const ast::Waveform &node) const -> Doc;
-    auto operator()(const ast::Waveform::Element &node) const -> Doc;
 
     // Sequential Statements
     auto operator()(const ast::CaseStatement &node) const -> Doc;
