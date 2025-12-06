@@ -12,7 +12,7 @@
 
 namespace {
 
-// ... helpers remain the same ...
+// Helper functions for test setup
 auto makeGeneric(std::string name, std::string type, std::string def_val) -> ast::GenericParam
 {
     return ast::GenericParam{ .names = { std::move(name) },
