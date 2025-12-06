@@ -18,4 +18,3 @@ ignorePaths:
   - "grammars/"
   - "clang.profile"
   - "Dockerfile"
-  - "docker-compose.yml"
