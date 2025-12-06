@@ -48,6 +48,11 @@ class Translator final
     [[nodiscard]] auto makeGenericClause(vhdlParser::Generic_clauseContext &ctx) -> ast::GenericClause;
     [[nodiscard]] auto makePortClause(vhdlParser::Port_clauseContext &ctx) -> ast::PortClause;
 
+    // Context clauses
+    [[nodiscard]] auto makeContextClause(vhdlParser::Context_clauseContext &ctx) -> std::vector<ast::ContextItem>;
+    [[nodiscard]] auto makeLibraryClause(vhdlParser::Library_clauseContext &ctx) -> ast::LibraryClause;
+    [[nodiscard]] auto makeUseClause(vhdlParser::Use_clauseContext &ctx) -> ast::UseClause;
+
     // Declarations
     [[nodiscard]] auto makeConstantDecl(vhdlParser::Constant_declarationContext &ctx) -> ast::ConstantDecl;
     [[nodiscard]] auto makeGenericParam(vhdlParser::Interface_constant_declarationContext &ctx) -> ast::GenericParam;
