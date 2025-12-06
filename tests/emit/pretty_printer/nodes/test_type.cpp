@@ -63,13 +63,13 @@ TEST_CASE("TypeDecl: Record type rendering", "[pretty_printer][type]")
         type_decl.record_elements.push_back(std::move(elem2));
         type_decl.record_elements.push_back(std::move(elem3));
 
-        const std::string expected = "type ctrl_engine_t is record\n"
-                                     "  state : ctrl_state_t;\n"
-                                     "  start : std_ulogic;\n"
-                                     "  valid : std_ulogic;\n"
-                                     "end record;";
+        constexpr std::string_view EXPECTED = "type ctrl_engine_t is record\n"
+                                              "  state : ctrl_state_t;\n"
+                                              "  start : std_ulogic;\n"
+                                              "  valid : std_ulogic;\n"
+                                              "end record;";
 
-        REQUIRE(emit::test::render(type_decl) == expected);
+        REQUIRE(emit::test::render(type_decl) == EXPECTED);
     }
 
     SECTION("Record with multiple names in one element")
@@ -85,12 +85,12 @@ TEST_CASE("TypeDecl: Record type rendering", "[pretty_printer][type]")
         type_decl.record_elements.push_back(std::move(elem1));
         type_decl.record_elements.push_back(std::move(elem2));
 
-        const std::string expected = "type ctrl_engine_t is record\n"
-                                     "  ready, valid, done : std_ulogic;\n"
-                                     "  data : std_logic_vector;\n"
-                                     "end record;";
+        constexpr std::string_view EXPECTED = "type ctrl_engine_t is record\n"
+                                              "  ready, valid, done : std_ulogic;\n"
+                                              "  data : std_logic_vector;\n"
+                                              "end record;";
 
-        REQUIRE(emit::test::render(type_decl) == expected);
+        REQUIRE(emit::test::render(type_decl) == EXPECTED);
     }
 
     SECTION("Record with end label")
@@ -103,11 +103,11 @@ TEST_CASE("TypeDecl: Record type rendering", "[pretty_printer][type]")
         type_decl.record_elements.push_back(std::move(elem));
         type_decl.end_label = "data_t";
 
-        const std::string expected = "type data_t is record\n"
-                                     "  value : integer;\n"
-                                     "end record data_t;";
+        constexpr std::string_view EXPECTED = "type data_t is record\n"
+                                              "  value : integer;\n"
+                                              "end record data_t;";
 
-        REQUIRE(emit::test::render(type_decl) == expected);
+        REQUIRE(emit::test::render(type_decl) == EXPECTED);
     }
 
     SECTION("Empty record")
@@ -134,11 +134,11 @@ TEST_CASE("TypeDecl: Record type rendering", "[pretty_printer][type]")
 
         type_decl.record_elements.push_back(std::move(elem1));
 
-        const std::string expected = "type ctrl_engine_t is record\n"
-                                     "  address : std_logic_vector(7 downto 0);\n"
-                                     "end record;";
+        constexpr std::string_view EXPECTED = "type ctrl_engine_t is record\n"
+                                              "  address : std_logic_vector(7 downto 0);\n"
+                                              "end record;";
 
-        REQUIRE(emit::test::render(type_decl) == expected);
+        REQUIRE(emit::test::render(type_decl) == EXPECTED);
     }
 }
 
