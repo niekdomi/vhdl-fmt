@@ -31,7 +31,7 @@ class VisitorBase
     auto visit(this const Self &self, const std::variant<Ts...> &node, Args &&...args) -> ReturnType
     {
         return std::visit(
-          [&self, &args...](const auto &n) -> ReturnType {
+          [&](const auto &n) -> ReturnType {
               return self.visit(n, std::forward<Args>(args)...);
           },
           node);
