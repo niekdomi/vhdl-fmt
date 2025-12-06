@@ -22,6 +22,7 @@ target_link_libraries(
         common
         builder
         emit
+        TBB::tbb
 )
 
 # Static linking for distribution builds

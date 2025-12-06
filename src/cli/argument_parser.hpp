@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <optional>
 #include <span>
+#include <vector>
 
 namespace cli {
 
@@ -23,10 +24,10 @@ class ArgumentParser final
     explicit ArgumentParser(std::span<const char *const> args);
 
     [[nodiscard]]
-    auto getConfigPath() const noexcept -> const std::optional<std::filesystem::path> &;
+    auto getConfigFilePath() const noexcept -> const std::optional<std::filesystem::path> &;
 
     [[nodiscard]]
-    auto getInputPath() const noexcept -> const std::filesystem::path &;
+    auto getFilesToFormat() const -> std::vector<std::filesystem::path>;
 
     [[nodiscard]]
     auto isFlagSet(ArgumentFlag flag) const noexcept -> bool;
