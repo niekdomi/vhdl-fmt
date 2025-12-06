@@ -11,11 +11,13 @@
 namespace ast {
 
 // Forward declarations
+struct AttributeExpr;
 struct BinaryExpr;
 struct CallExpr;
 struct GroupExpr;
 struct ParenExpr;
 struct PhysicalLiteral;
+struct QualifiedExpr;
 struct TokenExpr;
 struct UnaryExpr;
 
@@ -29,8 +31,15 @@ using Box = std::unique_ptr<T>;
 /// @brief Variant type for all expressions (holds values, not pointers).
 ///
 /// Example: `TokenExpr`, `BinaryExpr`, or `CallExpr`
-using Expr
-  = std::variant<TokenExpr, GroupExpr, UnaryExpr, BinaryExpr, ParenExpr, CallExpr, PhysicalLiteral>;
+using Expr = std::variant<TokenExpr,
+                          GroupExpr,
+                          UnaryExpr,
+                          BinaryExpr,
+                          ParenExpr,
+                          CallExpr,
+                          AttributeExpr,
+                          QualifiedExpr,
+                          PhysicalLiteral>;
 
 /// @brief Represents a binary expression.
 ///
@@ -93,14 +102,31 @@ struct UnaryExpr : NodeBase
     Box<Expr> value; ///< Operand expression (boxed for recursion).
 };
 
+/// @brief Represents an attribute reference.
+///
+/// Example: `data'length`, `clk'event`, `signal_name'stable(5 ns)`
+struct AttributeExpr : NodeBase
+{
+    Box<Expr> prefix;                      ///< Base expression (signal, type, array, etc.).
+    std::string attribute;                 ///< Attribute name (e.g., "length", "event", "stable").
+    std::optional<Box<Expr>> arg;          ///< Optional parameter for attributes like 'stable(5 ns).
+};
+
+/// @brief Represents a qualified expression (type qualification).
+///
+/// Example: `std_logic_vector'(x"AB")`, `integer'(42)`
+struct QualifiedExpr : NodeBase
+{
+    std::string type_mark;  ///< Type qualifier/mark (e.g., "std_logic_vector", "integer").
+    Box<Expr> operand;      ///< Expression being qualified (aggregate or parenthesized expression).
+};
+
 // -------------------------------------------------------
 // Forward declarations
 struct IndexConstraint;
 struct RangeConstraint;
 
 /// @brief Variant type for constraints used in type declarations.
-struct IndexConstraint;
-struct RangeConstraint;
 ///
 /// Example: `IndexConstraint` or `RangeConstraint`
 using Constraint = std::variant<IndexConstraint, RangeConstraint>;

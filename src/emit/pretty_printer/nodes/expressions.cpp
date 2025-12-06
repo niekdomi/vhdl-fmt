@@ -46,6 +46,22 @@ auto PrettyPrinter::operator()(const ast::BinaryExpr &node) const -> Doc
     return visit(*node.left) & Doc::text(node.op) & visit(*node.right);
 }
 
+auto PrettyPrinter::operator()(const ast::AttributeExpr &node) const -> Doc
+{
+    Doc result = visit(*node.prefix) + Doc::text("'") + Doc::text(node.attribute);
+
+    if (node.arg.has_value()) {
+        result += Doc::text("(") + visit(**node.arg) + Doc::text(")");
+    }
+
+    return result;
+}
+
+auto PrettyPrinter::operator()(const ast::QualifiedExpr &node) const -> Doc
+{
+    return Doc::text(node.type_mark) + Doc::text("'") + visit(*node.operand);
+}
+
 auto PrettyPrinter::operator()(const ast::ParenExpr &node) const -> Doc
 {
     return Doc::text("(") + visit(*node.inner) + Doc::text(")");

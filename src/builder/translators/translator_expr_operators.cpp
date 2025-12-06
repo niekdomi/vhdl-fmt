@@ -151,7 +151,7 @@ auto Translator::makePrimary(vhdlParser::PrimaryContext &ctx) -> ast::Expr
 auto Translator::makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx) -> ast::Expr
 {
     // qualified_expression: subtype_indication APOSTROPHE (aggregate | LPAREN expression RPAREN)
-    // Represented as: BinaryExpr with op="'"
+    // Build the operand (aggregate or parenthesized expression)
     ast::Expr value_expr = [&]() -> ast::Expr {
         if (auto *agg = ctx.aggregate()) {
             return makeAggregate(*agg);
@@ -171,7 +171,11 @@ auto Translator::makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx)
         return value_expr;
     }
 
-    return makeBinary(ctx, "'", makeToken(*subtype), std::move(value_expr));
+    // Create QualifiedExpr node
+    return build<ast::QualifiedExpr>(ctx)
+      .set(&ast::QualifiedExpr::type_mark, subtype->getText())
+      .setBox(&ast::QualifiedExpr::operand, std::move(value_expr))
+      .build();
 }
 
 auto Translator::makeAllocator(vhdlParser::AllocatorContext &ctx) -> ast::Expr

@@ -24,6 +24,8 @@ concept IsExpression = std::is_same_v<T, ast::TokenExpr>
                     || std::is_same_v<T, ast::BinaryExpr>
                     || std::is_same_v<T, ast::ParenExpr>
                     || std::is_same_v<T, ast::CallExpr>
+                    || std::is_same_v<T, ast::AttributeExpr>
+                    || std::is_same_v<T, ast::QualifiedExpr>
                     || std::is_same_v<T, ast::PhysicalLiteral>;
 
 class PrettyPrinter final : public ast::VisitorBase<Doc>
@@ -51,11 +53,13 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     auto operator()(const ast::VariableDecl &node) const -> Doc;
 
     // Expressions
+    auto operator()(const ast::AttributeExpr &node) const -> Doc;
     auto operator()(const ast::BinaryExpr &node) const -> Doc;
     auto operator()(const ast::CallExpr &node) const -> Doc;
     auto operator()(const ast::GroupExpr &node) const -> Doc;
     auto operator()(const ast::ParenExpr &node) const -> Doc;
     auto operator()(const ast::PhysicalLiteral &node) const -> Doc;
+    auto operator()(const ast::QualifiedExpr &node) const -> Doc;
     auto operator()(const ast::TokenExpr &node) const -> Doc;
     auto operator()(const ast::UnaryExpr &node) const -> Doc;
 

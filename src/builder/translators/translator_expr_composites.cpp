@@ -22,6 +22,16 @@ auto Translator::makeAggregate(vhdlParser::AggregateContext &ctx) -> ast::Expr
 
 auto Translator::makeElementAssociation(vhdlParser::Element_associationContext &ctx) -> ast::Expr
 {
+    // element_association: (choices ARROW)? expression
+    // If no choices, this is positional notation - return just the expression
+    if (ctx.choices() == nullptr) {
+        if (auto *expr = ctx.expression()) {
+            return makeExpr(*expr);
+        }
+        return makeToken(ctx);
+    }
+
+    // Named association: choices => expression
     return build<ast::BinaryExpr>(ctx)
       .set(&ast::BinaryExpr::op, "=>")
       .maybeBox(
