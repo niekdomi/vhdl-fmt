@@ -30,11 +30,7 @@ auto PrettyPrinter::operator()(const ast::GenericParam &node, const bool is_last
         result &= Doc::text(":=") & visit(node.default_expr.value());
     }
 
-    if (!is_last) {
-        result += Doc::text(";");
-    }
-
-    return result;
+    return is_last ? result : result + Doc::text(";");
 }
 
 auto PrettyPrinter::operator()(const ast::Port &node, const bool is_last) const -> Doc
@@ -57,11 +53,7 @@ auto PrettyPrinter::operator()(const ast::Port &node, const bool is_last) const 
         result &= Doc::text(":=") & visit(node.default_expr.value());
     }
 
-    if (!is_last) {
-        result += Doc::text(";");
-    }
-
-    return result;
+    return is_last ? result : result + Doc::text(";");
 }
 
 auto PrettyPrinter::operator()(const ast::SignalDecl &node) const -> Doc
