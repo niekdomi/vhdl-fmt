@@ -10,6 +10,7 @@
 #include <format>
 #include <iostream>
 #include <optional>
+#include <ranges>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -31,19 +32,30 @@ ArgumentParser::ArgumentParser(std::span<const char *const> args)
     parseArguments(args);
 }
 
-auto ArgumentParser::getConfigPath() const noexcept -> const std::optional<std::filesystem::path> &
+auto ArgumentParser::getConfigFilePath() const noexcept
+  -> const std::optional<std::filesystem::path> &
 {
     return config_file_path_;
-}
-
-auto ArgumentParser::getInputPath() const noexcept -> const std::filesystem::path &
-{
-    return input_path_;
 }
 
 auto ArgumentParser::isFlagSet(ArgumentFlag flag) const noexcept -> bool
 {
     return used_flags_.test(static_cast<std::size_t>(flag));
+}
+
+auto ArgumentParser::getFilesToFormat() const -> std::vector<std::filesystem::path>
+{
+    if (std::filesystem::is_regular_file(input_path_)) {
+        return { input_path_ };
+    }
+
+    return std::filesystem::recursive_directory_iterator(input_path_)
+         | std::views::filter([](const auto &entry) {
+               return entry.is_regular_file()
+                   && (entry.path().extension() == ".vhd" || entry.path().extension() == ".vhdl");
+           })
+         | std::views::transform([](const auto &entry) { return entry.path(); })
+         | std::ranges::to<std::vector>();
 }
 
 auto ArgumentParser::parseArguments(std::span<const char *const> args) -> void

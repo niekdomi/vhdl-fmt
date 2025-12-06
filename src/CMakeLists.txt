@@ -16,6 +16,7 @@ target_link_libraries(
         common
         builder
         emit
+        onetbb::onetbb
 )
 
 target_compile_options(
