@@ -24,7 +24,9 @@ TEST_CASE("SignalDecl: Single signal with type", "[declarations][signal]")
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    const auto *signal = std::get_if<ast::SignalDecl>(arch->decls.data());
+    const auto *decl_item = std::get_if<ast::Declaration>(&arch->decls[0]);
+    REQUIRE(decl_item != nullptr);
+    const auto *signal = std::get_if<ast::SignalDecl>(decl_item);
     REQUIRE(signal != nullptr);
     REQUIRE(signal->names.size() == 1);
     REQUIRE(signal->names[0] == "temp");
@@ -47,7 +49,9 @@ TEST_CASE("SignalDecl: Signal with initialization", "[declarations][signal]")
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    const auto *signal = std::get_if<ast::SignalDecl>(arch->decls.data());
+    const auto *decl_item = std::get_if<ast::Declaration>(&arch->decls[0]);
+    REQUIRE(decl_item != nullptr);
+    const auto *signal = std::get_if<ast::SignalDecl>(decl_item);
     REQUIRE(signal != nullptr);
     REQUIRE(signal->names.size() == 1);
     REQUIRE(signal->names[0] == "count");
@@ -70,7 +74,9 @@ TEST_CASE("SignalDecl: Multiple signals same declaration", "[declarations][signa
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    const auto *signal = std::get_if<ast::SignalDecl>(arch->decls.data());
+    const auto *decl_item = std::get_if<ast::Declaration>(&arch->decls[0]);
+    REQUIRE(decl_item != nullptr);
+    const auto *signal = std::get_if<ast::SignalDecl>(decl_item);
     REQUIRE(signal != nullptr);
     REQUIRE(signal->names.size() == 3);
     REQUIRE(signal->names[0] == "clk");

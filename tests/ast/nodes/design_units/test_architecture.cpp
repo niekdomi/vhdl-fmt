@@ -25,12 +25,13 @@ TEST_CASE("Architecture: With component declarations", "[design_units][architect
 
     auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
-    REQUIRE(arch->components.size() == 1);
+    REQUIRE(arch->decls.size() == 1);
 
-    const auto &comp = arch->components[0];
-    REQUIRE(comp.name == "my_comp");
-    REQUIRE(comp.generic_clause.generics.size() == 1);
-    REQUIRE(comp.port_clause.ports.size() == 1);
+    auto *comp = std::get_if<ast::ComponentDecl>(&arch->decls[0]);
+    REQUIRE(comp != nullptr);
+    REQUIRE(comp->name == "my_comp");
+    REQUIRE(comp->generic_clause.generics.size() == 1);
+    REQUIRE(comp->port_clause.ports.size() == 1);
 }
 
 TEST_CASE("Architecture: Basic architecture without statements", "[design_units][architecture]")

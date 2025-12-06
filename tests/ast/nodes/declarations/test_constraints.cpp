@@ -23,7 +23,10 @@ TEST_CASE("Signal with index constraint (array)", "[declarations][constraints]")
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    const auto *signal = std::get_if<ast::SignalDecl>(arch->decls.data());
+    const auto *decl_item = std::get_if<ast::Declaration>(arch->decls.data());
+    REQUIRE(decl_item != nullptr);
+
+    const auto *signal = std::get_if<ast::SignalDecl>(decl_item);
     REQUIRE(signal != nullptr);
     REQUIRE(signal->names[0] == "data");
     REQUIRE(signal->type_name == "std_logic_vector");
@@ -82,7 +85,9 @@ TEST_CASE("Signal with 'to' direction constraint", "[declarations][constraints]"
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    const auto *signal = std::get_if<ast::SignalDecl>(arch->decls.data());
+    const auto *decl_item = std::get_if<ast::Declaration>(arch->decls.data());
+    REQUIRE(decl_item != nullptr);
+    const auto *signal = std::get_if<ast::SignalDecl>(decl_item);
     REQUIRE(signal != nullptr);
     REQUIRE(signal->type_name == "bit_vector");
     REQUIRE(signal->constraint.has_value());

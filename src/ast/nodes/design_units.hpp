@@ -76,22 +76,6 @@ struct Entity : NodeBase
     bool has_end_entity_keyword{ false };   ///< Whether END ENTITY syntax is used.
 };
 
-/// @brief Represents a VHDL architecture body.
-///
-/// Example: `architecture rtl of counter is begin process(clk) begin end process; end architecture
-/// rtl;`
-struct Architecture : NodeBase
-{
-    std::vector<ContextItem> context;           ///< Library and use clauses.
-    std::string name;                           ///< Architecture identifier.
-    std::string entity_name;                    ///< Name of the associated entity.
-    std::vector<ComponentDecl> components;      ///< Component declarations.
-    std::vector<Declaration> decls;             ///< Architecture declarative items.
-    std::vector<ConcurrentStatement> stmts;     ///< Architecture concurrent statements.
-    std::optional<std::string> end_label;       ///< Optional label after END keyword.
-    bool has_end_architecture_keyword{ false }; ///< Whether END ARCHITECTURE syntax is used.
-};
-
 /// @brief Represents a VHDL component declaration.
 ///
 /// Example: `component my_comp is generic (WIDTH : integer); port (clk : in std_logic); end
@@ -103,6 +87,26 @@ struct ComponentDecl : NodeBase
     PortClause port_clause;               ///< Port declarations clause.
     std::optional<std::string> end_label; ///< Optional label after END COMPONENT.
     bool has_is_keyword{ false };         ///< Whether IS keyword is present.
+};
+
+/// @brief Variant type for architecture declarative items (preserves order).
+///
+/// Example: `ConstantDecl`, `SignalDecl`, `ComponentDecl`
+using DeclarativeItem = std::variant<Declaration, ComponentDecl>;
+
+/// @brief Represents a VHDL architecture body.
+///
+/// Example: `architecture rtl of counter is begin process(clk) begin end process; end architecture
+/// rtl;`
+struct Architecture : NodeBase
+{
+    std::vector<ContextItem> context;           ///< Library and use clauses.
+    std::string name;                           ///< Architecture identifier.
+    std::string entity_name;                    ///< Name of the associated entity.
+    std::vector<DeclarativeItem> decls;         ///< Architecture declarative items.
+    std::vector<ConcurrentStatement> stmts;     ///< Architecture concurrent statements.
+    std::optional<std::string> end_label;       ///< Optional label after END keyword.
+    bool has_end_architecture_keyword{ false }; ///< Whether END ARCHITECTURE syntax is used.
 };
 
 } // namespace ast

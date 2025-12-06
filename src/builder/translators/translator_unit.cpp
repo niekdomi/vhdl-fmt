@@ -68,44 +68,39 @@ auto Translator::makeEntity(vhdlParser::Entity_declarationContext &ctx) -> ast::
 
 auto Translator::makeArchitecture(vhdlParser::Architecture_bodyContext &ctx) -> ast::Architecture
 {
-    ast::Architecture arch
-      = build<ast::Architecture>(ctx)
-          .set(&ast::Architecture::name, ctx.identifier(0)->getText())
-          .set(&ast::Architecture::entity_name, ctx.identifier(1)->getText())
-          .set(&ast::Architecture::has_end_architecture_keyword, ctx.ARCHITECTURE().size() > 1)
-          .maybe(
-            &ast::Architecture::end_label, ctx.identifier(2), [](auto &id) { return id.getText(); })
-          .maybe(&ast::Architecture::stmts,
-                 ctx.architecture_statement_part(),
-                 [&](auto &sp) { return makeArchitectureStatementPart(sp); })
-          .build();
-
-    if (auto *dp = ctx.architecture_declarative_part()) {
-        arch.decls = makeArchitectureDeclarativePart(*dp, arch.components);
-    }
-
-    return arch;
+    return build<ast::Architecture>(ctx)
+      .set(&ast::Architecture::name, ctx.identifier(0)->getText())
+      .set(&ast::Architecture::entity_name, ctx.identifier(1)->getText())
+      .set(&ast::Architecture::has_end_architecture_keyword, ctx.ARCHITECTURE().size() > 1)
+      .maybe(
+        &ast::Architecture::end_label, ctx.identifier(2), [](auto &id) { return id.getText(); })
+      .maybe(&ast::Architecture::decls,
+             ctx.architecture_declarative_part(),
+             [&](auto &dp) { return makeArchitectureDeclarativePart(dp); })
+      .maybe(&ast::Architecture::stmts,
+             ctx.architecture_statement_part(),
+             [&](auto &sp) { return makeArchitectureStatementPart(sp); })
+      .build();
 }
 
 auto Translator::makeArchitectureDeclarativePart(
-  vhdlParser::Architecture_declarative_partContext &ctx,
-  std::vector<ast::ComponentDecl> &components) -> std::vector<ast::Declaration>
+  vhdlParser::Architecture_declarative_partContext &ctx) -> std::vector<ast::DeclarativeItem>
 {
-    std::vector<ast::Declaration> decls{};
+    std::vector<ast::DeclarativeItem> items{};
 
     for (auto *item : ctx.block_declarative_item()) {
         if (auto *const_ctx = item->constant_declaration()) {
-            decls.emplace_back(makeConstantDecl(*const_ctx));
+            items.emplace_back(ast::Declaration(makeConstantDecl(*const_ctx)));
         } else if (auto *sig_ctx = item->signal_declaration()) {
-            decls.emplace_back(makeSignalDecl(*sig_ctx));
+            items.emplace_back(ast::Declaration(makeSignalDecl(*sig_ctx)));
         } else if (auto *comp_ctx = item->component_declaration()) {
-            components.emplace_back(makeComponentDecl(*comp_ctx));
+            items.emplace_back(makeComponentDecl(*comp_ctx));
         }
         // TODO(someone): Add more declaration types as needed (variables, types, subprograms,
         // etc.)
     }
 
-    return decls;
+    return items;
 }
 
 auto Translator::makeArchitectureStatementPart(vhdlParser::Architecture_statement_partContext &ctx)

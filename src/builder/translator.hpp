@@ -40,7 +40,7 @@ class Translator final
 
     // Design units
     [[nodiscard]] auto makeArchitecture(vhdlParser::Architecture_bodyContext &ctx) -> ast::Architecture;
-    [[nodiscard]] auto makeArchitectureDeclarativePart(vhdlParser::Architecture_declarative_partContext &ctx, std::vector<ast::ComponentDecl> &components) -> std::vector<ast::Declaration>;
+    [[nodiscard]] auto makeArchitectureDeclarativePart(vhdlParser::Architecture_declarative_partContext &ctx) -> std::vector<ast::DeclarativeItem>;
     [[nodiscard]] auto makeArchitectureStatementPart(vhdlParser::Architecture_statement_partContext &ctx) -> std::vector<ast::ConcurrentStatement>;
     [[nodiscard]] auto makeEntity(vhdlParser::Entity_declarationContext &ctx) -> ast::Entity;
 

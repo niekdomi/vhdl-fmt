@@ -86,13 +86,9 @@ auto PrettyPrinter::operator()(const ast::Architecture &node) const -> Doc
         *result /= arch_line;
     }
 
-    // Components
+    // Declarative items (components, constants, signals, etc. - in order)
     *result = std::ranges::fold_left(
-      node.components, *result, [this](auto acc, const auto &comp) { return acc <<= visit(comp); });
-
-    // Declarations
-    *result = std::ranges::fold_left(
-      node.decls, *result, [this](auto acc, const auto &decl) { return acc <<= visit(decl); });
+      node.decls, *result, [this](auto acc, const auto &item) { return acc <<= visit(item); });
 
     // begin
     *result /= Doc::text("begin");
