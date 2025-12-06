@@ -47,9 +47,9 @@ auto Doc::alignText(std::string_view str, int level) -> Doc
     return Doc(makeAlignText(str, level));
 }
 
-auto Doc::inlineComment(std::string_view text) -> Doc
+auto Doc::inlineComment(const Doc &doc) -> Doc
 {
-    return Doc(makeInlineComment(text));
+    return Doc(makeInlineComment(doc.impl_));
 }
 
 // ========================================================================

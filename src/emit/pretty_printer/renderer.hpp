@@ -41,7 +41,7 @@ class Renderer final
     static auto fitsImpl(int width, const DocPtr &doc) -> int;
 
     // Helper to flush pending comments
-    void flushComments();
+    void flushComments(int indent);
 
     // Output helpers
     void write(std::string_view text);
@@ -53,7 +53,8 @@ class Renderer final
     bool align_{ false };
     int column_{ 0 };
     std::string output_;
-    std::vector<std::string> pending_comments_;
+    std::vector<DocPtr> pending_comments_;
+    bool flushing_comments_{ false };
 };
 
 } // namespace emit

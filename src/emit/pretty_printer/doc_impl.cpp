@@ -111,9 +111,9 @@ auto makeAlign(DocPtr doc) -> DocPtr
     return std::make_shared<DocImpl>(Align{ .doc = std::move(doc) });
 }
 
-auto makeInlineComment(std::string_view text) -> DocPtr
+auto makeInlineComment(DocPtr doc) -> DocPtr
 {
-    return std::make_shared<DocImpl>(InlineComment{ std::string(text) });
+    return std::make_shared<DocImpl>(InlineComment{ .doc = std::move(doc) });
 }
 
 // Utility functions

@@ -61,7 +61,7 @@ class Doc final
     /// @brief Creates an inline comment document.
     /// @param text The comment text.
     /// @return A Doc representing the inline comment.
-    static auto inlineComment(std::string_view text) -> Doc;
+    static auto inlineComment(const Doc &doc) -> Doc;
 
     // ========================================================================
     // Low-Level Combinators (Operators)

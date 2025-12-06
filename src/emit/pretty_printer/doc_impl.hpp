@@ -221,18 +221,19 @@ struct Align
 
 struct InlineComment
 {
-    std::string content;
+    DocPtr doc;
 
     template<typename Fn>
-    auto fmap(Fn && /* fn */) const -> InlineComment
+    auto fmap(Fn &&fn) const -> InlineComment
     {
-        return { content };
+        return { std::forward<Fn>(fn)(doc) };
     }
 
     template<typename T, typename Fn>
-    auto fold(T init, Fn && /* fn */) const -> T
+    auto fold(T init, Fn &&fn) const -> T
     {
-        return init;
+        // Align knows it has one child.
+        return std::forward<Fn>(fn)(std::move(init), doc);
     }
 };
 
@@ -298,7 +299,7 @@ auto makeHang(DocPtr doc) -> DocPtr;
 auto makeUnion(DocPtr flat, DocPtr broken) -> DocPtr;
 auto makeAlignText(std::string_view text, int level) -> DocPtr;
 auto makeAlign(DocPtr doc) -> DocPtr;
-auto makeInlineComment(std::string_view text) -> DocPtr;
+auto makeInlineComment(DocPtr doc) -> DocPtr;
 
 // Utility functions
 auto flatten(const DocPtr &doc) -> DocPtr;
