@@ -1,10 +1,10 @@
+#include "ast/node.hpp"
 #include "ast/nodes/expressions.hpp"
 #include "ast/nodes/statements.hpp"
 #include "common/config.hpp"
 #include "emit/test_utils.hpp"
 
 #include <catch2/catch_test_macros.hpp>
-#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -12,46 +12,41 @@
 
 namespace {
 
-auto token(std::string_view text) -> ast::TokenExpr
+// Helper: Creates a signal assignment with a target
+auto makeAssign(std::string target) -> ast::SignalAssign
 {
-    return ast::TokenExpr{ .text = std::string(text) };
+    ast::SignalAssign assign{ .target = ast::TokenExpr{ .text = std::move(target) } };
+    return assign;
+}
+
+// Helper: Creates a waveform element (value + optional after clause)
+auto makeElem(std::string value, std::string after) -> ast::Waveform::Element
+{
+    ast::Waveform::Element elem{ .value = ast::TokenExpr{ .text = std::move(value) },
+                                 .after = ast::TokenExpr{ .text = std::move(after) } };
+    return elem;
 }
 
 } // namespace
 
 TEST_CASE("Waveform Rendering", "[pretty_printer][waveforms]")
 {
-    ast::SignalAssign assign;
-    assign.target = token("s");
+    auto assign = makeAssign("s");
 
     SECTION("Time Delays (AFTER)")
     {
-        // s <= '1' after 5 ns;
-        ast::Waveform::Element elem;
-        elem.value = token("'1'");
-        elem.after = token("5 ns");
-        assign.waveform.elements.emplace_back(std::move(elem));
+        assign.waveform.elements.emplace_back(makeElem("'1'", "5 ns"));
 
         REQUIRE(emit::test::render(assign) == "s <= '1' after 5 ns;");
     }
 
     SECTION("Multiple Drivers")
     {
-        // Driver 1
-        ast::Waveform::Element el1;
-        el1.value = token("'1'");
-        el1.after = token("5 ns");
-        assign.waveform.elements.emplace_back(std::move(el1));
-
-        // Driver 2
-        ast::Waveform::Element el2;
-        el2.value = token("'0'");
-        el2.after = token("10 ns");
-        assign.waveform.elements.emplace_back(std::move(el2));
+        assign.waveform.elements.emplace_back(makeElem("'1'", "5 ns"));
+        assign.waveform.elements.emplace_back(makeElem("'0'", "10 ns"));
 
         SECTION("Fits on one line (Flat)")
         {
-            // Default width is 80, this string is ~35 chars, so it stays flat.
             constexpr std::string_view EXPECTED = "s <= '1' after 5 ns, '0' after 10 ns;";
             REQUIRE(emit::test::render(assign) == EXPECTED);
         }
@@ -66,6 +61,19 @@ TEST_CASE("Waveform Rendering", "[pretty_printer][waveforms]")
                                                   "     '0' after 10 ns;";
 
             REQUIRE(emit::test::render(assign, tight_config) == EXPECTED);
+        }
+
+        SECTION("With Comments")
+        {
+            assign.setInlineComment("-- Second value");
+            assign.waveform.elements[0].addTrailing(ast::Comment{ .text = "-- First trailing" });
+            assign.waveform.elements[0].setInlineComment("-- First value");
+
+            constexpr std::string_view EXPECTED = "s <= '1' after 5 ns, -- First value\n"
+                                                  "     -- First trailing\n"
+                                                  "     '0' after 10 ns; -- Second value";
+
+            REQUIRE(emit::test::render(assign) == EXPECTED);
         }
     }
 

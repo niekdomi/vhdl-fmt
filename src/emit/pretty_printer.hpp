@@ -34,9 +34,11 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     auto operator()(const ast::DesignFile &node) const -> Doc;
     auto operator()(const ast::Entity &node) const -> Doc;
     auto operator()(const ast::GenericClause &node) const -> Doc;
-    auto operator()(const ast::GenericParam &node) const -> Doc;
-    auto operator()(const ast::Port &node) const -> Doc;
     auto operator()(const ast::PortClause &node) const -> Doc;
+    auto operator()(const ast::GenericParam &node) const -> Doc { return (*this)(node, true); }
+    auto operator()(const ast::GenericParam &node, bool is_last) const -> Doc;
+    auto operator()(const ast::Port &node) const -> Doc { return (*this)(node, true); }
+    auto operator()(const ast::Port &node, bool is_last) const -> Doc;
     auto operator()(const ast::LibraryClause &node) const -> Doc;
     auto operator()(const ast::UseClause &node) const -> Doc;
     auto operator()(const ast::ComponentDecl &node) const -> Doc;
@@ -62,13 +64,14 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     auto operator()(const ast::RangeConstraint &node) const -> Doc;
 
     // Concurrent Statements
+    auto operator()(const ast::Process &node) const -> Doc;
+    auto operator()(const ast::Waveform &node) const -> Doc;
+    auto operator()(const ast::Waveform::Element &node, bool is_last) const -> Doc;
+    auto operator()(const ast::Waveform::Element &node) const -> Doc { return (*this)(node, true); }
     auto operator()(const ast::ConditionalConcurrentAssign &node) const -> Doc;
     auto operator()(const ast::ConditionalConcurrentAssign::ConditionalWaveform &node) const -> Doc;
-    auto operator()(const ast::Process &node) const -> Doc;
     auto operator()(const ast::SelectedConcurrentAssign &node) const -> Doc;
     auto operator()(const ast::SelectedConcurrentAssign::Selection &node) const -> Doc;
-    auto operator()(const ast::Waveform &node) const -> Doc;
-    auto operator()(const ast::Waveform::Element &node) const -> Doc;
 
     // Sequential Statements
     auto operator()(const ast::CaseStatement &node) const -> Doc;

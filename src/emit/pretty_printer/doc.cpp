@@ -47,11 +47,6 @@ auto Doc::alignText(std::string_view str, int level) -> Doc
     return Doc(makeAlignText(str, level));
 }
 
-auto Doc::inlineComment(std::string_view text) -> Doc
-{
-    return Doc(makeInlineComment(text));
-}
-
 // ========================================================================
 // Low-Level Combinators (Operators)
 // ========================================================================

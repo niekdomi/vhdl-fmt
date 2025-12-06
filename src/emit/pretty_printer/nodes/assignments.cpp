@@ -5,13 +5,13 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::Waveform::Element &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::Waveform::Element &node, const bool is_last) const -> Doc
 {
-    Doc d = visit(node.value);
+    Doc doc = visit(node.value);
     if (node.after) {
-        d += Doc::text(" after ") + visit(*node.after);
+        doc += Doc::text(" after ") + visit(*node.after);
     }
-    return d;
+    return is_last ? doc : doc + Doc::text(",");
 }
 
 auto PrettyPrinter::operator()(const ast::Waveform &node) const -> Doc
@@ -20,9 +20,14 @@ auto PrettyPrinter::operator()(const ast::Waveform &node) const -> Doc
         return Doc::text("unaffected");
     }
 
-    // Join elements with ", "
-    // Using Doc::line() allows wrapping: "1 after 5 ns," / "0 after 10 ns"
-    return joinMap(node.elements, Doc::text(",") + Doc::line(), toDoc(*this), false);
+    return joinMap(
+      node.elements,
+      Doc::line(),
+      [&](const auto &elem) {
+          const bool is_last = (&elem == &node.elements.back());
+          return visit(elem, is_last);
+      },
+      false);
 }
 
 auto PrettyPrinter::operator()(

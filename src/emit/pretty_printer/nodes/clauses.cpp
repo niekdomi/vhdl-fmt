@@ -16,13 +16,16 @@ auto PrettyPrinter::operator()(const ast::GenericClause &node) const -> Doc
     const Doc opener = Doc::text("generic") & Doc::text("(");
     const Doc closer = Doc::text(");");
 
-    const Doc doc = joinMap(
+    const Doc generics = joinMap(
       node.generics,
-      Doc::text(";") + Doc::line(),
-      [this](const auto &g) { return visit(g); },
+      Doc::line(),
+      [&](const auto &param) {
+          const bool is_last = &param == &node.generics.back();
+          return visit(param, is_last);
+      },
       false);
 
-    const Doc result = Doc::align(doc);
+    const Doc result = Doc::align(generics);
 
     return Doc::group(Doc::bracket(opener, result, closer));
 }
@@ -36,10 +39,16 @@ auto PrettyPrinter::operator()(const ast::PortClause &node) const -> Doc
     const Doc opener = Doc::text("port") & Doc::text("(");
     const Doc closer = Doc::text(");");
 
-    const Doc doc = joinMap(
-      node.ports, Doc::text(";") + Doc::line(), [this](const auto &p) { return visit(p); }, false);
+    const Doc ports = joinMap(
+      node.ports,
+      Doc::line(),
+      [&](const auto &port) {
+          const bool is_last = (&port == &node.ports.back());
+          return visit(port, is_last);
+      },
+      false);
 
-    const Doc result = Doc::align(doc);
+    const Doc result = Doc::align(ports);
 
     return Doc::group(Doc::bracket(opener, result, closer));
 }

@@ -219,23 +219,6 @@ struct Align
     }
 };
 
-struct InlineComment
-{
-    std::string content;
-
-    template<typename Fn>
-    auto fmap(Fn && /* fn */) const -> InlineComment
-    {
-        return { content };
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn && /* fn */) const -> T
-    {
-        return init;
-    }
-};
-
 /// Internal document representation using variant
 struct DocImpl
 {
@@ -249,8 +232,7 @@ struct DocImpl
                  Hang,
                  Union,
                  AlignText,
-                 Align,
-                 InlineComment>
+                 Align>
       value;
 };
 
@@ -298,7 +280,6 @@ auto makeHang(DocPtr doc) -> DocPtr;
 auto makeUnion(DocPtr flat, DocPtr broken) -> DocPtr;
 auto makeAlignText(std::string_view text, int level) -> DocPtr;
 auto makeAlign(DocPtr doc) -> DocPtr;
-auto makeInlineComment(std::string_view text) -> DocPtr;
 
 // Utility functions
 auto flatten(const DocPtr &doc) -> DocPtr;
