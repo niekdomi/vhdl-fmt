@@ -90,6 +90,19 @@ struct Architecture : NodeBase
     bool has_end_architecture_keyword{ false }; ///< Whether END ARCHITECTURE syntax is used.
 };
 
+/// @brief Represents a VHDL component declaration.
+///
+/// Example: `component my_comp is generic (WIDTH : integer); port (clk : in std_logic); end
+/// component;`
+struct ComponentDecl : NodeBase
+{
+    std::string name;                     ///< Component identifier.
+    GenericClause generic_clause;         ///< Generic parameters clause.
+    PortClause port_clause;               ///< Port declarations clause.
+    std::optional<std::string> end_label; ///< Optional label after END COMPONENT.
+    bool has_is_keyword{ false };         ///< Whether IS keyword is present.
+};
+
 } // namespace ast
 
 #endif /* AST_NODES_ENTITY_HPP */
