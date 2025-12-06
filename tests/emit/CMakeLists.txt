@@ -5,6 +5,7 @@ add_executable(
     pretty_printer/test_optimizer.cpp
     pretty_printer/nodes/test_declarations.cpp
     pretty_printer/nodes/test_clauses.cpp
+    pretty_printer/nodes/test_context_clauses.cpp
     pretty_printer/nodes/test_control_flow.cpp
     pretty_printer/nodes/test_design_units.cpp
     pretty_printer/nodes/test_design_file.cpp

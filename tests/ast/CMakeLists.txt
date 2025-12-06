@@ -4,6 +4,7 @@ add_executable(
     # Design Units
     nodes/test_trivia.cpp
     nodes/design_units/test_architecture.cpp
+    nodes/design_units/test_context_clauses.cpp
     nodes/design_units/test_entity.cpp
     #
     # Declarations
