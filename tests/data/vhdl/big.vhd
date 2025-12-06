@@ -1,4 +1,4 @@
--- NOTE: This file is from the NEORV32 project and is used for testing purposes.
+-- NOTE: This file is from the NEORV32 project and is used for testing purposes only.
 -- Original: https://github.com/stnolting/neorv32
 
 -- ================================================================================ --
