@@ -10,25 +10,42 @@ namespace emit {
 
 auto PrettyPrinter::operator()(const ast::Entity &node) const -> Doc
 {
-    Doc result = Doc::text("entity") & Doc::text(node.name) & Doc::text("is");
+    std::optional<Doc> result;
+
+    // Emit context clauses (library and use) first
+    for (const auto &ctx : node.context) {
+        if (!result.has_value()) {
+            result = visit(ctx);
+        } else {
+            *result /= visit(ctx);
+        }
+    }
+
+    // Emit entity declaration
+    Doc entity_line = Doc::text("entity") & Doc::text(node.name) & Doc::text("is");
+    if (!result.has_value()) {
+        result = entity_line;
+    } else {
+        *result /= entity_line;
+    }
 
     if (!std::ranges::empty(node.generic_clause.generics)) {
-        result <<= visit(node.generic_clause);
+        *result <<= visit(node.generic_clause);
     }
 
     if (!std::ranges::empty(node.port_clause.ports)) {
-        result <<= visit(node.port_clause);
+        *result <<= visit(node.port_clause);
     }
 
     // Declarations
-    result = std::ranges::fold_left(
-      node.decls, result, [this](auto acc, const auto &decl) { return acc <<= visit(decl); });
+    *result = std::ranges::fold_left(
+      node.decls, *result, [this](auto acc, const auto &decl) { return acc <<= visit(decl); });
 
     // Begin section (concurrent statements)
     if (!std::ranges::empty(node.stmts)) {
-        result /= Doc::text("begin");
-        result = std::ranges::fold_left(
-          node.stmts, result, [this](auto acc, const auto &stmt) { return acc <<= visit(stmt); });
+        *result /= Doc::text("begin");
+        *result = std::ranges::fold_left(
+          node.stmts, *result, [this](auto acc, const auto &stmt) { return acc <<= visit(stmt); });
     }
 
     Doc end_line = Doc::text("end");
@@ -40,27 +57,45 @@ auto PrettyPrinter::operator()(const ast::Entity &node) const -> Doc
     }
     end_line += Doc::text(";");
 
-    return result / end_line;
+    return *result / end_line;
 }
 
 auto PrettyPrinter::operator()(const ast::Architecture &node) const -> Doc
 {
-    Doc result = Doc::text("architecture")
-               & Doc::text(node.name)
-               & Doc::text("of")
-               & Doc::text(node.entity_name)
-               & Doc::text("is");
+    std::optional<Doc> result;
+
+    // Emit context clauses (library and use) first
+    for (const auto &ctx : node.context) {
+        if (!result.has_value()) {
+            result = visit(ctx);
+        } else {
+            *result /= visit(ctx);
+        }
+    }
+
+    // Emit architecture declaration
+    Doc arch_line = Doc::text("architecture")
+                  & Doc::text(node.name)
+                  & Doc::text("of")
+                  & Doc::text(node.entity_name)
+                  & Doc::text("is");
+
+    if (!result.has_value()) {
+        result = arch_line;
+    } else {
+        *result /= arch_line;
+    }
 
     // Declarations
-    result = std::ranges::fold_left(
-      node.decls, result, [this](auto acc, const auto &decl) { return acc <<= visit(decl); });
+    *result = std::ranges::fold_left(
+      node.decls, *result, [this](auto acc, const auto &decl) { return acc <<= visit(decl); });
 
     // begin
-    result /= Doc::text("begin");
+    *result /= Doc::text("begin");
 
     // Concurrent statements
-    result = std::ranges::fold_left(
-      node.stmts, result, [this](auto acc, const auto &stmt) { return acc <<= visit(stmt); });
+    *result = std::ranges::fold_left(
+      node.stmts, *result, [this](auto acc, const auto &stmt) { return acc <<= visit(stmt); });
 
     // end [architecture] [<name>];
     Doc end_line = Doc::text("end");
@@ -72,7 +107,37 @@ auto PrettyPrinter::operator()(const ast::Architecture &node) const -> Doc
     }
     end_line += Doc::text(";");
 
-    return result / end_line;
+    return *result / end_line;
+}
+
+auto PrettyPrinter::operator()(const ast::LibraryClause &node) const -> Doc
+{
+    Doc result = Doc::text("library");
+
+    for (const auto &[idx, name] : std::views::enumerate(node.logical_names)) {
+        if (idx > 0) {
+            result += Doc::text(",");
+        }
+        result &= Doc::text(name);
+    }
+    result += Doc::text(";");
+
+    return result;
+}
+
+auto PrettyPrinter::operator()(const ast::UseClause &node) const -> Doc
+{
+    Doc result = Doc::text("use");
+
+    for (const auto &[idx, name] : std::views::enumerate(node.selected_names)) {
+        if (idx > 0) {
+            result += Doc::text(",");
+        }
+        result &= Doc::text(name);
+    }
+    result += Doc::text(";");
+
+    return result;
 }
 
 } // namespace emit
