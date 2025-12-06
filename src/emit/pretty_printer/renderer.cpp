@@ -24,6 +24,9 @@ auto Renderer::render(const DocPtr &doc) -> std::string
 
     renderDoc(0, Mode::BREAK, doc);
 
+    // Flush any remaining inline comments at the end of rendering
+    flushComments(0);
+
     return std::move(output_);
 }
 
@@ -85,7 +88,9 @@ void Renderer::renderDoc(int indent, Mode mode, const DocPtr &doc)
         // AlignText (base case for alignment, renders as text)
         [&](const AlignText &node) -> void { write(node.content); },
 
-        // InlineComment (stores comment for later flushing)
+        // InlineComment (deferred rendering mechanism)
+        // Stores the doc for later flushing at the next newline. This ensures inline
+        // comments appear AFTER semicolons/commas that are added during rendering.
         [&](const InlineComment &node) -> void { pending_comments_.emplace_back(node.doc); },
 
         // Union (decision point)
@@ -179,6 +184,8 @@ void Renderer::newline(int indent)
 
 void Renderer::flushComments(int indent)
 {
+    // Guard against re-entrant calls: when rendering comment docs that contain
+    // newlines, those newlines would try to flush comments again, causing issues.
     if (pending_comments_.empty() || flushing_comments_) {
         return;
     }
@@ -187,6 +194,7 @@ void Renderer::flushComments(int indent)
     auto comments = std::move(pending_comments_);
     pending_comments_.clear();
 
+    // Render each deferred comment doc at the current indent level
     for (const auto &comment : comments) {
         renderDoc(indent, Mode::BREAK, comment);
     }
