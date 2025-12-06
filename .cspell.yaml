@@ -13,6 +13,7 @@ dictionaries:
 ignorePaths:
   - ".*"
   - "*.vhd"
+  - "*.txt"
   - "example/"
   - "grammars/"
   - "clang.profile"
