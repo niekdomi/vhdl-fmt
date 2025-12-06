@@ -8,6 +8,7 @@ add_executable(
     nodes/design_units/test_entity.cpp
     #
     # Declarations
+    nodes/declarations/test_component.cpp
     nodes/declarations/test_constant.cpp
     nodes/declarations/test_constraints.cpp
     nodes/declarations/test_generic_param.cpp
