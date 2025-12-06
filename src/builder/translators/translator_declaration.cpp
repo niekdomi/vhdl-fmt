@@ -5,6 +5,7 @@
 
 #include <ranges>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace builder {
@@ -166,6 +167,78 @@ auto Translator::makeVariableDecl(vhdlParser::Variable_declarationContext &ctx) 
       })
       .maybe(
         &ast::VariableDecl::init_expr, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })
+      .build();
+}
+
+// ---------------------- Type declarations ----------------------
+
+auto Translator::makeRecordElement(vhdlParser::Element_declarationContext &ctx)
+  -> ast::RecordElement
+{
+    return build<ast::RecordElement>(ctx)
+      .set(&ast::RecordElement::names, extractNames(ctx.identifier_list()))
+      .apply([&](auto &node) {
+          extractSubtypeInfo(node,
+                             ctx.element_subtype_definition()->subtype_indication(),
+                             [&](auto &c) { return makeConstraint(c); });
+      })
+      .build();
+}
+
+auto Translator::makeTypeDecl(vhdlParser::Type_declarationContext &ctx) -> ast::TypeDecl
+{
+    const std::string name = ctx.identifier()->getText();
+
+    // Check if there's a type definition (incomplete type if not)
+    auto *type_def = ctx.type_definition();
+    if (type_def == nullptr) {
+        return build<ast::TypeDecl>(ctx)
+          .set(&ast::TypeDecl::name, name)
+          .set(&ast::TypeDecl::kind, ast::TypeKind::OTHER)
+          .set(&ast::TypeDecl::other_definition, "")
+          .build();
+    }
+
+    // Handle enumeration type
+    if (auto *enum_def = type_def->scalar_type_definition()) {
+        if (auto *enum_type = enum_def->enumeration_type_definition()) {
+            std::vector<std::string> literals;
+            for (auto *lit : enum_type->enumeration_literal()) {
+                literals.push_back(lit->getText());
+            }
+
+            return build<ast::TypeDecl>(ctx)
+              .set(&ast::TypeDecl::name, name)
+              .set(&ast::TypeDecl::kind, ast::TypeKind::ENUMERATION)
+              .set(&ast::TypeDecl::enum_literals, std::move(literals))
+              .build();
+        }
+    }
+
+    // Handle record type
+    if (auto *composite_def = type_def->composite_type_definition()) {
+        if (auto *record_def = composite_def->record_type_definition()) {
+            std::vector<ast::RecordElement> elements;
+            for (auto *elem_ctx : record_def->element_declaration()) {
+                elements.push_back(makeRecordElement(*elem_ctx));
+            }
+
+            return build<ast::TypeDecl>(ctx)
+              .set(&ast::TypeDecl::name, name)
+              .set(&ast::TypeDecl::kind, ast::TypeKind::RECORD)
+              .set(&ast::TypeDecl::record_elements, std::move(elements))
+              .maybe(&ast::TypeDecl::end_label,
+                     record_def->identifier(),
+                     [](auto &id) { return id.getText(); })
+              .build();
+        }
+    }
+
+    // For all other types (array, access, file, physical, range), store as text
+    return build<ast::TypeDecl>(ctx)
+      .set(&ast::TypeDecl::name, name)
+      .set(&ast::TypeDecl::kind, ast::TypeKind::OTHER)
+      .set(&ast::TypeDecl::other_definition, type_def->getText())
       .build();
 }
 

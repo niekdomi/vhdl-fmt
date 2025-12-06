@@ -3,7 +3,9 @@
 #include "nodes/declarations.hpp"
 #include "vhdlParser.h"
 
+#include <optional>
 #include <ranges>
+#include <string>
 
 namespace builder {
 
@@ -31,14 +33,15 @@ auto Translator::makeWaveform(vhdlParser::WaveformContext &ctx) -> ast::Waveform
 }
 
 auto Translator::makeConcurrentAssign(
-  vhdlParser::Concurrent_signal_assignment_statementContext &ctx) -> ast::ConcurrentStatement
+  vhdlParser::Concurrent_signal_assignment_statementContext &ctx,
+  const std::optional<std::string> &label) -> ast::ConcurrentStatement
 {
     if (auto *cond = ctx.conditional_signal_assignment()) {
-        return makeConditionalAssign(*cond);
+        return makeConditionalAssign(*cond, label);
     }
 
     if (auto *sel = ctx.selected_signal_assignment()) {
-        return makeSelectedAssign(*sel);
+        return makeSelectedAssign(*sel, label);
     }
 
     return {};
@@ -59,10 +62,12 @@ auto Translator::makeConditionalWaveform(vhdlParser::Conditional_waveformsContex
       .build();
 }
 
-auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx)
+auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx,
+                                       const std::optional<std::string> &label)
   -> ast::ConditionalConcurrentAssign
 {
     return build<ast::ConditionalConcurrentAssign>(ctx)
+      .set(&ast::ConditionalConcurrentAssign::label, label)
       .maybe(&ast::ConditionalConcurrentAssign::target,
              ctx.target(),
              [&](auto &t) { return makeTarget(t); })
@@ -88,10 +93,12 @@ auto Translator::makeSelection(vhdlParser::WaveformContext &wave,
       .build();
 }
 
-auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx)
+auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx,
+                                    const std::optional<std::string> &label)
   -> ast::SelectedConcurrentAssign
 {
     return build<ast::SelectedConcurrentAssign>(ctx)
+      .set(&ast::SelectedConcurrentAssign::label, label)
       .maybe(&ast::SelectedConcurrentAssign::selector,
              ctx.expression(),
              [this](auto &expr) { return makeExpr(expr); })
@@ -120,8 +127,7 @@ auto Translator::makeProcessDeclarativeItem(vhdlParser::Process_declarative_item
     }
 
     if (auto *type_ctx = ctx.type_declaration()) {
-        // TODO(vedivad): Implement makeTypeDecl
-        // return makeTypeDecl(*type_ctx);
+        return makeTypeDecl(*type_ctx);
     }
 
     if (auto *file_ctx = ctx.file_declaration()) {

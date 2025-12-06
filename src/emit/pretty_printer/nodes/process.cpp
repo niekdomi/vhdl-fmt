@@ -9,6 +9,11 @@ auto PrettyPrinter::operator()(const ast::Process &node) const -> Doc
 {
     Doc head = Doc::text("process");
 
+    // Label: label:
+    if (node.label) {
+        head = Doc::text(*node.label + ":") & head;
+    }
+
     // Sensitivity list: process(clk, rst)
     if (!node.sensitivity_list.empty()) {
         const Doc list = joinMap(

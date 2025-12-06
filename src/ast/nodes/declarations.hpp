@@ -4,6 +4,7 @@
 #include "ast/node.hpp"
 #include "nodes/expressions.hpp"
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <variant>
@@ -15,13 +16,16 @@ namespace ast {
 struct ConstantDecl;
 struct GenericParam;
 struct Port;
+struct RecordElement;
 struct SignalDecl;
+struct TypeDecl;
 struct VariableDecl;
 
 /// @brief Variant type for all declarations.
 ///
-/// Example: `ConstantDecl`, `SignalDecl`, or `VariableDecl`
-using Declaration = std::variant<ConstantDecl, SignalDecl, VariableDecl, GenericParam, Port>;
+/// Example: `ConstantDecl`, `SignalDecl`, `VariableDecl`, or `TypeDecl`
+using Declaration
+  = std::variant<ConstantDecl, SignalDecl, VariableDecl, TypeDecl, GenericParam, Port>;
 
 /// @brief Represents a VHDL constant declaration.
 ///
@@ -77,6 +81,38 @@ struct VariableDecl : NodeBase
     std::optional<Constraint> constraint; ///< Optional type constraint.
     std::optional<Expr> init_expr;        ///< Optional initialization expression.
     bool shared{ false };                 ///< Whether the SHARED keyword is present.
+};
+
+/// @brief Type kind enumeration for VHDL type declarations.
+enum class TypeKind : std::uint8_t
+{
+    ENUMERATION, ///< Enumeration type: (VALUE1, VALUE2, ...)
+    RECORD,      ///< Record type: record ... end record
+    OTHER        ///< Other types (array, access, file, range, etc.) - stored as text
+};
+
+/// @brief Represents an element in a VHDL record type definition.
+///
+/// Example: `state : ctrl_state_t;` inside a record
+struct RecordElement : NodeBase
+{
+    std::vector<std::string> names;       ///< List of element identifiers.
+    std::string type_name;                ///< Type of the element.
+    std::optional<Constraint> constraint; ///< Optional type constraint.
+};
+
+/// @brief Represents a VHDL type declaration.
+///
+/// Example: `type ctrl_state_t is (S_IDLE, S_BUSY);`
+/// Example: `type ctrl_engine_t is record state : ctrl_state_t; end record;`
+struct TypeDecl : NodeBase
+{
+    std::string name;                           ///< Type identifier.
+    TypeKind kind{ TypeKind::OTHER };           ///< Kind of type definition.
+    std::vector<std::string> enum_literals;     ///< For enumeration types.
+    std::vector<RecordElement> record_elements; ///< For record types.
+    std::string other_definition;               ///< For other types, raw text.
+    std::optional<std::string> end_label;       ///< Optional label after END RECORD.
 };
 
 } // namespace ast

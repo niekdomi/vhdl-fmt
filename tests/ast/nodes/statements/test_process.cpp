@@ -80,3 +80,59 @@ TEST_CASE("Process Translator", "[builder][process]")
         }
     }
 }
+
+TEST_CASE("Process with label", "[builder][process][label]")
+{
+    constexpr std::string_view VHDL_FILE = "entity E is end E;\n"
+                                           "architecture A of E is\n"
+                                           "begin\n"
+                                           "    csr_write: process(clk, rst)\n"
+                                           "    begin\n"
+                                           "        null;\n"
+                                           "    end process;\n"
+                                           "end A;";
+
+    const auto design = builder::buildFromString(VHDL_FILE);
+
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    REQUIRE(arch != nullptr);
+    REQUIRE(arch->stmts.size() == 1);
+
+    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
+    REQUIRE(proc != nullptr);
+
+    SECTION("Label is captured")
+    {
+        REQUIRE(proc->label.has_value());
+        CHECK(proc->label.value() == "csr_write");
+    }
+
+    SECTION("Sensitivity list is correct")
+    {
+        REQUIRE(proc->sensitivity_list.size() == 2);
+        CHECK(proc->sensitivity_list[0] == "clk");
+        CHECK(proc->sensitivity_list[1] == "rst");
+    }
+}
+
+TEST_CASE("Process without label", "[builder][process][label]")
+{
+    constexpr std::string_view VHDL_FILE = "entity E is end E;\n"
+                                           "architecture A of E is\n"
+                                           "begin\n"
+                                           "    process(clk)\n"
+                                           "    begin\n"
+                                           "        null;\n"
+                                           "    end process;\n"
+                                           "end A;";
+
+    const auto design = builder::buildFromString(VHDL_FILE);
+
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    REQUIRE(arch != nullptr);
+
+    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
+    REQUIRE(proc != nullptr);
+
+    CHECK_FALSE(proc->label.has_value());
+}

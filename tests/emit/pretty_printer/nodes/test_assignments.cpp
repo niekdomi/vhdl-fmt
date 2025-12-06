@@ -145,4 +145,53 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
             REQUIRE(emit::test::render(assign, config) == EXPECTED);
         }
     }
+
+    SECTION("Conditional Assignment with Label")
+    {
+        // mux_select: data_out <= data_in when sel = '1' else '0';
+        ast::ConditionalConcurrentAssign assign;
+        assign.label = "mux_select";
+        assign.target = token("data_out");
+
+        // Waveform 1: data_in when sel = '1'
+        ast::ConditionalConcurrentAssign::ConditionalWaveform w1;
+        w1.waveform = makeWave(token("data_in"));
+        w1.condition = binary("sel", "=", "'1'");
+        assign.waveforms.emplace_back(std::move(w1));
+
+        // Waveform 2: '0' (else)
+        ast::ConditionalConcurrentAssign::ConditionalWaveform w2;
+        w2.waveform = makeWave(token("'0'"));
+        w2.condition = std::nullopt;
+        assign.waveforms.emplace_back(std::move(w2));
+
+        constexpr std::string_view EXPECTED
+          = "mux_select: data_out <= data_in when sel = '1' else '0';";
+        REQUIRE(emit::test::render(assign) == EXPECTED);
+    }
+
+    SECTION("Selected Assignment with Label")
+    {
+        // decoder: with counter select data_out <= ...
+        ast::SelectedConcurrentAssign assign;
+        assign.label = "decoder";
+        assign.selector = token("counter");
+        assign.target = token("data_out");
+
+        // Selection 1: x"00" when 0
+        ast::SelectedConcurrentAssign::Selection sel1;
+        sel1.waveform = makeWave(token("x\"00\""));
+        sel1.choices.emplace_back(token("0"));
+        assign.selections.emplace_back(std::move(sel1));
+
+        // Selection 2: x"FF" when others
+        ast::SelectedConcurrentAssign::Selection sel2;
+        sel2.waveform = makeWave(token("x\"FF\""));
+        sel2.choices.emplace_back(token("others"));
+        assign.selections.emplace_back(std::move(sel2));
+
+        constexpr std::string_view EXPECTED
+          = R"(decoder: with counter select data_out <= x"00" when 0, x"FF" when others;)";
+        REQUIRE(emit::test::render(assign) == EXPECTED);
+    }
 }
