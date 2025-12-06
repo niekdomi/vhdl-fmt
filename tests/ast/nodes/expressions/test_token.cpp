@@ -16,14 +16,17 @@ auto getSignalInitExpr(const ast::DesignFile &design) -> const ast::Expr *
     if (design.units.size() < 2) {
         return nullptr;
     }
+
     const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     if ((arch == nullptr) || arch->decls.empty()) {
         return nullptr;
     }
+
     const auto *signal = std::get_if<ast::SignalDecl>(arch->decls.data());
     if ((signal == nullptr) || !signal->init_expr.has_value()) {
         return nullptr;
     }
+
     return &(*signal->init_expr);
 }
 
@@ -39,7 +42,7 @@ TEST_CASE("TokenExpr: Integer literal", "[expressions][token]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -58,7 +61,7 @@ TEST_CASE("TokenExpr: Negative integer", "[expressions][token]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -82,7 +85,7 @@ TEST_CASE("TokenExpr: Bit literal '0'", "[expressions][token]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -101,7 +104,7 @@ TEST_CASE("TokenExpr: Bit literal '1'", "[expressions][token]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 
@@ -120,7 +123,7 @@ TEST_CASE("TokenExpr: Identifier", "[expressions][token]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     const auto *expr = getSignalInitExpr(design);
     REQUIRE(expr != nullptr);
 

@@ -17,14 +17,14 @@ TEST_CASE("SignalDecl: Single signal with type", "[declarations][signal]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     REQUIRE(design.units.size() == 2);
 
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    auto *signal = std::get_if<ast::SignalDecl>(arch->decls.data());
+    const auto *signal = std::get_if<ast::SignalDecl>(arch->decls.data());
     REQUIRE(signal != nullptr);
     REQUIRE(signal->names.size() == 1);
     REQUIRE(signal->names[0] == "temp");
@@ -42,12 +42,12 @@ TEST_CASE("SignalDecl: Signal with initialization", "[declarations][signal]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    auto *signal = std::get_if<ast::SignalDecl>(arch->decls.data());
+    const auto *signal = std::get_if<ast::SignalDecl>(arch->decls.data());
     REQUIRE(signal != nullptr);
     REQUIRE(signal->names.size() == 1);
     REQUIRE(signal->names[0] == "count");
@@ -65,12 +65,12 @@ TEST_CASE("SignalDecl: Multiple signals same declaration", "[declarations][signa
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    auto *signal = std::get_if<ast::SignalDecl>(arch->decls.data());
+    const auto *signal = std::get_if<ast::SignalDecl>(arch->decls.data());
     REQUIRE(signal != nullptr);
     REQUIRE(signal->names.size() == 3);
     REQUIRE(signal->names[0] == "clk");

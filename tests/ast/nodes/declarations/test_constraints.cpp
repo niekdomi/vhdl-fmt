@@ -18,12 +18,12 @@ TEST_CASE("Signal with index constraint (array)", "[declarations][constraints]")
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    auto *signal = std::get_if<ast::SignalDecl>(arch->decls.data());
+    const auto *signal = std::get_if<ast::SignalDecl>(arch->decls.data());
     REQUIRE(signal != nullptr);
     REQUIRE(signal->names[0] == "data");
     REQUIRE(signal->type_name == "std_logic_vector");
@@ -47,8 +47,8 @@ TEST_CASE("Port with index constraint", "[declarations][constraints]")
         end E;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *entity = std::get_if<ast::Entity>(design.units.data());
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *entity = std::get_if<ast::Entity>(design.units.data());
     REQUIRE(entity != nullptr);
     REQUIRE(entity->port_clause.ports.size() == 1);
 
@@ -77,12 +77,12 @@ TEST_CASE("Signal with 'to' direction constraint", "[declarations][constraints]"
         end A;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(VHDL_FILE);
+    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
     REQUIRE(arch->decls.size() == 1);
 
-    auto *signal = std::get_if<ast::SignalDecl>(arch->decls.data());
+    const auto *signal = std::get_if<ast::SignalDecl>(arch->decls.data());
     REQUIRE(signal != nullptr);
     REQUIRE(signal->type_name == "bit_vector");
     REQUIRE(signal->constraint.has_value());

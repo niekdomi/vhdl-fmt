@@ -15,10 +15,10 @@ TEST_CASE("Architecture: Basic architecture body", "[design_units][architecture]
         end RTL;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     REQUIRE(design.units.size() == 1);
 
-    auto *arch = std::get_if<ast::Architecture>(design.units.data());
+    const auto *arch = std::get_if<ast::Architecture>(design.units.data());
     REQUIRE(arch != nullptr);
     REQUIRE(arch->name == "RTL");
     REQUIRE(arch->entity_name == "MyEntity");
@@ -38,15 +38,15 @@ TEST_CASE("Architecture: Multiple architectures for same entity", "[design_units
         end Behavioral;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    const auto design = builder::buildFromString(VHDL_FILE);
     REQUIRE(design.units.size() == 2);
 
-    auto *arch1 = std::get_if<ast::Architecture>(design.units.data());
+    const auto *arch1 = std::get_if<ast::Architecture>(design.units.data());
     REQUIRE(arch1 != nullptr);
     REQUIRE(arch1->name == "RTL");
     REQUIRE(arch1->entity_name == "Counter");
 
-    auto *arch2 = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto *arch2 = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch2 != nullptr);
     REQUIRE(arch2->name == "Behavioral");
     REQUIRE(arch2->entity_name == "Counter");
