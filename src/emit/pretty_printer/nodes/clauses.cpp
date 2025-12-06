@@ -43,7 +43,7 @@ auto PrettyPrinter::operator()(const ast::PortClause &node) const -> Doc
       node.ports,
       Doc::line(),
       [&](const auto &port) {
-          const bool is_last = &port == &node.ports.back();
+          const bool is_last = (&port == &node.ports.back());
           return visit(port, is_last);
       },
       false);
