@@ -33,12 +33,20 @@ auto Translator::makeWaveform(vhdlParser::WaveformContext &ctx) -> ast::Waveform
 auto Translator::makeConcurrentAssign(
   vhdlParser::Concurrent_signal_assignment_statementContext &ctx) -> ast::ConcurrentStatement
 {
+    // Extract label from the parent context
+    auto *label = ctx.label_colon();
+    auto *label_id = (label != nullptr) ? label->identifier() : nullptr;
+    std::optional<std::string> label_str;
+    if (label_id != nullptr) {
+        label_str = label_id->getText();
+    }
+
     if (auto *cond = ctx.conditional_signal_assignment()) {
-        return makeConditionalAssign(*cond);
+        return makeConditionalAssign(*cond, label_str);
     }
 
     if (auto *sel = ctx.selected_signal_assignment()) {
-        return makeSelectedAssign(*sel);
+        return makeSelectedAssign(*sel, label_str);
     }
 
     return {};
@@ -59,10 +67,12 @@ auto Translator::makeConditionalWaveform(vhdlParser::Conditional_waveformsContex
       .build();
 }
 
-auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx)
+auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx,
+                                       std::optional<std::string> label)
   -> ast::ConditionalConcurrentAssign
 {
     return build<ast::ConditionalConcurrentAssign>(ctx)
+      .set(&ast::ConditionalConcurrentAssign::label, label)
       .maybe(&ast::ConditionalConcurrentAssign::target,
              ctx.target(),
              [&](auto &t) { return makeTarget(t); })
@@ -88,10 +98,12 @@ auto Translator::makeSelection(vhdlParser::WaveformContext &wave,
       .build();
 }
 
-auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx)
+auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx,
+                                    std::optional<std::string> label)
   -> ast::SelectedConcurrentAssign
 {
     return build<ast::SelectedConcurrentAssign>(ctx)
+      .set(&ast::SelectedConcurrentAssign::label, label)
       .maybe(&ast::SelectedConcurrentAssign::selector,
              ctx.expression(),
              [this](auto &expr) { return makeExpr(expr); })
