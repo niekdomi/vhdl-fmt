@@ -5,6 +5,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <memory>
 #include <optional>
+#include <string_view>
 #include <utility>
 
 TEST_CASE("TypeDecl: Enumeration type rendering", "[pretty_printer][type]")
