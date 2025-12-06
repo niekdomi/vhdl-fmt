@@ -94,26 +94,25 @@ auto Translator::makeCallExpr(ast::Expr base,
               return;
           }
 
-          if (list_ctx == nullptr) {
-              node.args = std::make_unique<ast::Expr>(makeToken(ctx));
-              return;
+          // Always create a GroupExpr for args, even for single arguments
+          ast::GroupExpr group;
+
+          if (list_ctx != nullptr) {
+              if (associations.size() == 1) {
+                  // Single argument - wrap in GroupExpr
+                  group.children.push_back(makeCallArgument(*associations[0]));
+              } else {
+                  // Multiple arguments
+                  for (auto *elem : associations) {
+                      group.children.push_back(makeCallArgument(*elem));
+                  }
+              }
           }
 
-          if (associations.size() == 1) {
-              node.args = std::make_unique<ast::Expr>(makeCallArgument(*associations[0]));
-          } else {
-              node.args = std::make_unique<ast::Expr>(
-                build<ast::GroupExpr>(*list_ctx)
-                  .collect(&ast::GroupExpr::children,
-                           associations,
-                           [&](auto *elem) { return makeCallArgument(*elem); })
-                  .build());
-          }
+          node.args = std::make_unique<ast::Expr>(std::move(group));
       })
       .build();
-}
-
-auto Translator::makeAttributeExpr(ast::Expr base, vhdlParser::Attribute_name_partContext &ctx)
+}auto Translator::makeAttributeExpr(ast::Expr base, vhdlParser::Attribute_name_partContext &ctx)
   -> ast::Expr
 {
     // Extract attribute name (everything after the apostrophe)

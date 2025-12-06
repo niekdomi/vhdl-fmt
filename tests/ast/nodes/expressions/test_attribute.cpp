@@ -50,7 +50,11 @@ TEST_CASE("AttributeExpr", "[expressions][attribute]")
         REQUIRE(callee != nullptr);
         REQUIRE(callee->text == "my_array");
 
-        const auto *arg = std::get_if<ast::TokenExpr>(call->args.get());
+        const auto *group = std::get_if<ast::GroupExpr>(call->args.get());
+        REQUIRE(group != nullptr);
+        REQUIRE(group->children.size() == 1);
+
+        const auto *arg = std::get_if<ast::TokenExpr>(group->children.data());
         REQUIRE(arg != nullptr);
         REQUIRE(arg->text == "i");
     }

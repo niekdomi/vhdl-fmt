@@ -14,7 +14,11 @@ TEST_CASE("CallExpr", "[expressions][call]")
         REQUIRE(callee != nullptr);
         REQUIRE(callee->text == "rising_edge");
 
-        const auto *arg = std::get_if<ast::TokenExpr>(call->args.get());
+        const auto *group = std::get_if<ast::GroupExpr>(call->args.get());
+        REQUIRE(group != nullptr);
+        REQUIRE(group->children.size() == 1);
+
+        const auto *arg = std::get_if<ast::TokenExpr>(group->children.data());
         REQUIRE(arg != nullptr);
         REQUIRE(arg->text == "clk");
     }
@@ -78,11 +82,19 @@ TEST_CASE("CallExpr", "[expressions][call]")
         REQUIRE(inner_callee != nullptr);
         REQUIRE(inner_callee->text == "get_array");
 
-        const auto *inner_arg = std::get_if<ast::TokenExpr>(inner_call->args.get());
+        const auto *inner_group = std::get_if<ast::GroupExpr>(inner_call->args.get());
+        REQUIRE(inner_group != nullptr);
+        REQUIRE(inner_group->children.size() == 1);
+
+        const auto *inner_arg = std::get_if<ast::TokenExpr>(inner_group->children.data());
         REQUIRE(inner_arg != nullptr);
         REQUIRE(inner_arg->text == "i");
 
-        const auto *outer_arg = std::get_if<ast::TokenExpr>(outer_call->args.get());
+        const auto *outer_group = std::get_if<ast::GroupExpr>(outer_call->args.get());
+        REQUIRE(outer_group != nullptr);
+        REQUIRE(outer_group->children.size() == 1);
+
+        const auto *outer_arg = std::get_if<ast::TokenExpr>(outer_group->children.data());
         REQUIRE(outer_arg != nullptr);
         REQUIRE(outer_arg->text == "j");
     }

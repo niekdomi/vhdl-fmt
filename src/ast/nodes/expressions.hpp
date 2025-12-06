@@ -57,7 +57,7 @@ struct BinaryExpr : NodeBase
 struct CallExpr : NodeBase
 {
     Box<Expr> callee; ///< Function/array name being called/indexed.
-    Box<Expr> args;   ///< Arguments (single expr or GroupExpr for multiple args).
+    Box<Expr> args;   ///< Arguments (GroupExpr for calls, BinaryExpr for slices).
 };
 
 /// @brief Represents an aggregate or grouped list of expressions.
@@ -107,9 +107,9 @@ struct UnaryExpr : NodeBase
 /// Example: `data'length`, `clk'event`, `signal_name'stable(5 ns)`
 struct AttributeExpr : NodeBase
 {
-    Box<Expr> prefix;                      ///< Base expression (signal, type, array, etc.).
-    std::string attribute;                 ///< Attribute name (e.g., "length", "event", "stable").
-    std::optional<Box<Expr>> arg;          ///< Optional parameter for attributes like 'stable(5 ns).
+    Box<Expr> prefix;             ///< Base expression (signal, type, array, etc.).
+    std::string attribute;        ///< Attribute name (e.g., "length", "event", "stable").
+    std::optional<Box<Expr>> arg; ///< Optional parameter for attributes like 'stable(5 ns).
 };
 
 /// @brief Represents a qualified expression (type qualification).
@@ -117,8 +117,8 @@ struct AttributeExpr : NodeBase
 /// Example: `std_logic_vector'(x"AB")`, `integer'(42)`
 struct QualifiedExpr : NodeBase
 {
-    std::string type_mark;  ///< Type qualifier/mark (e.g., "std_logic_vector", "integer").
-    Box<Expr> operand;      ///< Expression being qualified (aggregate or parenthesized expression).
+    std::string type_mark; ///< Type qualifier/mark (e.g., "std_logic_vector", "integer").
+    Box<Expr> operand;     ///< Expression being qualified (aggregate or parenthesized expression).
 };
 
 // -------------------------------------------------------
