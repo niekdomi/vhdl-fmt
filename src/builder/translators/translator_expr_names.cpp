@@ -3,6 +3,7 @@
 #include "vhdlParser.h"
 
 #include <algorithm>
+#include <iterator>
 #include <memory>
 #include <ranges>
 #include <string>
