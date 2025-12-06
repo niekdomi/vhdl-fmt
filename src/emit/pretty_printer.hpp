@@ -35,8 +35,8 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     auto operator()(const ast::Architecture &node) const -> Doc;
     auto operator()(const ast::GenericClause &node) const -> Doc;
     auto operator()(const ast::PortClause &node) const -> Doc;
-    auto operator()(const ast::GenericParam &node) const -> Doc;
-    auto operator()(const ast::Port &node) const -> Doc;
+    auto operator()(const ast::GenericParam &node, std::string_view delimiter = "") const -> Doc;
+    auto operator()(const ast::Port &node, std::string_view delimiter = "") const -> Doc;
 
     // Declarations
     auto operator()(const ast::SignalDecl &node) const -> Doc;
@@ -75,9 +75,15 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     auto operator()(const ast::Loop &node) const -> Doc;
 
     /// @brief Wraps the core doc with trivia for the given node.
+    /// @param delimiter Optional delimiter to append after core but before trivia (e.g., ";" for ports)
     template<typename T>
-    auto wrapResult(const T &node, Doc result) const -> Doc
+    auto wrapResult(const T &node, Doc result, std::string_view delimiter = "") const -> Doc
     {
+        // Append delimiter BEFORE trivia wrapping so inline comments appear after it
+        if (!delimiter.empty()) {
+            result += Doc::text(delimiter);
+        }
+
         return withTrivia(node, std::move(result), IsExpression<T>);
     }
 

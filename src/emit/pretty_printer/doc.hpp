@@ -58,11 +58,6 @@ class Doc final
     /// @param level An integer key that defines the alignment group.
     static auto alignText(std::string_view str, int level) -> Doc;
 
-    /// @brief Creates an inline comment document.
-    /// @param text The comment text.
-    /// @return A Doc representing the inline comment.
-    static auto inlineComment(const Doc &doc) -> Doc;
-
     // ========================================================================
     // Low-Level Combinators (Operators)
     // ========================================================================

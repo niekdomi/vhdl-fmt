@@ -219,24 +219,6 @@ struct Align
     }
 };
 
-struct InlineComment
-{
-    DocPtr doc;
-
-    template<typename Fn>
-    auto fmap(Fn &&fn) const -> InlineComment
-    {
-        return { std::forward<Fn>(fn)(doc) };
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn &&fn) const -> T
-    {
-        // Align knows it has one child.
-        return std::forward<Fn>(fn)(std::move(init), doc);
-    }
-};
-
 /// Internal document representation using variant
 struct DocImpl
 {
@@ -250,8 +232,7 @@ struct DocImpl
                  Hang,
                  Union,
                  AlignText,
-                 Align,
-                 InlineComment>
+                 Align>
       value;
 };
 
@@ -299,7 +280,6 @@ auto makeHang(DocPtr doc) -> DocPtr;
 auto makeUnion(DocPtr flat, DocPtr broken) -> DocPtr;
 auto makeAlignText(std::string_view text, int level) -> DocPtr;
 auto makeAlign(DocPtr doc) -> DocPtr;
-auto makeInlineComment(DocPtr doc) -> DocPtr;
 
 // Utility functions
 auto flatten(const DocPtr &doc) -> DocPtr;

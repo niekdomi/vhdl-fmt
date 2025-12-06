@@ -14,23 +14,27 @@ template<typename ReturnType = void>
 class VisitorBase
 {
   public:
-    /// @brief Visit a concrete node.
-    template<typename Self, typename T>
+    /// @brief Visit a concrete node with optional additional arguments.
+    template<typename Self, typename T, typename... Args>
         requires std::is_base_of_v<NodeBase, T>
-    auto visit(this const Self &self, const T &node) -> ReturnType
+    auto visit(this const Self &self, const T &node, Args &&...args) -> ReturnType
     {
         if constexpr (std::is_void_v<ReturnType>) {
-            self(node);
+            self(node, std::forward<Args>(args)...);
         } else {
-            return self.wrapResult(node, self(node));
+            return self.wrapResult(node, self(node, std::forward<Args>(args)...), std::forward<Args>(args)...);
         }
     }
 
-    /// @brief Visit a variant node.
-    template<typename Self, typename... Ts>
-    auto visit(this const Self &self, const std::variant<Ts...> &node) -> ReturnType
+    /// @brief Visit a variant node with optional additional arguments.
+    template<typename Self, typename... Ts, typename... Args>
+    auto visit(this const Self &self, const std::variant<Ts...> &node, Args &&...args) -> ReturnType
     {
-        return std::visit([&self](const auto &n) -> ReturnType { return self.visit(n); }, node);
+        return std::visit(
+          [&self, &args...](const auto &n) -> ReturnType {
+              return self.visit(n, std::forward<Args>(args)...);
+          },
+          node);
     }
 };
 

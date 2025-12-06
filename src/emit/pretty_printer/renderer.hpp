@@ -6,7 +6,6 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
-#include <vector>
 
 namespace common {
 struct Config;
@@ -40,9 +39,6 @@ class Renderer final
     // Helper for fits: returns remaining width, or -1 if doesn't fit
     static auto fitsImpl(int width, const DocPtr &doc) -> int;
 
-    // Helper to flush pending comments
-    void flushComments(int indent);
-
     // Output helpers
     void write(std::string_view text);
     void newline(int indent);
@@ -53,8 +49,6 @@ class Renderer final
     bool align_{ false };
     int column_{ 0 };
     std::string output_;
-    std::vector<DocPtr> pending_comments_;
-    bool flushing_comments_{ false };
 };
 
 } // namespace emit

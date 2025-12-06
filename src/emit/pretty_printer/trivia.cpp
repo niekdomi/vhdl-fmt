@@ -89,13 +89,13 @@ auto PrettyPrinter::withTrivia(const ast::NodeBase &node, Doc core, const bool s
     // 2. Core Doc
     result += core;
 
-    // 3. Inline Comment with Trailing Trivia
+    // 3. Inline Comment
     if (auto comment = node.getInlineComment()) {
-        result += Doc::inlineComment(Doc::text(std::string{ " " }.append(*comment)) + buildTrivia(node.getTrailing(), suppress, Doc::hardline(), formatLastTrailing));
-    } else {
-        // 4. Trailing Trivia (only when no inline comment)
-        result += buildTrivia(node.getTrailing(), suppress, Doc::hardline(), formatLastTrailing);
+        result += Doc::text(std::string{ " " }.append(*comment));
     }
+
+    // 4. Trailing Trivia
+    result += buildTrivia(node.getTrailing(), suppress, Doc::hardline(), formatLastTrailing);
 
     return result;
 }
