@@ -78,8 +78,9 @@ auto PrettyPrinter::operator()(const ast::ArrayTypeDef &node) const -> Doc
     if (!node.indices.empty()) {
         auto render_index = [&](const auto &idx) {
             return std::visit(
-              common::Overload{ [](const std::string &s) { return Doc::text(s + " range <>"); },
-                                [&](const auto &expr) { return visit(expr); } },
+              common::Overload{
+                [](const std::string &s) -> Doc { return Doc::text(s + " range <>"); },
+                [&](const auto &expr) -> Doc { return visit(expr); } },
               idx);
         };
 

@@ -6,6 +6,7 @@
 #include "ast/nodes/design_units.hpp"
 #include "ast/nodes/expressions.hpp"
 #include "ast/nodes/statements.hpp"
+#include "ast/nodes/types.hpp"
 #include "builder/node_builder.hpp"
 #include "builder/trivia/trivia_binder.hpp"
 #include "vhdlParser.h"
