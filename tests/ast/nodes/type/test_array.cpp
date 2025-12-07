@@ -85,7 +85,7 @@ TEST_CASE("TypeDecl: Array", "[builder][type][array]")
 
         // Verify the constraint expression inside
         REQUIRE(constr->ranges.children.size() == 1);
-        const auto *range_expr = std::get_if<ast::BinaryExpr>(&constr->ranges.children[0]);
+        const auto *range_expr = std::get_if<ast::BinaryExpr>(constr->ranges.children.data());
         REQUIRE(range_expr != nullptr);
         REQUIRE(range_expr->op == "downto");
     }

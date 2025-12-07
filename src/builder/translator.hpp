@@ -317,8 +317,8 @@ class Translator final
 
     template<typename Node>
     static void extractSubtypeInfo(Node &node,
-                            vhdlParser::Subtype_indicationContext *stype,
-                            auto &&make_constraint_fn)
+                                   vhdlParser::Subtype_indicationContext *stype,
+                                   auto &&make_constraint_fn)
     {
         if (stype == nullptr) {
             return;
