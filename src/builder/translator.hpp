@@ -81,6 +81,8 @@ class Translator final
 
     // Type Definitions
     [[nodiscard]]
+    auto makeTypeDefinition(vhdlParser::Type_definitionContext &ctx) -> ast::TypeDefinition;
+    [[nodiscard]]
     auto makeEnumerationType(vhdlParser::Enumeration_type_definitionContext &ctx)
       -> ast::EnumerationTypeDef;
     [[nodiscard]]
