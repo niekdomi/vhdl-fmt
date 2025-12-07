@@ -1,0 +1,56 @@
+#include "ast/nodes/expressions.hpp"
+#include "emit/test_utils.hpp"
+
+#include <catch2/catch_test_macros.hpp>
+#include <memory>
+
+TEST_CASE("GroupExpr Rendering", "[pretty_printer][expressions][group]")
+{
+    SECTION("Positional association")
+    {
+        ast::GroupExpr group;
+        group.children.push_back(ast::TokenExpr{ .text = "'1'" });
+        group.children.push_back(ast::TokenExpr{ .text = "'0'" });
+        group.children.push_back(ast::TokenExpr{ .text = "'1'" });
+
+        REQUIRE(emit::test::render(group) == "('1', '0', '1')");
+    }
+
+    SECTION("Named association")
+    {
+        ast::BinaryExpr assoc;
+        assoc.left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "addr" });
+        assoc.op = "=>";
+        assoc.right = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "x\\\"AB\\\"" });
+
+        ast::GroupExpr group;
+        group.children.push_back(std::move(assoc));
+
+        REQUIRE(emit::test::render(group) == "(addr => x\\\"AB\\\")");
+    }
+
+    SECTION("Others association")
+    {
+        ast::BinaryExpr assoc;
+        assoc.left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "others" });
+        assoc.op = "=>";
+        assoc.right = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "'0'" });
+
+        ast::GroupExpr group;
+        group.children.push_back(std::move(assoc));
+
+        REQUIRE(emit::test::render(group) == "(others => '0')");
+    }
+
+    SECTION("Nested aggregates")
+    {
+        ast::GroupExpr inner;
+        inner.children.push_back(ast::TokenExpr{ .text = "'1'" });
+        inner.children.push_back(ast::TokenExpr{ .text = "'0'" });
+
+        ast::GroupExpr outer;
+        outer.children.push_back(std::move(inner));
+
+        REQUIRE(emit::test::render(outer) == "(('1', '0'))");
+    }
+}

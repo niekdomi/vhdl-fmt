@@ -50,4 +50,3 @@ TEST_CASE("QualifiedExpr", "[expressions][qualified]")
         REQUIRE(binary->op == "=>");
     }
 }
-

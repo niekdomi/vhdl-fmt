@@ -22,7 +22,8 @@ inline auto parseExpr(std::string_view init_expr) -> const ast::Expr *
             signal x : integer := {};
         begin
         end A;
-    )", init_expr);
+    )",
+                                  init_expr);
 
     static ast::DesignFile design; // Static to keep alive for returned pointer
     design = builder::buildFromString(vhdl);

@@ -58,8 +58,8 @@ struct BinaryExpr : NodeBase
 /// Example: `rising_edge(clk)`, `resize(data, 16)`
 struct CallExpr : NodeBase
 {
-    Box<Expr> callee;      ///< Function name being called.
-    Box<GroupExpr> args;   ///< Arguments (always a GroupExpr with parentheses).
+    Box<Expr> callee;    ///< Function name being called.
+    Box<GroupExpr> args; ///< Arguments (always a GroupExpr with parentheses).
 };
 
 /// @brief Represents array/signal slice notation.
