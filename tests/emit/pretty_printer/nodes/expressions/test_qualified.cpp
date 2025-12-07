@@ -9,11 +9,13 @@ TEST_CASE("QualifiedExpr Rendering", "[pretty_printer][expressions][qualified]")
 {
     SECTION("Simple qualified expression")
     {
-        const ast::QualifiedExpr qual{ .type_mark{ "integer" },
-                                       .operand{ std::make_unique<ast::Expr>(
-                                         ast::TokenExpr{ .text{ "42" } }) } };
+        ast::ParenExpr inner{ .inner{
+          std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "42" } }) } };
 
-        REQUIRE(emit::test::render(qual) == "integer'42");
+        const ast::QualifiedExpr qual{ .type_mark{ "integer" },
+                                       .operand{ std::make_unique<ast::Expr>(std::move(inner)) } };
+
+        REQUIRE(emit::test::render(qual) == "integer'(42)");
     }
 
     SECTION("Qualified aggregate")

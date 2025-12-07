@@ -1,5 +1,5 @@
-#ifndef TEST_HELPERS_HPP
-#define TEST_HELPERS_HPP
+#ifndef EXPR_UTILS_HPP
+#define EXPR_UTILS_HPP
 
 #include "ast/nodes/declarations.hpp"
 #include "ast/nodes/design_file.hpp"
@@ -48,4 +48,4 @@ inline auto parseExpr(std::string_view init_expr) -> const ast::Expr *
 
 } // namespace expr_utils
 
-#endif // TEST_HELPERS_HPP
+#endif // EXPR_UTILS_HPP

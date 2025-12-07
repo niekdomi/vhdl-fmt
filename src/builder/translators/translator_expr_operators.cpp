@@ -150,49 +150,45 @@ auto Translator::makePrimary(vhdlParser::PrimaryContext &ctx) -> ast::Expr
 
 auto Translator::makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx) -> ast::Expr
 {
-    // qualified_expression: subtype_indication APOSTROPHE (aggregate | LPAREN expression RPAREN)
-    // Build the operand (aggregate or parenthesized expression)
-    ast::Expr value_expr = [&]() -> ast::Expr {
-        if (auto *agg = ctx.aggregate()) {
-            return makeAggregate(*agg);
-        }
+    // Build the operand (Aggregate or Parenthesized Expression)
+    ast::Expr operand{};
 
-        if (auto *expr = ctx.expression()) {
-            return build<ast::ParenExpr>(*expr)
-              .setBox(&ast::ParenExpr::inner, makeExpr(*expr))
-              .build();
-        }
-
-        return makeToken(ctx);
-    }();
-
-    auto *subtype = ctx.subtype_indication();
-    if (subtype == nullptr) {
-        return value_expr;
+    if (auto *agg = ctx.aggregate()) {
+        operand = makeAggregate(*agg);
+    } else if (auto *expr = ctx.expression()) {
+        operand
+          = build<ast::ParenExpr>(*expr).setBox(&ast::ParenExpr::inner, makeExpr(*expr)).build();
+    } else {
+        // Fallback for invalid parsing
+        operand = makeToken(ctx);
     }
 
-    // Create QualifiedExpr node
+    // If missing, return the unwrapped operand.
+    auto *subtype = ctx.subtype_indication();
+    if (subtype == nullptr) {
+        return operand;
+    }
+
     return build<ast::QualifiedExpr>(ctx)
       .set(&ast::QualifiedExpr::type_mark, subtype->getText())
-      .setBox(&ast::QualifiedExpr::operand, std::move(value_expr))
+      .setBox(&ast::QualifiedExpr::operand, std::move(operand))
       .build();
 }
 
 auto Translator::makeAllocator(vhdlParser::AllocatorContext &ctx) -> ast::Expr
 {
-    // allocator: NEW (qualified_expression | subtype_indication)
-    // Represented as: UnaryExpr with op="new"
-    ast::Expr operand = [&]() -> ast::Expr {
-        if (auto *qual = ctx.qualified_expression()) {
-            return makeQualifiedExpr(*qual);
-        }
+    ast::Expr operand{};
 
-        if (auto *subtype = ctx.subtype_indication()) {
-            return makeToken(*subtype);
-        }
-
-        return makeToken(ctx);
-    }();
+    // Determine the operand type (Qualified Expression vs Subtype)
+    if (auto *qual = ctx.qualified_expression()) {
+        operand = makeQualifiedExpr(*qual);
+    } else if (auto *subtype = ctx.subtype_indication()) {
+        // "new integer" or "new std_logic_vector(0 to 3)"
+        operand = makeToken(*subtype);
+    } else {
+        // Fallback for safety
+        operand = makeToken(ctx);
+    }
 
     return makeUnary(ctx, "new", std::move(operand));
 }

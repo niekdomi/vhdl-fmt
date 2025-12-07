@@ -134,14 +134,6 @@ struct QualifiedExpr : NodeBase
 };
 
 // -------------------------------------------------------
-// Forward declarations
-struct IndexConstraint;
-struct RangeConstraint;
-
-/// @brief Variant type for constraints used in type declarations.
-///
-/// Example: `IndexConstraint` or `RangeConstraint`
-using Constraint = std::variant<IndexConstraint, RangeConstraint>;
 
 /// @brief Represents an index constraint with parentheses.
 ///
@@ -158,6 +150,9 @@ struct RangeConstraint : NodeBase
 {
     BinaryExpr range; ///< Single range expression (e.g., "0 to 255" or "7 downto 0").
 };
+
+/// @brief Variant type for constraints used in type declarations.
+using Constraint = std::variant<IndexConstraint, RangeConstraint>;
 
 } // namespace ast
 
