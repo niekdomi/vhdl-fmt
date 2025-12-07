@@ -152,4 +152,27 @@ auto Translator::makeDiscreteRange(vhdlParser::Discrete_rangeContext &ctx) -> as
     return makeToken(ctx);
 }
 
+auto Translator::makeSubtypeIndication(vhdlParser::Subtype_indicationContext &ctx)
+  -> ast::SubtypeIndication
+{
+    return build<ast::SubtypeIndication>(ctx)
+      .apply([&](auto &node) {
+          auto names = ctx.selected_name();
+
+          // Grammar: selected_name (selected_name)? ...
+          if (names.size() >= 2) {
+              // First is resolution function, second is type mark
+              node.resolution_func = names[0]->getText();
+              node.type_mark = names[1]->getText();
+          } else if (!names.empty()) {
+              // Just type mark
+              node.type_mark = names[0]->getText();
+          }
+      })
+      .maybe(&ast::SubtypeIndication::constraint,
+             ctx.constraint(),
+             [this](auto &c) { return makeConstraint(c); })
+      .build();
+}
+
 } // namespace builder

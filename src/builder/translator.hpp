@@ -205,6 +205,9 @@ class Translator final
     auto makeSliceExpr(ast::Expr base, vhdlParser::Slice_name_partContext &ctx) -> ast::Expr;
     [[nodiscard]]
     auto makeTerm(vhdlParser::TermContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeSubtypeIndication(vhdlParser::Subtype_indicationContext &ctx)
+      -> ast::SubtypeIndication;
 
     // Constraints
     [[nodiscard]]

@@ -56,7 +56,7 @@ auto PrettyPrinter::operator()(const ast::AttributeExpr &node) const -> Doc
 
 auto PrettyPrinter::operator()(const ast::QualifiedExpr &node) const -> Doc
 {
-    return Doc::text(node.type_mark) + Doc::text("'") + visit(*node.operand);
+    return visit(node.type_mark) + Doc::text("'") + visit(*node.operand);
 }
 
 auto PrettyPrinter::operator()(const ast::ParenExpr &node) const -> Doc
@@ -73,6 +73,26 @@ auto PrettyPrinter::operator()(const ast::CallExpr &node) const -> Doc
 auto PrettyPrinter::operator()(const ast::SliceExpr &node) const -> Doc
 {
     return visit(*node.prefix) + Doc::text("(") + visit(*node.range) + Doc::text(")");
+}
+
+auto PrettyPrinter::operator()(const ast::SubtypeIndication &node) const -> Doc
+{
+    Doc result = Doc::empty();
+
+    // 1. Resolution Function (e.g., "resolved")
+    if (node.resolution_func) {
+        result += Doc::text(*node.resolution_func) + Doc::text(" ");
+    }
+
+    // 2. Type Mark (e.g., "std_logic")
+    result += Doc::text(node.type_mark);
+
+    // 3. Constraint (e.g., "(7 downto 0)")
+    if (node.constraint) {
+        result += visit(node.constraint.value());
+    }
+
+    return result;
 }
 
 } // namespace emit

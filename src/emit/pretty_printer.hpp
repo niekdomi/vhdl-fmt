@@ -76,6 +76,7 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     auto operator()(const ast::SliceExpr &node) const -> Doc;
     auto operator()(const ast::TokenExpr &node) const -> Doc;
     auto operator()(const ast::UnaryExpr &node) const -> Doc;
+    auto operator()(const ast::SubtypeIndication &node) const -> Doc;
 
     // Constraints
     auto operator()(const ast::IndexConstraint &node) const -> Doc;
