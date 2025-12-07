@@ -74,10 +74,13 @@ TEST_CASE("Entity Rendering", "[pretty_printer][design_units][entity]")
               .left = std::move(left), .op = "downto", .right = std::move(right) });
 
             // Port
-            entity.port_clause.ports.emplace_back(
-              ast::Port{ .names = { "data_in" },
-                         .mode = "in",
-                         .subtype = ast::SubtypeIndication{ .type_mark = "std_logic_vector", .constraint = ast::Constraint(std::move(idx_constraint)) } });
+            entity.port_clause.ports.emplace_back(ast::Port{
+              .names = { "data_in" },
+              .mode = "in",
+              .subtype = ast::SubtypeIndication{ .type_mark = "std_logic_vector",
+                        .constraint
+                                                 = ast::Constraint(std::move(idx_constraint)) }
+            });
 
             const std::string result = emit::test::render(entity);
             constexpr std::string_view EXPECTED

@@ -142,7 +142,7 @@ TEST_CASE("Architecture: Order preserved - constant, component, signal",
     const_decl.names = { "MAX_VALUE" };
     const_decl.subtype = ast::SubtypeIndication{ .type_mark = "integer" };
     const_decl.init_expr = ast::TokenExpr{ .text = "100" };
-    arch.decls.emplace_back(ast::Declaration(std::move(const_decl)));
+    arch.decls.emplace_back(std::move(const_decl));
 
     // Add component
     ast::ComponentDecl comp;
@@ -154,7 +154,7 @@ TEST_CASE("Architecture: Order preserved - constant, component, signal",
     ast::SignalDecl sig_decl;
     sig_decl.names = { "counter" };
     sig_decl.subtype = ast::SubtypeIndication{ .type_mark = "integer" };
-    arch.decls.emplace_back(ast::Declaration(std::move(sig_decl)));
+    arch.decls.emplace_back(std::move(sig_decl));
 
     const std::string result = emit::test::render(arch);
     constexpr std::string_view EXPECTED = "architecture rtl of test_entity is\n"
@@ -178,7 +178,7 @@ TEST_CASE("Architecture: Order preserved - signal, component, constant",
     ast::SignalDecl sig_decl;
     sig_decl.names = { "enable" };
     sig_decl.subtype = ast::SubtypeIndication{ .type_mark = "bit" };
-    arch.decls.emplace_back(ast::Declaration(std::move(sig_decl)));
+    arch.decls.emplace_back(std::move(sig_decl));
 
     // Add component
     ast::ComponentDecl comp;
@@ -191,7 +191,7 @@ TEST_CASE("Architecture: Order preserved - signal, component, constant",
     const_decl.names = { "TIMEOUT" };
     const_decl.subtype = ast::SubtypeIndication{ .type_mark = "integer" };
     const_decl.init_expr = ast::TokenExpr{ .text = "50" };
-    arch.decls.emplace_back(ast::Declaration(std::move(const_decl)));
+    arch.decls.emplace_back(std::move(const_decl));
 
     const std::string result = emit::test::render(arch);
     constexpr std::string_view EXPECTED = "architecture rtl of test_entity is\n"
@@ -215,13 +215,13 @@ TEST_CASE("Architecture: Complex interleaved declarations", "[pretty_printer][co
     c1.names = { "C1" };
     c1.subtype = ast::SubtypeIndication{ .type_mark = "integer" };
     c1.init_expr = ast::TokenExpr{ .text = "1" };
-    arch.decls.emplace_back(ast::Declaration(std::move(c1)));
+    arch.decls.emplace_back(std::move(c1));
 
     // S1
     ast::SignalDecl s1;
     s1.names = { "S1" };
     s1.subtype = ast::SubtypeIndication{ .type_mark = "bit" };
-    arch.decls.emplace_back(ast::Declaration(std::move(s1)));
+    arch.decls.emplace_back(std::move(s1));
 
     // COMP1
     ast::ComponentDecl comp1;
@@ -233,7 +233,7 @@ TEST_CASE("Architecture: Complex interleaved declarations", "[pretty_printer][co
     c2.names = { "C2" };
     c2.subtype = ast::SubtypeIndication{ .type_mark = "integer" };
     c2.init_expr = ast::TokenExpr{ .text = "2" };
-    arch.decls.emplace_back(ast::Declaration(std::move(c2)));
+    arch.decls.emplace_back(std::move(c2));
 
     // COMP2
     ast::ComponentDecl comp2;
@@ -244,14 +244,14 @@ TEST_CASE("Architecture: Complex interleaved declarations", "[pretty_printer][co
     ast::SignalDecl s2;
     s2.names = { "S2" };
     s2.subtype = ast::SubtypeIndication{ .type_mark = "bit" };
-    arch.decls.emplace_back(ast::Declaration(std::move(s2)));
+    arch.decls.emplace_back(std::move(s2));
 
     // C3
     ast::ConstantDecl c3;
     c3.names = { "C3" };
     c3.subtype = ast::SubtypeIndication{ .type_mark = "integer" };
     c3.init_expr = ast::TokenExpr{ .text = "3" };
-    arch.decls.emplace_back(ast::Declaration(std::move(c3)));
+    arch.decls.emplace_back(std::move(c3));
 
     const std::string result = emit::test::render(arch);
 
