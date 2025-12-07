@@ -45,4 +45,21 @@ TEST_CASE("CallExpr Rendering", "[pretty_printer][expressions][call]")
 
         REQUIRE(emit::test::render(outer) == "get_array(i)(j)");
     }
+
+    SECTION("Nested function call as argument")
+    {
+        ast::CallExpr inner{ .callee{
+                               std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "unsigned" } }) },
+                             .args{ std::make_unique<ast::GroupExpr>() } };
+
+        inner.args->children.emplace_back(ast::TokenExpr{ .text{ "sig" } });
+
+        ast::CallExpr outer{ .callee{ std::make_unique<ast::Expr>(
+                               ast::TokenExpr{ .text{ "to_integer" } }) },
+                             .args{ std::make_unique<ast::GroupExpr>() } };
+
+        outer.args->children.emplace_back(std::move(inner));
+
+        REQUIRE(emit::test::render(outer) == "to_integer(unsigned(sig))");
+    }
 }

@@ -94,14 +94,37 @@ auto Translator::makeAttributeExpr(ast::Expr base, vhdlParser::Attribute_name_pa
 auto Translator::makeCallArgument(vhdlParser::Association_elementContext &ctx) -> ast::Expr
 {
     auto *actual = ctx.actual_part();
-    auto *designator = (actual != nullptr) ? actual->actual_designator() : nullptr;
-    auto *expr = (designator != nullptr) ? designator->expression() : nullptr;
-
-    if (expr != nullptr) {
-        return makeExpr(*expr);
+    if (actual == nullptr) {
+        return makeToken(ctx);
     }
 
-    return makeToken(ctx);
+    // Resolve the inner content (Expression or OPEN token)
+    // actual_designator is available in both grammar alternatives.
+    auto *designator = actual->actual_designator();
+    ast::Expr content{};
+
+    if (designator != nullptr && designator->expression() != nullptr) {
+        content = makeExpr(*designator->expression());
+    } else if (designator != nullptr) {
+        // Handle 'OPEN' keyword
+        content = makeToken(*designator);
+    } else {
+        return makeToken(*actual);
+    }
+
+    // Check for function call / type conversion syntax: name(actual_designator)
+    if (auto *name_ctx = actual->name()) {
+        ast::GroupExpr args{};
+        args.children.push_back(std::move(content));
+
+        return build<ast::CallExpr>(*actual)
+          .setBox(&ast::CallExpr::callee, makeName(*name_ctx))
+          .setBox(&ast::CallExpr::args, std::move(args))
+          .build();
+    }
+
+    // Otherwise, it is just the direct content
+    return content;
 }
 
 } // namespace builder

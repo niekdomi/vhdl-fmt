@@ -69,4 +69,30 @@ TEST_CASE("CallExpr", "[expressions][call]")
         REQUIRE(outer_arg != nullptr);
         REQUIRE(outer_arg->text == "j");
     }
+
+    SECTION("Nested function call as argument")
+    {
+        const auto *expr = expr_utils::parseExpr("to_integer(unsigned(sig))");
+        const auto *outer_call = std::get_if<ast::CallExpr>(expr);
+        REQUIRE(outer_call != nullptr);
+
+        const auto *outer_callee = std::get_if<ast::TokenExpr>(outer_call->callee.get());
+        REQUIRE(outer_callee != nullptr);
+        REQUIRE(outer_callee->text == "to_integer");
+
+        REQUIRE(outer_call->args->children.size() == 1);
+
+        const auto *inner_call = std::get_if<ast::CallExpr>(outer_call->args->children.data());
+        REQUIRE(inner_call != nullptr);
+
+        const auto *inner_callee = std::get_if<ast::TokenExpr>(inner_call->callee.get());
+        REQUIRE(inner_callee != nullptr);
+        REQUIRE(inner_callee->text == "unsigned");
+
+        REQUIRE(inner_call->args->children.size() == 1);
+
+        const auto *inner_arg = std::get_if<ast::TokenExpr>(inner_call->args->children.data());
+        REQUIRE(inner_arg != nullptr);
+        REQUIRE(inner_arg->text == "sig");
+    }
 }
