@@ -1,3 +1,4 @@
+#include "ast/nodes/declarations.hpp"
 #include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/doc.hpp"
 
