@@ -30,16 +30,14 @@ TEST_CASE("TypeDecl: Record", "[pretty_printer][type][record]")
 
         type_decl.type_def = std::move(record_def);
 
-        SECTION("Without Alignment Configured")
+        SECTION("Default Configuration (No Alignment)")
         {
             constexpr auto EXPECTED = "type packet_t is record\n"
                                       "  id : integer;\n"
                                       "  data : std_logic_vector;\n"
                                       "end record;";
 
-            auto config = emit::test::defaultConfig();
-
-            REQUIRE(emit::test::render(type_decl, config) == EXPECTED);
+            REQUIRE(emit::test::render(type_decl) == EXPECTED);
         }
 
         SECTION("With Alignment Configured")
