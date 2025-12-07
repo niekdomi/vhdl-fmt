@@ -12,7 +12,7 @@ namespace emit {
 
 namespace {
 
-/// @brief Local constants for record element alignment (matches declarations.cpp).
+/// @brief Local constants for record element alignment.
 struct AlignmentLevel
 {
     static constexpr int NAME = 0; ///< Column 0: Field names
@@ -30,15 +30,11 @@ auto PrettyPrinter::operator()(const ast::EnumerationTypeDef &node) const -> Doc
                                | std::views::join_with(std::string_view{ ", " })
                                | std::ranges::to<std::string>();
 
-    // Result: (A, B, C)
-    // The wrapping group is handled by Doc::group in TypeDecl if necessary,
-    // but usually enums fit on one line.
     return Doc::text("(") + Doc::text(literals) + Doc::text(")");
 }
 
 auto PrettyPrinter::operator()(const ast::RecordElement &node) const -> Doc
 {
-    // field1, field2 : type_name;
     const std::string names = node.names
                             | std::views::join_with(std::string_view{ ", " })
                             | std::ranges::to<std::string>();
