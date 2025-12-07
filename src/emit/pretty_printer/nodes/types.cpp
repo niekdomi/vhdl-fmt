@@ -1,5 +1,6 @@
 #include "ast/nodes/types.hpp"
 
+#include "common/overload.hpp"
 #include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/doc.hpp"
 #include "emit/pretty_printer/doc_utils.hpp"
@@ -75,31 +76,20 @@ auto PrettyPrinter::operator()(const ast::ArrayTypeDef &node) const -> Doc
     Doc result = Doc::text("array");
 
     if (!node.indices.empty()) {
-        const Doc indices = joinMap(
-          node.indices,
-          Doc::text(", "),
-          [&](const auto &idx) -> Doc {
-              return std::visit(
-                [&](const auto &val) -> Doc {
-                    using T = std::decay_t<decltype(val)>;
-                    if constexpr (std::is_same_v<T, std::string>) {
-                        // Unconstrained: "natural range <>"
-                        return Doc::text(val + " range <>");
-                    } else {
-                        // Constrained: visit expression "7 downto 0"
-                        return visit(val);
-                    }
-                },
-                idx);
-          },
-          false);
+        auto render_index = [&](const auto &idx) {
+            return std::visit(
+              common::Overload{ [](const std::string &s) { return Doc::text(s + " range <>"); },
+                                [&](const auto &expr) { return visit(expr); } },
+              idx);
+        };
 
-        result += Doc::text("(") + indices + Doc::text(")");
+        result += Doc::text("(")
+                + joinMap(node.indices, Doc::text(", "), render_index, false)
+                + Doc::text(")");
     }
 
     result &= Doc::text("of") & Doc::text(node.element_type);
 
-    // Render element constraint (e.g. vector(7 downto 0))
     if (node.element_constraint) {
         result += visit(node.element_constraint.value());
     }

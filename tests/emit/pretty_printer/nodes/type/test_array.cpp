@@ -10,14 +10,13 @@
 
 TEST_CASE("TypeDecl: Array", "[pretty_printer][type][array]")
 {
-    ast::TypeDecl type_decl;
+    ast::TypeDecl type_decl{};
     type_decl.name = "mem_t";
-
-    ast::ArrayTypeDef array_def;
-    array_def.element_type = "std_logic";
 
     SECTION("Unconstrained array")
     {
+        ast::ArrayTypeDef array_def{};
+        array_def.element_type = "std_logic";
         // indices = "natural" (string variant) -> renders as "natural range <>"
         array_def.indices.emplace_back("natural");
         type_decl.type_def = std::move(array_def);
@@ -28,11 +27,13 @@ TEST_CASE("TypeDecl: Array", "[pretty_printer][type][array]")
 
     SECTION("Constrained array (range expression)")
     {
+        ast::ArrayTypeDef array_def{};
+        array_def.element_type = "std_logic";
         // indices = Expr (0 to 1023)
         auto left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "0" });
         auto right = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "1023" });
 
-        ast::BinaryExpr range_expr;
+        ast::BinaryExpr range_expr{};
         range_expr.left = std::move(left);
         range_expr.op = "to";
         range_expr.right = std::move(right);
@@ -45,13 +46,15 @@ TEST_CASE("TypeDecl: Array", "[pretty_printer][type][array]")
 
     SECTION("Multi-dimensional mixed array")
     {
+        ast::ArrayTypeDef array_def{};
+        array_def.element_type = "std_logic";
         // indices = ["integer", Expr(0 to 3)]
         array_def.indices.emplace_back("integer"); // Unconstrained
 
         auto left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "0" });
         auto right = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "3" });
 
-        ast::BinaryExpr range_expr;
+        ast::BinaryExpr range_expr{};
         range_expr.left = std::move(left);
         range_expr.op = "to";
         range_expr.right = std::move(right);
@@ -66,6 +69,7 @@ TEST_CASE("TypeDecl: Array", "[pretty_printer][type][array]")
 
     SECTION("Array with element constraint")
     {
+        ast::ArrayTypeDef array_def{};
         // type ram_t is array (0 to 63) of std_logic_vector(7 downto 0);
         array_def.element_type = "std_logic_vector";
 
@@ -84,7 +88,7 @@ TEST_CASE("TypeDecl: Array", "[pretty_printer][type][array]")
                                     .op = "downto",
                                     .right = std::move(elem_right) };
 
-        ast::IndexConstraint constr;
+        ast::IndexConstraint constr{};
         constr.ranges.children.emplace_back(std::move(elem_range));
         array_def.element_constraint = std::move(constr);
 
