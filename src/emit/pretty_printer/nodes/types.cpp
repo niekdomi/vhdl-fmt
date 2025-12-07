@@ -3,7 +3,6 @@
 #include "common/overload.hpp"
 #include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/doc.hpp"
-#include "emit/pretty_printer/doc_utils.hpp"
 
 #include <ranges>
 #include <string>
@@ -67,8 +66,7 @@ auto PrettyPrinter::operator()(const ast::RecordTypeDef &node) const -> Doc
         return head & end;
     }
 
-    return Doc::align(
-      Doc::bracket(head, joinMap(node.elements, Doc::line(), toDoc(*this), false), end));
+    return Doc::align(Doc::bracket(head, join(node.elements, Doc::line()), end));
 }
 
 auto PrettyPrinter::operator()(const ast::ArrayTypeDef &node) const -> Doc
@@ -84,9 +82,8 @@ auto PrettyPrinter::operator()(const ast::ArrayTypeDef &node) const -> Doc
               idx);
         };
 
-        result += Doc::text("(")
-                + joinMap(node.indices, Doc::text(", "), render_index, false)
-                + Doc::text(")");
+        result
+          += Doc::text("(") + joinMap(node.indices, Doc::text(", "), render_index) + Doc::text(")");
     }
 
     result &= Doc::text("of") & Doc::text(node.element_type);

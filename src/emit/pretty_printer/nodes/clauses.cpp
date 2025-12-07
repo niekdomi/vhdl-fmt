@@ -1,7 +1,6 @@
 #include "ast/nodes/design_units.hpp"
 #include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/doc.hpp"
-#include "emit/pretty_printer/doc_utils.hpp"
 
 #include <ranges>
 
@@ -16,14 +15,10 @@ auto PrettyPrinter::operator()(const ast::GenericClause &node) const -> Doc
     const Doc opener = Doc::text("generic") & Doc::text("(");
     const Doc closer = Doc::text(");");
 
-    const Doc generics = joinMap(
-      node.generics,
-      Doc::line(),
-      [&](const auto &param) {
-          const bool is_last = &param == &node.generics.back();
-          return visit(param, is_last);
-      },
-      false);
+    const Doc generics = joinMap(node.generics, Doc::line(), [&](const auto &param) {
+        const bool is_last = &param == &node.generics.back();
+        return visit(param, is_last);
+    });
 
     const Doc result = Doc::align(generics);
 
@@ -39,14 +34,10 @@ auto PrettyPrinter::operator()(const ast::PortClause &node) const -> Doc
     const Doc opener = Doc::text("port") & Doc::text("(");
     const Doc closer = Doc::text(");");
 
-    const Doc ports = joinMap(
-      node.ports,
-      Doc::line(),
-      [&](const auto &port) {
-          const bool is_last = (&port == &node.ports.back());
-          return visit(port, is_last);
-      },
-      false);
+    const Doc ports = joinMap(node.ports, Doc::line(), [&](const auto &port) {
+        const bool is_last = (&port == &node.ports.back());
+        return visit(port, is_last);
+    });
 
     const Doc result = Doc::align(ports);
 

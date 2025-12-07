@@ -2,7 +2,6 @@
 
 #include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/doc.hpp"
-#include "emit/pretty_printer/doc_utils.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -21,9 +20,7 @@ auto PrettyPrinter::operator()(const ast::PhysicalLiteral &node) const -> Doc
 
 auto PrettyPrinter::operator()(const ast::GroupExpr &node) const -> Doc
 {
-    const Doc result
-      = joinMap(node.children, Doc::text(", "), [this](const auto &c) { return visit(c); }, false);
-
+    const Doc result = join(node.children, Doc::text(", "));
     return Doc::text("(") + result + Doc::text(")");
 }
 

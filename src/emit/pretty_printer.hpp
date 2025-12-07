@@ -11,6 +11,8 @@
 #include "ast/visitor.hpp"
 #include "emit/pretty_printer/doc.hpp"
 
+#include <algorithm>
+#include <functional>
 #include <type_traits>
 #include <utility>
 
@@ -110,6 +112,27 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
 
     // Allow base class to call `wrapResult`, so `wrapResult` can be private
     friend class ast::VisitorBase<Doc>;
+
+    /// @brief Generic joiner: Applies a transform function to each item.
+    template<std::ranges::input_range Range, typename Transform>
+    auto joinMap(Range &&items, const Doc &sep, Transform &&transform) const -> Doc
+    {
+        auto result = std::ranges::fold_left(
+          std::forward<Range>(items), Doc::empty(), [&](const Doc &acc, const auto &item) {
+              // Apply the user-provided transform (lambda or function object)
+              const Doc doc = std::invoke(std::forward<Transform>(transform), item);
+              return acc.isEmpty() ? doc : acc + sep + doc;
+          });
+        return result;
+    }
+
+    /// @brief AST joiner: Automatically calls this->visit() on each item.
+    template<std::ranges::input_range Range>
+    auto join(Range &&items, const Doc &sep) const -> Doc
+    {
+        return joinMap(
+          std::forward<Range>(items), sep, [this](const auto &node) { return this->visit(node); });
+    }
 };
 
 } // namespace emit
