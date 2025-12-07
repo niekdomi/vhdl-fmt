@@ -14,12 +14,12 @@ add_executable(
     nodes/declarations/test_variable.cpp
     #
     # Types
-    nodes/type/test_access.cpp
-    nodes/type/test_array.cpp
-    nodes/type/test_enumeration.cpp
-    nodes/type/test_file.cpp
-    nodes/type/test_incomplete.cpp
-    nodes/type/test_record.cpp
+    nodes/types/test_access.cpp
+    nodes/types/test_array.cpp
+    nodes/types/test_enumeration.cpp
+    nodes/types/test_file.cpp
+    nodes/types/test_incomplete.cpp
+    nodes/types/test_record.cpp
     #
     # Expressions
     nodes/expressions/test_attribute.cpp
