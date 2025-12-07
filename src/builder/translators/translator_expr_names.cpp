@@ -94,7 +94,7 @@ auto Translator::makeAttributeExpr(ast::Expr base, vhdlParser::Attribute_name_pa
 auto Translator::makeCallArgument(vhdlParser::Association_elementContext &ctx) -> ast::Expr
 {
     auto *actual = ctx.actual_part();
-    if (actual == nullptr) [[unlikely]] {
+    if (actual == nullptr) {
         return makeToken(ctx);
     }
 
@@ -119,8 +119,7 @@ auto Translator::makeCallArgument(vhdlParser::Association_elementContext &ctx) -
     // 2. Check for function call / type conversion syntax: name(actual_designator)
     if (auto *name_ctx = actual->name()) {
         ast::GroupExpr args{};
-        args.children.reserve(1);
-        args.children.push_back(std::move(content));
+        args.children.emplace_back(std::move(content));
 
         return build<ast::CallExpr>(*actual)
           .setBox(&ast::CallExpr::callee, makeName(*name_ctx))
