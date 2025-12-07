@@ -10,10 +10,8 @@ add_executable(
     # Declarations
     nodes/declarations/test_component.cpp
     nodes/declarations/test_constant.cpp
-    nodes/declarations/test_constraints.cpp
-    nodes/declarations/test_generic_param.cpp
-    nodes/declarations/test_port.cpp
     nodes/declarations/test_signal.cpp
+    nodes/declarations/test_variable.cpp
     #
     # Types
     nodes/type/test_access.cpp

@@ -54,7 +54,7 @@ TEST_CASE("Process Translator", "[builder][process]")
             REQUIRE(variable != nullptr);
 
             CHECK(variable->names[0] == "counter");
-            CHECK(variable->type_name == "integer");
+            CHECK(variable->subtype.type_mark == "integer");
             CHECK(variable->shared == false);
             CHECK(variable->init_expr.has_value());
         }
@@ -65,7 +65,7 @@ TEST_CASE("Process Translator", "[builder][process]")
             REQUIRE(constant != nullptr);
 
             CHECK(constant->names[0] == "MAX_VAL");
-            CHECK(constant->type_name == "integer");
+            CHECK(constant->subtype.type_mark == "integer");
             CHECK(constant->init_expr.has_value());
         }
 
@@ -75,7 +75,7 @@ TEST_CASE("Process Translator", "[builder][process]")
             REQUIRE(shared != nullptr);
 
             CHECK(shared->names[0] == "flags");
-            CHECK(shared->type_name == "bit_vector");
+            CHECK(shared->subtype.type_mark == "bit_vector");
             CHECK(shared->shared == true);
         }
     }

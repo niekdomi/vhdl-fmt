@@ -1,5 +1,4 @@
 #include "ast/nodes/declarations.hpp"
-#include "ast/nodes/design_units.hpp"
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
@@ -36,7 +35,7 @@ auto Translator::makeGenericParam(vhdlParser::Interface_constant_declarationCont
 {
     return build<ast::GenericParam>(ctx)
       .set(&ast::GenericParam::names, extractNames(ctx.identifier_list()))
-      .set(&ast::GenericParam::type_name, extractTypeFullText(ctx.subtype_indication()))
+      .set(&ast::GenericParam::subtype, makeSubtypeIndication(*ctx.subtype_indication()))
       .maybe(&ast::GenericParam::default_expr,
              ctx.expression(),
              [&](auto &expr) { return makeExpr(expr); })
@@ -50,10 +49,7 @@ auto Translator::makeSignalPort(vhdlParser::Interface_port_declarationContext &c
     return build<ast::Port>(ctx)
       .set(&ast::Port::names, extractNames(ctx.identifier_list()))
       .set(&ast::Port::mode, extractMode(ctx.signal_mode()))
-      .apply([&](auto &node) {
-          extractSubtypeInfo(
-            node, ctx.subtype_indication(), [&](auto &c) { return makeConstraint(c); });
-      })
+      .set(&ast::Port::subtype, makeSubtypeIndication(*ctx.subtype_indication()))
       .maybe(&ast::Port::default_expr, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })
       .build();
 }
@@ -62,7 +58,7 @@ auto Translator::makeConstantDecl(vhdlParser::Constant_declarationContext &ctx) 
 {
     return build<ast::ConstantDecl>(ctx)
       .set(&ast::ConstantDecl::names, extractNames(ctx.identifier_list()))
-      .set(&ast::ConstantDecl::type_name, extractTypeName(ctx.subtype_indication()))
+      .set(&ast::ConstantDecl::subtype, makeSubtypeIndication(*ctx.subtype_indication()))
       .maybe(
         &ast::ConstantDecl::init_expr, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })
       .build();
@@ -74,10 +70,7 @@ auto Translator::makeSignalDecl(vhdlParser::Signal_declarationContext &ctx) -> a
 
     return build<ast::SignalDecl>(ctx)
       .set(&ast::SignalDecl::names, extractNames(ctx.identifier_list()))
-      .apply([&](auto &node) {
-          extractSubtypeInfo(
-            node, ctx.subtype_indication(), [&](auto &c) { return makeConstraint(c); });
-      })
+      .set(&ast::SignalDecl::subtype, makeSubtypeIndication(*ctx.subtype_indication()))
       .set(&ast::SignalDecl::has_bus_kw, skind != nullptr && skind->BUS() != nullptr)
       .maybe(
         &ast::SignalDecl::init_expr, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })
@@ -89,16 +82,11 @@ auto Translator::makeVariableDecl(vhdlParser::Variable_declarationContext &ctx) 
     return build<ast::VariableDecl>(ctx)
       .set(&ast::VariableDecl::shared, ctx.SHARED() != nullptr)
       .set(&ast::VariableDecl::names, extractNames(ctx.identifier_list()))
-      .apply([&](auto &node) {
-          extractSubtypeInfo(
-            node, ctx.subtype_indication(), [&](auto &c) { return makeConstraint(c); });
-      })
+      .set(&ast::VariableDecl::subtype, makeSubtypeIndication(*ctx.subtype_indication()))
       .maybe(
         &ast::VariableDecl::init_expr, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })
       .build();
 }
-
-// ---------------------- Component declarations ----------------------
 
 auto Translator::makeComponentDecl(vhdlParser::Component_declarationContext &ctx)
   -> ast::ComponentDecl

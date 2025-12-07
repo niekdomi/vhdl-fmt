@@ -42,7 +42,7 @@ class Translator final
     auto makeArchitecture(vhdlParser::Architecture_bodyContext &ctx) -> ast::Architecture;
     [[nodiscard]]
     auto makeArchitectureDeclarativePart(vhdlParser::Architecture_declarative_partContext &ctx)
-      -> std::vector<ast::DeclarativeItem>;
+      -> std::vector<ast::Declaration>;
     [[nodiscard]]
     auto makeArchitectureStatementPart(vhdlParser::Architecture_statement_partContext &ctx)
       -> std::vector<ast::ConcurrentStatement>;

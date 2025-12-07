@@ -1,5 +1,5 @@
-#ifndef TYPE_UTILS_HPP
-#define TYPE_UTILS_HPP
+#ifndef DECL_UTILS_HPP
+#define DECL_UTILS_HPP
 
 #include "ast/nodes/declarations.hpp"
 #include "ast/nodes/design_file.hpp"
@@ -10,11 +10,12 @@
 #include <string_view>
 #include <variant>
 
-namespace type_utils {
+namespace decl_utils {
 
-/// Parse a VHDL type declaration string into an AST node.
-/// Returns a pointer to the TypeDecl inside the static AST.
-inline auto parseType(std::string_view type_decl_str) -> const ast::TypeDecl *
+/// Parse a VHDL declaration string into a specific AST node.
+/// Wraps the string in an architecture body to ensure valid parsing context.
+template<typename T>
+inline auto parse(std::string_view decl_str) -> const T *
 {
     const auto vhdl = std::format(R"(
         entity E is end E;
@@ -23,9 +24,9 @@ inline auto parseType(std::string_view type_decl_str) -> const ast::TypeDecl *
         begin
         end A;
     )",
-                                  type_decl_str);
+                                  decl_str);
 
-    static ast::DesignFile design; // Static to keep alive for returned pointer
+    static ast::DesignFile design;
     design = builder::buildFromString(vhdl);
 
     if (design.units.size() < 2) {
@@ -36,11 +37,11 @@ inline auto parseType(std::string_view type_decl_str) -> const ast::TypeDecl *
         return nullptr;
     }
 
-    const auto *decl_item = arch->decls.data();
+    const auto *decl_variant = &arch->decls.front();
 
-    return std::get_if<ast::TypeDecl>(decl_item);
+    return std::get_if<T>(decl_variant);
 }
 
-} // namespace type_utils
+} // namespace decl_utils
 
-#endif // TYPE_UTILS_HPP
+#endif // DECL_UTILS_HPP

@@ -28,7 +28,7 @@ TEST_CASE("Entity Rendering", "[pretty_printer][design_units][entity]")
         SECTION("Generics Only")
         {
             ast::GenericParam param{ .names = { "WIDTH" },
-                                     .type_name = "positive",
+                                     .subtype = ast::SubtypeIndication{ .type_mark = "positive" },
                                      .default_expr = ast::TokenExpr{ .text = "8" } };
             entity.generic_clause.generics.emplace_back(std::move(param));
 
@@ -42,9 +42,13 @@ TEST_CASE("Entity Rendering", "[pretty_printer][design_units][entity]")
         SECTION("Ports Only")
         {
             entity.port_clause.ports.emplace_back(
-              ast::Port{ .names = { "clk" }, .mode = "in", .type_name = "std_logic" });
+              ast::Port{ .names = { "clk" },
+                         .mode = "in",
+                         .subtype = ast::SubtypeIndication{ .type_mark = "std_logic" } });
             entity.port_clause.ports.emplace_back(
-              ast::Port{ .names = { "count" }, .mode = "out", .type_name = "natural" });
+              ast::Port{ .names = { "count" },
+                         .mode = "out",
+                         .subtype = ast::SubtypeIndication{ .type_mark = "natural" } });
 
             const std::string result = emit::test::render(entity);
             constexpr std::string_view EXPECTED
@@ -59,7 +63,7 @@ TEST_CASE("Entity Rendering", "[pretty_printer][design_units][entity]")
             // Generic
             entity.generic_clause.generics.emplace_back(
               ast::GenericParam{ .names = { "DEPTH" },
-                                 .type_name = "positive",
+                                 .subtype = ast::SubtypeIndication{ .type_mark = "positive" },
                                  .default_expr = ast::TokenExpr{ .text = "16" } });
 
             // Port Constraint Construction
@@ -73,8 +77,7 @@ TEST_CASE("Entity Rendering", "[pretty_printer][design_units][entity]")
             entity.port_clause.ports.emplace_back(
               ast::Port{ .names = { "data_in" },
                          .mode = "in",
-                         .type_name = "std_logic_vector",
-                         .constraint = ast::Constraint(std::move(idx_constraint)) });
+                         .subtype = ast::SubtypeIndication{ .type_mark = "std_logic_vector", .constraint = ast::Constraint(std::move(idx_constraint)) } });
 
             const std::string result = emit::test::render(entity);
             constexpr std::string_view EXPECTED
@@ -252,7 +255,9 @@ TEST_CASE("Entity with Context Clauses", "[pretty_printer][design_units][context
           ast::UseClause{ .selected_names = { "ieee.std_logic_1164.all" } });
         entity.context.emplace_back(ast::LibraryClause{ .logical_names = { "work" } });
         entity.port_clause.ports.emplace_back(
-          ast::Port{ .names = { "clk" }, .mode = "in", .type_name = "std_logic" });
+          ast::Port{ .names = { "clk" },
+                     .mode = "in",
+                     .subtype = ast::SubtypeIndication{ .type_mark = "std_logic" } });
 
         const std::string result = emit::test::render(entity);
         constexpr std::string_view EXPECTED = "library ieee;\n"

@@ -66,7 +66,9 @@ TEST_CASE("Entity: With library and use clauses", "[pretty_printer][context][ent
     entity.context.emplace_back(ast::UseClause{ .selected_names = { "ieee.numeric_std.all" } });
 
     entity.port_clause.ports.emplace_back(
-      ast::Port{ .names = { "clk" }, .mode = "in", .type_name = "std_logic" });
+      ast::Port{ .names = { "clk" },
+                 .mode = "in",
+                 .subtype = ast::SubtypeIndication{ .type_mark = "std_logic" } });
 
     const std::string result = emit::test::render(entity);
     constexpr std::string_view EXPECTED = "library ieee;\n"
