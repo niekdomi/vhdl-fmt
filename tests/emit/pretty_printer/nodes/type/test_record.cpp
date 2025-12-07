@@ -1,5 +1,5 @@
 #include "ast/nodes/declarations.hpp"
-#include "ast/nodes/expressions.hpp" // For constraints
+#include "ast/nodes/expressions.hpp"
 #include "ast/nodes/types.hpp"
 #include "emit/test_utils.hpp"
 
@@ -14,7 +14,7 @@ TEST_CASE("TypeDecl: Record", "[pretty_printer][type][record]")
     ast::TypeDecl type_decl{};
     type_decl.name = "packet_t";
 
-    SECTION("Simple record")
+    SECTION("Simple record (Populated, No Label)")
     {
         ast::RecordElement header{};
         header.names = { "id" };
@@ -30,23 +30,66 @@ TEST_CASE("TypeDecl: Record", "[pretty_printer][type][record]")
 
         type_decl.type_def = std::move(record_def);
 
-        constexpr auto EXPECTED = "type packet_t is record\n"
-                                  "  id : integer;\n"
-                                  "  data : std_logic_vector;\n"
-                                  "end record;";
+        SECTION("Without Alignment Configured")
+        {
+            constexpr auto EXPECTED = "type packet_t is record\n"
+                                      "  id : integer;\n"
+                                      "  data : std_logic_vector;\n"
+                                      "end record;";
 
-        REQUIRE(emit::test::render(type_decl) == EXPECTED);
+            auto config = emit::test::defaultConfig();
+
+            REQUIRE(emit::test::render(type_decl, config) == EXPECTED);
+        }
+
+        SECTION("With Alignment Configured")
+        {
+            constexpr auto EXPECTED = "type packet_t is record\n"
+                                      "  id   : integer;\n"
+                                      "  data : std_logic_vector;\n"
+                                      "end record;";
+
+            auto config = emit::test::defaultConfig();
+            config.port_map.align_signals = true;
+
+            REQUIRE(emit::test::render(type_decl, config) == EXPECTED);
+        }
     }
 
-    SECTION("Record with end label")
+    SECTION("Empty record (No Label)")
+    {
+        ast::RecordTypeDef record_def{};
+        // No elements, no end_label
+        type_decl.type_def = std::move(record_def);
+
+        // Should render concisely on one line
+        REQUIRE(emit::test::render(type_decl) == "type packet_t is record end record;");
+    }
+
+    SECTION("Empty record (With Label)")
     {
         ast::RecordTypeDef record_def{};
         record_def.end_label = "packet_t";
 
         type_decl.type_def = std::move(record_def);
 
-        // Empty record with label
+        REQUIRE(emit::test::render(type_decl) == "type packet_t is record end record packet_t;");
+    }
+
+    SECTION("Populated record (With Label)")
+    {
+        ast::RecordElement elem{};
+        elem.names = { "val" };
+        elem.type_name = "integer";
+
+        ast::RecordTypeDef record_def{};
+        record_def.elements.push_back(std::move(elem));
+        record_def.end_label = "packet_t";
+
+        type_decl.type_def = std::move(record_def);
+
         constexpr auto EXPECTED = "type packet_t is record\n"
+                                  "  val : integer;\n"
                                   "end record packet_t;";
 
         REQUIRE(emit::test::render(type_decl) == EXPECTED);
@@ -65,12 +108,12 @@ TEST_CASE("RecordElement Rendering", "[pretty_printer][type][record]")
         REQUIRE(emit::test::render(elem) == "r, g, b : byte;");
     }
 
-    SECTION("Constrained element")
+    SECTION("Index Constrained element (Parentheses)")
     {
         elem.names = { "addr" };
         elem.type_name = "unsigned";
 
-        // Manually build constraint: (31 downto 0)
+        // Constraint: (31 downto 0)
         auto left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "31" });
         auto right = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "0" });
 
@@ -80,5 +123,22 @@ TEST_CASE("RecordElement Rendering", "[pretty_printer][type][record]")
         elem.constraint = ast::Constraint(std::move(constr));
 
         REQUIRE(emit::test::render(elem) == "addr : unsigned(31 downto 0);");
+    }
+
+    SECTION("Range Constrained element (Keyword)")
+    {
+        elem.names = { "level" };
+        elem.type_name = "integer";
+
+        // Constraint: range 0 to 255
+        auto left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "0" });
+        auto right = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "255" });
+
+        ast::RangeConstraint constr{};
+        constr.range
+          = ast::BinaryExpr{ .left = std::move(left), .op = "to", .right = std::move(right) };
+        elem.constraint = ast::Constraint(std::move(constr));
+
+        REQUIRE(emit::test::render(elem) == "level : integer range 0 to 255;");
     }
 }

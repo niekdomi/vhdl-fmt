@@ -16,7 +16,6 @@ namespace {
 struct AlignmentLevel
 {
     static constexpr int NAME = 0; ///< Column 0: Field names
-    static constexpr int TYPE = 1; ///< Column 1: Field types
 };
 
 } // namespace
@@ -44,9 +43,8 @@ auto PrettyPrinter::operator()(const ast::RecordElement &node) const -> Doc
                             | std::views::join_with(std::string_view{ ", " })
                             | std::ranges::to<std::string>();
 
-    Doc result = Doc::alignText(names, AlignmentLevel::NAME)
-               & Doc::text(":")
-               & Doc::alignText(node.type_name, AlignmentLevel::TYPE);
+    Doc result
+      = Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":") & Doc::text(node.type_name);
 
     if (node.constraint) {
         result += visit(node.constraint.value());
