@@ -11,7 +11,8 @@ TEST_CASE("CallExpr Rendering", "[pretty_printer][expressions][call]")
         ast::CallExpr call{ .callee{ std::make_unique<ast::Expr>(
                               ast::TokenExpr{ .text{ "rising_edge" } }) },
                             .args{ std::make_unique<ast::GroupExpr>() } };
-        call.args->children.push_back(ast::TokenExpr{ .text{ "clk" } });
+
+        call.args->children.emplace_back(ast::TokenExpr{ .text{ "clk" } });
 
         REQUIRE(emit::test::render(call) == "rising_edge(clk)");
     }
@@ -21,8 +22,8 @@ TEST_CASE("CallExpr Rendering", "[pretty_printer][expressions][call]")
         ast::CallExpr call{ .callee{
                               std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "resize" } }) },
                             .args{ std::make_unique<ast::GroupExpr>() } };
-        call.args->children.push_back(ast::TokenExpr{ .text{ "data" } });
-        call.args->children.push_back(ast::TokenExpr{ .text{ "16" } });
+        call.args->children.emplace_back(ast::TokenExpr{ .text{ "data" } });
+        call.args->children.emplace_back(ast::TokenExpr{ .text{ "16" } });
 
         REQUIRE(emit::test::render(call) == "resize(data, 16)");
     }
@@ -32,12 +33,11 @@ TEST_CASE("CallExpr Rendering", "[pretty_printer][expressions][call]")
         ast::CallExpr inner{ .callee{ std::make_unique<ast::Expr>(
                                ast::TokenExpr{ .text{ "get_array" } }) },
                              .args{ std::make_unique<ast::GroupExpr>() } };
-        inner.args->children.push_back(ast::TokenExpr{ .text{ "i" } });
+        inner.args->children.emplace_back(ast::TokenExpr{ .text{ "i" } });
 
         ast::CallExpr outer{ .callee{ std::make_unique<ast::Expr>(std::move(inner)) },
                              .args{ std::make_unique<ast::GroupExpr>() } };
-        outer.args->children.push_back(ast::TokenExpr{ .text{ "j" } });
-
+        outer.args->children.emplace_back(ast::TokenExpr{ .text{ "j" } });
         REQUIRE(emit::test::render(outer) == "get_array(i)(j)");
     }
 }

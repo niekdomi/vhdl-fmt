@@ -33,7 +33,7 @@ TEST_CASE("AttributeExpr Rendering", "[pretty_printer][expressions][attribute]")
                               std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "my_array" } }) },
                             .args{ std::make_unique<ast::GroupExpr>() } };
 
-        call.args->children.push_back(ast::TokenExpr{ .text{ "i" } });
+        call.args->children.emplace_back(ast::TokenExpr{ .text{ "i" } });
 
         ast::AttributeExpr attr{ .prefix{ std::make_unique<ast::Expr>(std::move(call)) },
                                  .attribute{ "length" } };

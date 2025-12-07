@@ -18,8 +18,8 @@ TEST_CASE("QualifiedExpr Rendering", "[pretty_printer][expressions][qualified]")
     SECTION("Qualified aggregate")
     {
         ast::GroupExpr group;
-        group.children.push_back(ast::TokenExpr{ .text{ "'1'" } });
-        group.children.push_back(ast::TokenExpr{ .text{ "'0'" } });
+        group.children.emplace_back(ast::TokenExpr{ .text{ "'1'" } });
+        group.children.emplace_back(ast::TokenExpr{ .text{ "'0'" } });
 
         ast::QualifiedExpr qual{ .type_mark{ "std_logic_vector" },
                                  .operand{ std::make_unique<ast::Expr>(std::move(group)) } };
@@ -36,7 +36,7 @@ TEST_CASE("QualifiedExpr Rendering", "[pretty_printer][expressions][qualified]")
         };
 
         ast::GroupExpr group;
-        group.children.push_back(std::move(assoc));
+        group.children.emplace_back(std::move(assoc));
 
         ast::QualifiedExpr qual{ .type_mark{ "std_logic_vector" },
                                  .operand{ std::make_unique<ast::Expr>(std::move(group)) } };
