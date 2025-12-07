@@ -4,6 +4,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <string>
+#include <utility>
 #include <vector>
 
 TEST_CASE("TypeDecl: Enumeration", "[pretty_printer][type][enum]")

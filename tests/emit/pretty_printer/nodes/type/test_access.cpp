@@ -3,6 +3,7 @@
 #include "emit/test_utils.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <utility>
 
 TEST_CASE("TypeDecl: Access", "[pretty_printer][type][access]")
 {

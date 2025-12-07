@@ -1,8 +1,10 @@
 #include "ast/nodes/declarations.hpp"
+#include "ast/nodes/expressions.hpp"
 #include "ast/nodes/types.hpp"
 #include "type_utils.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <string>
 #include <variant>
 
 TEST_CASE("TypeDecl: Array", "[builder][type][array]")
