@@ -103,28 +103,11 @@ auto Translator::makeCallExpr(ast::Expr base,
 auto Translator::makeAttributeExpr(ast::Expr base, vhdlParser::Attribute_name_partContext &ctx)
   -> ast::Expr
 {
-    // Extract attribute name (everything after the apostrophe)
-    const std::string full_text = ctx.getText();
-    const std::string attr_text = full_text.substr(1); // Skip leading apostrophe
-
-    // Check if there's a parenthesized expression (attribute with parameter)
-    auto *param_expr = ctx.expression();
-
-    // Find where the attribute name ends (before the paren if it exists)
-    std::string attr_name = attr_text;
-    if (param_expr != nullptr) {
-        // Remove the parameter part from attribute name
-        const auto paren_pos = attr_text.find('(');
-        if (paren_pos != std::string::npos) {
-            attr_name = attr_text.substr(0, paren_pos);
-        }
-    }
-
     return build<ast::AttributeExpr>(ctx)
       .setBox(&ast::AttributeExpr::prefix, std::move(base))
-      .set(&ast::AttributeExpr::attribute, std::move(attr_name))
+      .set(&ast::AttributeExpr::attribute, ctx.attribute_designator()->getText())
       .maybe(&ast::AttributeExpr::arg,
-             param_expr,
+             ctx.expression(), // Pass the pointer directly
              [&](auto &expr) { return std::make_unique<ast::Expr>(makeExpr(expr)); })
       .build();
 }
