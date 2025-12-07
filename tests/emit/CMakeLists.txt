@@ -14,6 +14,18 @@ add_executable(
     pretty_printer/nodes/test_waveforms.cpp
     pretty_printer/nodes/test_process.cpp
     pretty_printer/nodes/test_assignments.cpp
+    #
+    # Expressions
+    pretty_printer/nodes/expressions/test_attribute.cpp
+    pretty_printer/nodes/expressions/test_binary.cpp
+    pretty_printer/nodes/expressions/test_call.cpp
+    pretty_printer/nodes/expressions/test_group.cpp
+    pretty_printer/nodes/expressions/test_paren.cpp
+    pretty_printer/nodes/expressions/test_physical.cpp
+    pretty_printer/nodes/expressions/test_qualified.cpp
+    pretty_printer/nodes/expressions/test_slice.cpp
+    pretty_printer/nodes/expressions/test_token.cpp
+    pretty_printer/nodes/expressions/test_unary.cpp
 )
 
 target_link_libraries(

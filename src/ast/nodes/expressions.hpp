@@ -4,6 +4,7 @@
 #include "ast/node.hpp"
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
@@ -11,11 +12,14 @@
 namespace ast {
 
 // Forward declarations
+struct AttributeExpr;
 struct BinaryExpr;
 struct CallExpr;
 struct GroupExpr;
 struct ParenExpr;
 struct PhysicalLiteral;
+struct QualifiedExpr;
+struct SliceExpr;
 struct TokenExpr;
 struct UnaryExpr;
 
@@ -29,8 +33,16 @@ using Box = std::unique_ptr<T>;
 /// @brief Variant type for all expressions (holds values, not pointers).
 ///
 /// Example: `TokenExpr`, `BinaryExpr`, or `CallExpr`
-using Expr
-  = std::variant<TokenExpr, GroupExpr, UnaryExpr, BinaryExpr, ParenExpr, CallExpr, PhysicalLiteral>;
+using Expr = std::variant<TokenExpr,
+                          GroupExpr,
+                          UnaryExpr,
+                          BinaryExpr,
+                          ParenExpr,
+                          CallExpr,
+                          SliceExpr,
+                          AttributeExpr,
+                          QualifiedExpr,
+                          PhysicalLiteral>;
 
 /// @brief Represents a binary expression.
 ///
@@ -42,13 +54,22 @@ struct BinaryExpr : NodeBase
     Box<Expr> right; ///< Right operand (boxed for recursion).
 };
 
-/// @brief Represents a function call or indexed name.
+/// @brief Represents a function call.
 ///
-/// Example: `rising_edge(clk)`, `data(7 downto 0)`
+/// Example: `rising_edge(clk)`, `resize(data, 16)`
 struct CallExpr : NodeBase
 {
-    Box<Expr> callee; ///< Function/array name being called/indexed.
-    Box<Expr> args;   ///< Arguments (single expr or GroupExpr for multiple args).
+    Box<Expr> callee;    ///< Function name being called.
+    Box<GroupExpr> args; ///< Arguments (always a GroupExpr with parentheses).
+};
+
+/// @brief Represents array/signal slice notation.
+///
+/// Example: `data(7 downto 0)`, `mem(i)`
+struct SliceExpr : NodeBase
+{
+    Box<Expr> prefix; ///< Array/signal being sliced.
+    Box<Expr> range;  ///< Index or range expression.
 };
 
 /// @brief Represents an aggregate or grouped list of expressions.
@@ -93,17 +114,26 @@ struct UnaryExpr : NodeBase
     Box<Expr> value; ///< Operand expression (boxed for recursion).
 };
 
-// -------------------------------------------------------
-// Forward declarations
-struct IndexConstraint;
-struct RangeConstraint;
-
-/// @brief Variant type for constraints used in type declarations.
-struct IndexConstraint;
-struct RangeConstraint;
+/// @brief Represents an attribute reference.
 ///
-/// Example: `IndexConstraint` or `RangeConstraint`
-using Constraint = std::variant<IndexConstraint, RangeConstraint>;
+/// Example: `data'length`, `clk'event`, `signal_name'stable(5 ns)`
+struct AttributeExpr : NodeBase
+{
+    Box<Expr> prefix;             ///< Base expression (signal, type, array, etc.).
+    std::string attribute;        ///< Attribute name (e.g., "length", "event", "stable").
+    std::optional<Box<Expr>> arg; ///< Optional parameter for attributes like 'stable(5 ns).
+};
+
+/// @brief Represents a qualified expression (type qualification).
+///
+/// Example: `std_logic_vector'(x"AB")`, `integer'(42)`
+struct QualifiedExpr : NodeBase
+{
+    std::string type_mark; ///< Type qualifier/mark (e.g., "std_logic_vector", "integer").
+    Box<Expr> operand;     ///< Expression being qualified (aggregate or parenthesized expression).
+};
+
+// -------------------------------------------------------
 
 /// @brief Represents an index constraint with parentheses.
 ///
@@ -120,6 +150,9 @@ struct RangeConstraint : NodeBase
 {
     BinaryExpr range; ///< Single range expression (e.g., "0 to 255" or "7 downto 0").
 };
+
+/// @brief Variant type for constraints used in type declarations.
+using Constraint = std::variant<IndexConstraint, RangeConstraint>;
 
 } // namespace ast
 

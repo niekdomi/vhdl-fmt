@@ -17,7 +17,14 @@ add_executable(
     nodes/declarations/test_type.cpp
     #
     # Expressions
+    nodes/expressions/test_attribute.cpp
     nodes/expressions/test_binary.cpp
+    nodes/expressions/test_call.cpp
+    nodes/expressions/test_group.cpp
+    nodes/expressions/test_paren.cpp
+    nodes/expressions/test_physical.cpp
+    nodes/expressions/test_qualified.cpp
+    nodes/expressions/test_slice.cpp
     nodes/expressions/test_token.cpp
     nodes/expressions/test_unary.cpp
     #

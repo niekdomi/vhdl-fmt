@@ -1,138 +1,32 @@
-#include "ast/nodes/declarations.hpp"
-#include "ast/nodes/design_file.hpp"
-#include "ast/nodes/design_units.hpp"
 #include "ast/nodes/expressions.hpp"
-#include "builder/ast_builder.hpp"
+#include "expr_utils.hpp"
 
 #include <catch2/catch_test_macros.hpp>
-#include <string_view>
 #include <variant>
 
-// Helper to get expression from signal initialization
-namespace {
-
-auto getSignalInitExpr(const ast::DesignFile &design) -> const ast::Expr *
+TEST_CASE("TokenExpr", "[expressions][token]")
 {
-    if (design.units.size() < 2) {
-        return nullptr;
+    SECTION("Integer literal")
+    {
+        const auto *expr = expr_utils::parseExpr("42");
+        const auto *tok = std::get_if<ast::TokenExpr>(expr);
+        REQUIRE(tok != nullptr);
+        REQUIRE(tok->text == "42");
     }
 
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    if ((arch == nullptr) || arch->decls.empty()) {
-        return nullptr;
+    SECTION("Bit literal")
+    {
+        const auto *expr = expr_utils::parseExpr("'0'");
+        const auto *tok = std::get_if<ast::TokenExpr>(expr);
+        REQUIRE(tok != nullptr);
+        REQUIRE(tok->text == "'0'");
     }
 
-    const auto *decl_item = std::get_if<ast::Declaration>(arch->decls.data());
-    if (decl_item == nullptr) {
-        return nullptr;
+    SECTION("Identifier")
+    {
+        const auto *expr = expr_utils::parseExpr("MAX_VALUE");
+        const auto *tok = std::get_if<ast::TokenExpr>(expr);
+        REQUIRE(tok != nullptr);
+        REQUIRE(tok->text == "MAX_VALUE");
     }
-
-    const auto *signal = std::get_if<ast::SignalDecl>(decl_item);
-    if ((signal == nullptr) || !signal->init_expr.has_value()) {
-        return nullptr;
-    }
-
-    return &(*signal->init_expr);
-}
-
-} // namespace
-
-TEST_CASE("TokenExpr: Integer literal", "[expressions][token]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-            signal x : integer := 42;
-        begin
-        end A;
-    )";
-
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *expr = getSignalInitExpr(design);
-    REQUIRE(expr != nullptr);
-
-    const auto *tok = std::get_if<ast::TokenExpr>(expr);
-    REQUIRE(tok != nullptr);
-    REQUIRE(tok->text == "42");
-}
-
-TEST_CASE("TokenExpr: Negative integer", "[expressions][token]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-            signal x : integer := -100;
-        begin
-        end A;
-    )";
-
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *expr = getSignalInitExpr(design);
-    REQUIRE(expr != nullptr);
-
-    // Negative numbers are typically parsed as unary expressions
-    // but if parsed as token, check for it
-    if (const auto *tok = std::get_if<ast::TokenExpr>(expr)) {
-        REQUIRE(tok->text == "-100");
-    } else {
-        // Likely UnaryExpr with "-" operator
-        REQUIRE(std::holds_alternative<ast::UnaryExpr>(*expr));
-    }
-}
-
-TEST_CASE("TokenExpr: Bit literal '0'", "[expressions][token]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-            signal x : std_logic := '0';
-        begin
-        end A;
-    )";
-
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *expr = getSignalInitExpr(design);
-    REQUIRE(expr != nullptr);
-
-    const auto *tok = std::get_if<ast::TokenExpr>(expr);
-    REQUIRE(tok != nullptr);
-    REQUIRE(tok->text == "'0'");
-}
-
-TEST_CASE("TokenExpr: Bit literal '1'", "[expressions][token]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-            signal x : std_logic := '1';
-        begin
-        end A;
-    )";
-
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *expr = getSignalInitExpr(design);
-    REQUIRE(expr != nullptr);
-
-    const auto *tok = std::get_if<ast::TokenExpr>(expr);
-    REQUIRE(tok != nullptr);
-    REQUIRE(tok->text == "'1'");
-}
-
-TEST_CASE("TokenExpr: Identifier", "[expressions][token]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity E is end E;
-        architecture A of E is
-            signal x : integer := MAX_VALUE;
-        begin
-        end A;
-    )";
-
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *expr = getSignalInitExpr(design);
-    REQUIRE(expr != nullptr);
-
-    const auto *tok = std::get_if<ast::TokenExpr>(expr);
-    REQUIRE(tok != nullptr);
-    REQUIRE(tok->text == "MAX_VALUE");
 }

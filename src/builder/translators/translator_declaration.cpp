@@ -238,7 +238,7 @@ auto Translator::makeTypeDecl(vhdlParser::Type_declarationContext &ctx) -> ast::
     return build<ast::TypeDecl>(ctx)
       .set(&ast::TypeDecl::name, name)
       .set(&ast::TypeDecl::kind, ast::TypeKind::OTHER)
-      .set(&ast::TypeDecl::other_definition, type_def->getText())
+      .set(&ast::TypeDecl::other_definition, type_def->getText()) // TODO(vedivad): raw text
       .build();
 }
 
