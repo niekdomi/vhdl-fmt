@@ -17,7 +17,7 @@ TEST_CASE("AttributeExpr Rendering", "[pretty_printer][expressions][attribute]")
 
     SECTION("Attribute with parameter")
     {
-        ast::AttributeExpr attr{
+        const ast::AttributeExpr attr{
             .prefix{ std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "signal_name" } }) },
             .attribute{ "stable" },
             .arg{

@@ -38,8 +38,8 @@ TEST_CASE("QualifiedExpr Rendering", "[pretty_printer][expressions][qualified]")
         ast::GroupExpr group;
         group.children.emplace_back(std::move(assoc));
 
-        ast::QualifiedExpr qual{ .type_mark{ "std_logic_vector" },
-                                 .operand{ std::make_unique<ast::Expr>(std::move(group)) } };
+        const ast::QualifiedExpr qual{ .type_mark{ "std_logic_vector" },
+                                       .operand{ std::make_unique<ast::Expr>(std::move(group)) } };
 
         REQUIRE(emit::test::render(qual) == "std_logic_vector'(others => '0')");
     }

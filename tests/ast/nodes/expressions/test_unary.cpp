@@ -1,6 +1,8 @@
+#include "ast/nodes/expressions.hpp"
 #include "expr_utils.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <variant>
 
 TEST_CASE("UnaryExpr", "[expressions][unary]")
 {

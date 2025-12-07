@@ -17,7 +17,7 @@ TEST_CASE("UnaryExpr Rendering", "[pretty_printer][expressions][unary]")
 
     SECTION("Unary plus")
     {
-        ast::UnaryExpr unary{
+        const ast::UnaryExpr unary{
             .op{ "+" }, .value{ std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "42" } }) }
         };
 
@@ -26,7 +26,7 @@ TEST_CASE("UnaryExpr Rendering", "[pretty_printer][expressions][unary]")
 
     SECTION("Logical not")
     {
-        ast::UnaryExpr unary{
+        const ast::UnaryExpr unary{
             .op{ "not" }, .value{ std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "ready" } }) }
         };
 
