@@ -11,9 +11,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-# --------------------------------------------------------------------
+# ------------------------------------------------------------------
 # Coverage Option
-# --------------------------------------------------------------------
+# ------------------------------------------------------------------
 option(ENABLE_COVERAGE "Enable code coverage" OFF)
 
 if(ENABLE_COVERAGE)
@@ -31,6 +31,23 @@ if(ENABLE_COVERAGE)
         -fcoverage-mapping
     )
 endif()
+
+# ------------------------------------------------------------------
+# Static Linking Option
+# ------------------------------------------------------------------
+option(ENABLE_STATIC_LINKING "Link C++ runtime statically for distribution" OFF)
+
+if(ENABLE_STATIC_LINKING)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        message(STATUS "  Static linking: ENABLED (C++ runtime)")
+    else()
+        message(WARNING "Static linking is only supported with GCC or Clang")
+    endif()
+endif()
+
+# ------------------------------------------------------------------
+# Project Configuration
+# ------------------------------------------------------------------
 
 message(STATUS "Project: ${PROJECT_NAME}")
 message(STATUS "  Version:  ${PROJECT_VERSION}")
@@ -55,9 +72,9 @@ find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(Catch2 CONFIG REQUIRED)
 
-# --------------------------------------------------------------------
+# ------------------------------------------------------------------
 # ANTLR Generation
-# --------------------------------------------------------------------
+# ------------------------------------------------------------------
 set(GRAMMAR_DIR ${CMAKE_SOURCE_DIR}/grammars)
 set(GENERATED_DIR ${CMAKE_BINARY_DIR}/generated)
 set(GRAMMAR_FILES
@@ -104,26 +121,26 @@ set_source_files_properties(
 target_include_directories(vhdl_generated SYSTEM PUBLIC ${GENERATED_DIR})
 target_link_libraries(vhdl_generated PUBLIC antlr4_static)
 
-# --------------------------------------------------------------------
+# ------------------------------------------------------------------
 # Version Header Generation
-# --------------------------------------------------------------------
+# ------------------------------------------------------------------
 set(VERSION_IN_FILE "${CMAKE_SOURCE_DIR}/src/common/version.hpp.in")
 set(VERSION_OUT_FILE "${CMAKE_BINARY_DIR}/generated/version.hpp")
 
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/generated")
 configure_file(${VERSION_IN_FILE} ${VERSION_OUT_FILE} @ONLY)
 
-# --------------------------------------------------------------------
+# ------------------------------------------------------------------
 # Project subdirs
-# --------------------------------------------------------------------
+# ------------------------------------------------------------------
 add_subdirectory(src)
 
 enable_testing()
 add_subdirectory(tests)
 
-# --------------------------------------------------------------------
+# ------------------------------------------------------------------
 # Coverage Targets
-# --------------------------------------------------------------------
+# ------------------------------------------------------------------
 if(ENABLE_COVERAGE)
     find_program(LLVM_PROFDATA llvm-profdata REQUIRED)
     find_program(LLVM_COV llvm-cov REQUIRED)

@@ -7,6 +7,12 @@ add_subdirectory(emit)
 
 # Main executable
 add_executable(vhdl_formatter main.cpp)
+# set_target_properties(
+#     vhdl_formatter
+#     PROPERTIES
+#         OUTPUT_NAME
+#             "vhdl-fmt"
+# )
 
 target_link_libraries(
     vhdl_formatter
@@ -17,6 +23,16 @@ target_link_libraries(
         builder
         emit
 )
+
+# Static linking for distribution builds
+if(ENABLE_STATIC_LINKING AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_link_options(
+        vhdl_formatter
+        PRIVATE
+            -static-libgcc
+            -static-libstdc++
+    )
+endif()
 
 target_compile_options(
     vhdl_formatter
