@@ -2,10 +2,15 @@
 #define BUILDER_TRANSLATOR_HPP
 
 #include "ast/nodes/declarations.hpp"
+#include "ast/nodes/declarations/interface.hpp"
+#include "ast/nodes/declarations/objects.hpp"
 #include "ast/nodes/design_file.hpp"
 #include "ast/nodes/design_units.hpp"
 #include "ast/nodes/expressions.hpp"
 #include "ast/nodes/statements.hpp"
+#include "ast/nodes/statements/concurrent.hpp"
+#include "ast/nodes/statements/sequential.hpp"
+#include "ast/nodes/statements/waveform.hpp"
 #include "ast/nodes/types.hpp"
 #include "builder/node_builder.hpp"
 #include "builder/trivia/trivia_binder.hpp"

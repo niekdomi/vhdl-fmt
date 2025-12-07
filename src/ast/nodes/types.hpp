@@ -32,8 +32,6 @@ struct RecordTypeDef : NodeBase
 };
 
 /// @brief Represents a single dimension in an array definition.
-/// - std::string: Unconstrained index type name (e.g., "natural" in "range <>")
-/// - ast::Expr: Constrained index range (e.g., "7 downto 0")
 using ArrayDimension = std::variant<std::string, Expr>;
 
 struct ArrayTypeDef : NodeBase
