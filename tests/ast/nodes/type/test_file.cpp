@@ -15,6 +15,6 @@ TEST_CASE("TypeDecl: File", "[builder][type][file]")
 
         const auto *def = std::get_if<ast::FileTypeDef>(&decl->type_def.value());
         REQUIRE(def != nullptr);
-        REQUIRE(def->content_type == "character");
+        REQUIRE(def->subtype.type_mark == "character");
     }
 }

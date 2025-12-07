@@ -13,13 +13,8 @@
 namespace ast {
 
 // Forward declarations
-struct Entity;
-struct Architecture;
 struct LibraryClause;
 struct UseClause;
-
-/// @brief Variant type for all design units.
-using DesignUnit = std::variant<Entity, Architecture>;
 
 /// @brief Variant type for context items.
 using ContextItem = std::variant<LibraryClause, UseClause>;
@@ -60,6 +55,9 @@ struct Architecture : NodeBase
     std::optional<std::string> end_label;
     bool has_end_architecture_keyword{ false };
 };
+
+/// @brief Variant type for all design units.
+using DesignUnit = std::variant<Entity, Architecture>;
 
 } // namespace ast
 

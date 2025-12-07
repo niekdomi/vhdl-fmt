@@ -39,12 +39,7 @@ auto PrettyPrinter::operator()(const ast::RecordElement &node) const -> Doc
                             | std::views::join_with(std::string_view{ ", " })
                             | std::ranges::to<std::string>();
 
-    Doc result
-      = Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":") & Doc::text(node.type_name);
-
-    if (node.constraint) {
-        result += visit(node.constraint.value());
-    }
+    Doc result = Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":") & visit(node.subtype);
 
     return result + Doc::text(";");
 }
@@ -82,23 +77,19 @@ auto PrettyPrinter::operator()(const ast::ArrayTypeDef &node) const -> Doc
           += Doc::text("(") + joinMap(node.indices, Doc::text(", "), render_index) + Doc::text(")");
     }
 
-    result &= Doc::text("of") & Doc::text(node.element_type);
-
-    if (node.element_constraint) {
-        result += visit(node.element_constraint.value());
-    }
+    result &= Doc::text("of") & visit(node.subtype);
 
     return result;
 }
 
 auto PrettyPrinter::operator()(const ast::AccessTypeDef &node) const -> Doc
 {
-    return Doc::text("access") & Doc::text(node.pointed_type);
+    return Doc::text("access") & visit(node.subtype);
 }
 
 auto PrettyPrinter::operator()(const ast::FileTypeDef &node) const -> Doc
 {
-    return Doc::text("file of") & Doc::text(node.content_type);
+    return Doc::text("file of") & visit(node.subtype);
 }
 
 } // namespace emit

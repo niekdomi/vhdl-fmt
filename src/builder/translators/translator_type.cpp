@@ -98,19 +98,8 @@ auto Translator::makeRecordElement(vhdlParser::Element_declarationContext &ctx)
            ctx.identifier_list()->identifier() | std::views::transform([](auto *id) {
                return id->getText();
            }) | std::ranges::to<std::vector<std::string>>())
-      .apply([&](auto &node) {
-          auto *subtype = ctx.element_subtype_definition()->subtype_indication();
-          if (subtype == nullptr) {
-              return;
-          }
-
-          if (auto *name = subtype->selected_name(0)) {
-              node.type_name = name->getText();
-          }
-          if (auto *constr = subtype->constraint()) {
-              node.constraint = makeConstraint(*constr);
-          }
-      })
+      .set(&ast::RecordElement::subtype,
+           makeSubtypeIndication(*ctx.element_subtype_definition()->subtype_indication()))
       .build();
 }
 
@@ -132,13 +121,7 @@ auto Translator::makeUnconstrainedArray(vhdlParser::Unconstrained_array_definiti
   -> ast::ArrayTypeDef
 {
     return build<ast::ArrayTypeDef>(ctx)
-      .with(ctx.subtype_indication(),
-            [this](auto &def, auto &sub) {
-                def.element_type = extractTypeName(&sub);
-                if (auto *c = sub.constraint()) {
-                    def.element_constraint = makeConstraint(*c);
-                }
-            })
+      .set(&ast::ArrayTypeDef::subtype, makeSubtypeIndication(*ctx.subtype_indication()))
       .apply([&](auto &def) {
           for (auto *idx : ctx.index_subtype_definition()) {
               if (auto *name = idx->name()) {
@@ -153,13 +136,7 @@ auto Translator::makeConstrainedArray(vhdlParser::Constrained_array_definitionCo
   -> ast::ArrayTypeDef
 {
     return build<ast::ArrayTypeDef>(ctx)
-      .with(ctx.subtype_indication(),
-            [this](auto &def, auto &sub) {
-                def.element_type = extractTypeName(&sub);
-                if (auto *c = sub.constraint()) {
-                    def.element_constraint = makeConstraint(*c);
-                }
-            })
+      .set(&ast::ArrayTypeDef::subtype, makeSubtypeIndication(*ctx.subtype_indication()))
       .with(ctx.index_constraint(),
             [this](auto &def, auto &idx_ctx) {
                 for (auto *dr : idx_ctx.discrete_range()) {
@@ -173,26 +150,14 @@ auto Translator::makeAccessType(vhdlParser::Access_type_definitionContext &ctx)
   -> ast::AccessTypeDef
 {
     return build<ast::AccessTypeDef>(ctx)
-      .apply([&](auto &def) {
-          if (auto *subtype = ctx.subtype_indication()) {
-              if (!subtype->selected_name().empty()) {
-                  def.pointed_type = subtype->selected_name(0)->getText();
-              }
-          }
-      })
+      .set(&ast::AccessTypeDef::subtype, makeSubtypeIndication(*ctx.subtype_indication()))
       .build();
 }
 
 auto Translator::makeFileType(vhdlParser::File_type_definitionContext &ctx) -> ast::FileTypeDef
 {
     return build<ast::FileTypeDef>(ctx)
-      .apply([&](auto &def) {
-          if (auto *subtype = ctx.subtype_indication()) {
-              if (!subtype->selected_name().empty()) {
-                  def.content_type = subtype->selected_name(0)->getText();
-              }
-          }
-      })
+      .set(&ast::FileTypeDef::subtype, makeSubtypeIndication(*ctx.subtype_indication()))
       .build();
 }
 

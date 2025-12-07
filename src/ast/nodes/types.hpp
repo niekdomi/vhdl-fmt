@@ -21,8 +21,7 @@ struct EnumerationTypeDef : NodeBase
 struct RecordElement : NodeBase
 {
     std::vector<std::string> names;
-    std::string type_name;
-    std::optional<Constraint> constraint;
+    SubtypeIndication subtype;
 };
 
 /// @brief Represents a record type definition.
@@ -39,20 +38,19 @@ using ArrayDimension = std::variant<std::string, Expr>;
 
 struct ArrayTypeDef : NodeBase
 {
-    std::string element_type;
-    std::optional<Constraint> element_constraint; ///< Constraint on the element type.
+    SubtypeIndication subtype;
     std::vector<ArrayDimension> indices;
 };
 
 // Represents "access my_type"
 struct AccessTypeDef : NodeBase
 {
-    std::string pointed_type;
+    SubtypeIndication subtype;
 };
 
 struct FileTypeDef : NodeBase
 {
-    std::string content_type;
+    SubtypeIndication subtype;
 };
 
 /// @brief Variant for the *structure* of a type.

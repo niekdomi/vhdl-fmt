@@ -23,7 +23,7 @@ TEST_CASE("TypeDecl: Record", "[builder][type][record]")
         REQUIRE(elem.names.size() == 2);
         REQUIRE(elem.names[0] == "x");
         REQUIRE(elem.names[1] == "y");
-        REQUIRE(elem.type_name == "integer");
+        REQUIRE(elem.subtype.type_mark == "integer");
     }
 
     SECTION("Record with constraints and end label")
@@ -43,11 +43,9 @@ TEST_CASE("TypeDecl: Record", "[builder][type][record]")
         // Check first element constraint
         const auto &elem0 = def->elements[0];
         REQUIRE(elem0.names[0] == "data");
-        REQUIRE(elem0.type_name == "std_logic_vector");
-        REQUIRE(elem0.constraint.has_value());
-
-        const auto *idx = std::get_if<ast::IndexConstraint>(&elem0.constraint.value());
+        REQUIRE(elem0.subtype.type_mark == "std_logic_vector");
+        REQUIRE(elem0.subtype.constraint.has_value());
+        const auto *idx = std::get_if<ast::IndexConstraint>(&elem0.subtype.constraint.value());
         REQUIRE(idx != nullptr);
-        // Deep constraint verification is covered in expression/constraint tests
     }
 }

@@ -18,10 +18,10 @@ TEST_CASE("TypeDecl: Array", "[builder][type][array]")
 
         const auto *def = std::get_if<ast::ArrayTypeDef>(&decl->type_def.value());
         REQUIRE(def != nullptr);
-        REQUIRE(def->element_type == "std_logic");
-        REQUIRE(def->indices.size() == 1);
+        REQUIRE(def->subtype.type_mark == "std_logic");
 
         // Verify it is stored as the string variant
+        REQUIRE(def->indices.size() == 1);
         const auto *idx_name = std::get_if<std::string>(def->indices.data());
         REQUIRE(idx_name != nullptr);
         REQUIRE(*idx_name == "natural");
@@ -34,10 +34,10 @@ TEST_CASE("TypeDecl: Array", "[builder][type][array]")
 
         const auto *def = std::get_if<ast::ArrayTypeDef>(&decl->type_def.value());
         REQUIRE(def != nullptr);
-        REQUIRE(def->element_type == "bit");
-        REQUIRE(def->indices.size() == 1);
+        REQUIRE(def->subtype.type_mark == "bit");
 
         // Verify it is stored as the Expr variant
+        REQUIRE(def->indices.size() == 1);
         const auto *idx_expr = std::get_if<ast::Expr>(def->indices.data());
         REQUIRE(idx_expr != nullptr);
 
@@ -56,10 +56,10 @@ TEST_CASE("TypeDecl: Array", "[builder][type][array]")
 
         const auto *def = std::get_if<ast::ArrayTypeDef>(&decl->type_def.value());
         REQUIRE(def != nullptr);
-        REQUIRE(def->element_type == "real");
-        REQUIRE(def->indices.size() == 2);
+        REQUIRE(def->subtype.type_mark == "real");
 
         // 1. 0 to 3 -> Expr
+        REQUIRE(def->indices.size() == 2);
         const auto *idx1 = std::get_if<ast::Expr>(def->indices.data());
         REQUIRE(idx1 != nullptr);
         REQUIRE(std::holds_alternative<ast::BinaryExpr>(*idx1));
@@ -78,14 +78,12 @@ TEST_CASE("TypeDecl: Array", "[builder][type][array]")
 
         const auto *def = std::get_if<ast::ArrayTypeDef>(&decl->type_def.value());
         REQUIRE(def != nullptr);
-        REQUIRE(def->element_type == "std_logic_vector");
+        REQUIRE(def->subtype.type_mark == "std_logic_vector");
 
-        // Verify element_constraint is populated
-        REQUIRE(def->element_constraint.has_value());
-        const auto *constr = std::get_if<ast::IndexConstraint>(&def->element_constraint.value());
+        REQUIRE(def->subtype.constraint.has_value());
+        const auto *constr = std::get_if<ast::IndexConstraint>(&def->subtype.constraint.value());
         REQUIRE(constr != nullptr);
 
-        // Verify the constraint expression inside
         REQUIRE(constr->ranges.children.size() == 1);
         const auto *range_expr = std::get_if<ast::BinaryExpr>(constr->ranges.children.data());
         REQUIRE(range_expr != nullptr);

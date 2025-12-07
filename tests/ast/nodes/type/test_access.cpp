@@ -15,7 +15,7 @@ TEST_CASE("TypeDecl: Access", "[builder][type][access]")
 
         const auto *def = std::get_if<ast::AccessTypeDef>(&decl->type_def.value());
         REQUIRE(def != nullptr);
-        REQUIRE(def->pointed_type == "integer");
+        REQUIRE(def->subtype.type_mark == "integer");
     }
 
     SECTION("Access to complex subtype")
@@ -25,6 +25,6 @@ TEST_CASE("TypeDecl: Access", "[builder][type][access]")
 
         const auto *def = std::get_if<ast::AccessTypeDef>(&decl->type_def.value());
         REQUIRE(def != nullptr);
-        REQUIRE(def->pointed_type == "string");
+        REQUIRE(def->subtype.type_mark == "string");
     }
 }
