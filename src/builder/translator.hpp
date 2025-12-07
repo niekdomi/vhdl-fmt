@@ -57,11 +57,18 @@ class Translator final
     [[nodiscard]] auto makeComponentDecl(vhdlParser::Component_declarationContext &ctx) -> ast::ComponentDecl;
     [[nodiscard]] auto makeConstantDecl(vhdlParser::Constant_declarationContext &ctx) -> ast::ConstantDecl;
     [[nodiscard]] auto makeGenericParam(vhdlParser::Interface_constant_declarationContext &ctx) -> ast::GenericParam;
-    [[nodiscard]] auto makeRecordElement(vhdlParser::Element_declarationContext &ctx) -> ast::RecordElement;
     [[nodiscard]] auto makeSignalDecl(vhdlParser::Signal_declarationContext &ctx) -> ast::SignalDecl;
     [[nodiscard]] auto makeSignalPort(vhdlParser::Interface_port_declarationContext &ctx) -> ast::Port;
-    [[nodiscard]] auto makeTypeDecl(vhdlParser::Type_declarationContext &ctx) -> ast::TypeDecl;
     [[nodiscard]] auto makeVariableDecl(vhdlParser::Variable_declarationContext &ctx) -> ast::VariableDecl;
+    [[nodiscard]] auto makeTypeDecl(vhdlParser::Type_declarationContext &ctx) -> ast::TypeDecl;
+
+    // Type Definitions
+    [[nodiscard]] auto makeEnumerationType(vhdlParser::Enumeration_type_definitionContext& ctx) -> ast::EnumerationTypeDef;
+    [[nodiscard]] auto makeRecordType(vhdlParser::Record_type_definitionContext& ctx) -> ast::RecordTypeDef;
+    [[nodiscard]] auto makeRecordElement(vhdlParser::Element_declarationContext& ctx) -> ast::RecordElement;
+    [[nodiscard]] auto makeArrayType(vhdlParser::Array_type_definitionContext& ctx) -> ast::ArrayTypeDef;
+    [[nodiscard]] auto makeAccessType(vhdlParser::Access_type_definitionContext& ctx) -> ast::AccessTypeDef;
+    [[nodiscard]] auto makeFileType(vhdlParser::File_type_definitionContext& ctx) -> ast::FileTypeDef;
 
     // Statements
     [[nodiscard]] auto makeCaseStatement(vhdlParser::Case_statementContext &ctx) -> ast::CaseStatement;

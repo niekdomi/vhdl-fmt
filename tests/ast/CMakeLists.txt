@@ -14,7 +14,14 @@ add_executable(
     nodes/declarations/test_generic_param.cpp
     nodes/declarations/test_port.cpp
     nodes/declarations/test_signal.cpp
-    nodes/declarations/test_type.cpp
+    #
+    # Types
+    nodes/type/test_access.cpp
+    nodes/type/test_array.cpp
+    nodes/type/test_enumeration.cpp
+    nodes/type/test_file.cpp
+    nodes/type/test_incomplete.cpp
+    nodes/type/test_record.cpp
     #
     # Expressions
     nodes/expressions/test_attribute.cpp

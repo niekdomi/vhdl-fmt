@@ -1,0 +1,84 @@
+#include "ast/nodes/declarations.hpp"
+#include "ast/nodes/expressions.hpp" // For constraints
+#include "ast/nodes/types.hpp"
+#include "emit/test_utils.hpp"
+
+#include <catch2/catch_test_macros.hpp>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+TEST_CASE("TypeDecl: Record", "[pretty_printer][type][record]")
+{
+    ast::TypeDecl type_decl{};
+    type_decl.name = "packet_t";
+
+    SECTION("Simple record")
+    {
+        ast::RecordElement header{};
+        header.names = { "id" };
+        header.type_name = "integer";
+
+        ast::RecordElement payload{};
+        payload.names = { "data" };
+        payload.type_name = "std_logic_vector";
+
+        ast::RecordTypeDef record_def{};
+        record_def.elements.push_back(std::move(header));
+        record_def.elements.push_back(std::move(payload));
+
+        type_decl.type_def = std::move(record_def);
+
+        constexpr auto EXPECTED = "type packet_t is record\n"
+                                  "  id : integer;\n"
+                                  "  data : std_logic_vector;\n"
+                                  "end record;";
+
+        REQUIRE(emit::test::render(type_decl) == EXPECTED);
+    }
+
+    SECTION("Record with end label")
+    {
+        ast::RecordTypeDef record_def{};
+        record_def.end_label = "packet_t";
+
+        type_decl.type_def = std::move(record_def);
+
+        // Empty record with label
+        constexpr auto EXPECTED = "type packet_t is record\n"
+                                  "end record packet_t;";
+
+        REQUIRE(emit::test::render(type_decl) == EXPECTED);
+    }
+}
+
+TEST_CASE("RecordElement Rendering", "[pretty_printer][type][record]")
+{
+    ast::RecordElement elem{};
+
+    SECTION("Multiple names")
+    {
+        elem.names = { "r", "g", "b" };
+        elem.type_name = "byte";
+
+        REQUIRE(emit::test::render(elem) == "r, g, b : byte;");
+    }
+
+    SECTION("Constrained element")
+    {
+        elem.names = { "addr" };
+        elem.type_name = "unsigned";
+
+        // Manually build constraint: (31 downto 0)
+        auto left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "31" });
+        auto right = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "0" });
+
+        ast::IndexConstraint constr{};
+        constr.ranges.children.emplace_back(
+          ast::BinaryExpr{ .left = std::move(left), .op = "downto", .right = std::move(right) });
+        elem.constraint = ast::Constraint(std::move(constr));
+
+        REQUIRE(emit::test::render(elem) == "addr : unsigned(31 downto 0);");
+    }
+}

@@ -10,6 +10,7 @@ add_library(
     translators/translator_expr_operators.cpp
     translators/translator_sequential.cpp
     translators/translator_unit.cpp
+    translators/translator_type.cpp
     trivia/trivia_binder.cpp
 )
 

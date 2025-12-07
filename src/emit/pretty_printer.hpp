@@ -7,6 +7,7 @@
 #include "ast/nodes/design_units.hpp"
 #include "ast/nodes/expressions.hpp"
 #include "ast/nodes/statements.hpp"
+#include "ast/nodes/types.hpp" // Added
 #include "ast/visitor.hpp"
 #include "emit/pretty_printer/doc.hpp"
 
@@ -48,10 +49,17 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
 
     // Declarations
     auto operator()(const ast::ConstantDecl &node) const -> Doc;
-    auto operator()(const ast::RecordElement &node) const -> Doc;
     auto operator()(const ast::SignalDecl &node) const -> Doc;
     auto operator()(const ast::TypeDecl &node) const -> Doc;
     auto operator()(const ast::VariableDecl &node) const -> Doc;
+
+    // Type Definitions
+    auto operator()(const ast::AccessTypeDef &node) const -> Doc;
+    auto operator()(const ast::ArrayTypeDef &node) const -> Doc;
+    auto operator()(const ast::EnumerationTypeDef &node) const -> Doc;
+    auto operator()(const ast::FileTypeDef &node) const -> Doc;
+    auto operator()(const ast::RecordTypeDef &node) const -> Doc;
+    auto operator()(const ast::RecordElement &node) const -> Doc;
 
     // Expressions
     auto operator()(const ast::AttributeExpr &node) const -> Doc;

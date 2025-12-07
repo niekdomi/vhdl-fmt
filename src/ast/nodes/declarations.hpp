@@ -3,8 +3,8 @@
 
 #include "ast/node.hpp"
 #include "nodes/expressions.hpp"
+#include "nodes/types.hpp"
 
-#include <cstdint>
 #include <optional>
 #include <string>
 #include <variant>
@@ -83,36 +83,12 @@ struct VariableDecl : NodeBase
     bool shared{ false };                 ///< Whether the SHARED keyword is present.
 };
 
-/// @brief Type kind enumeration for VHDL type declarations.
-enum class TypeKind : std::uint8_t
-{
-    ENUMERATION, ///< Enumeration type: (VALUE1, VALUE2, ...)
-    RECORD,      ///< Record type: record ... end record
-    OTHER        ///< Other types (array, access, file, range, etc.) - stored as text
-};
-
-/// @brief Represents an element in a VHDL record type definition.
-///
-/// Example: `state : ctrl_state_t;` inside a record
-struct RecordElement : NodeBase
-{
-    std::vector<std::string> names;       ///< List of element identifiers.
-    std::string type_name;                ///< Type of the element.
-    std::optional<Constraint> constraint; ///< Optional type constraint.
-};
-
 /// @brief Represents a VHDL type declaration.
-///
-/// Example: `type ctrl_state_t is (S_IDLE, S_BUSY);`
-/// Example: `type ctrl_engine_t is record state : ctrl_state_t; end record;`
+/// This is the "wrapper" that binds a name to a definition.
 struct TypeDecl : NodeBase
 {
-    std::string name;                           ///< Type identifier.
-    TypeKind kind{ TypeKind::OTHER };           ///< Kind of type definition.
-    std::vector<std::string> enum_literals;     ///< For enumeration types.
-    std::vector<RecordElement> record_elements; ///< For record types.
-    std::string other_definition;               ///< For other types, raw text.
-    std::optional<std::string> end_label;       ///< Optional label after END RECORD.
+    std::string name;                       ///< The identifier being declared (e.g., "my_state_t")
+    std::optional<TypeDefinition> type_def; ///< The underlying structure (Enum, Record, etc.)
 };
 
 } // namespace ast

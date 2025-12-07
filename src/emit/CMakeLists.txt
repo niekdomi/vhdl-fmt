@@ -14,6 +14,7 @@ add_library(
     pretty_printer/nodes/design_units.cpp
     pretty_printer/nodes/expressions.cpp
     pretty_printer/nodes/process.cpp
+    pretty_printer/nodes/types.cpp
 )
 
 target_include_directories(emit PUBLIC ${CMAKE_SOURCE_DIR}/src)
