@@ -3,7 +3,6 @@
 #include "vhdlParser.h"
 
 #include <algorithm>
-#include <iterator>
 #include <memory>
 #include <ranges>
 #include <string>
@@ -13,57 +12,37 @@ namespace builder {
 
 auto Translator::makeName(vhdlParser::NameContext &ctx) -> ast::Expr
 {
-    const auto &parts = ctx.name_part();
-    // For formatting: check if we have any structural parts (calls, slices, attributes)
-    // If not, just keep the whole name as a single token
-    const auto has_structure = std::ranges::any_of(parts, [](auto *part) {
-        return part->function_call_or_indexed_name_part()
-            != nullptr
-            || part->slice_name_part()
-            != nullptr
-            || part->attribute_name_part()
-            != nullptr;
-    });
+    const auto parts = ctx.name_part();
 
-    if (!has_structure) {
-        // Simple name (possibly with dots like "rec.field") - keep as one token
-        return makeToken(ctx);
-    }
+    // 1. Find split point
+    const auto split_it
+      = std::ranges::find_if(parts, [](auto *p) { return p->selected_name_part() == nullptr; });
 
-    // Has structural parts - build up the base, then apply operations
-    // Start with the identifier/literal and consume any leading dot selections
-    std::string base_text;
-    if (ctx.identifier() != nullptr) {
-        base_text = ctx.identifier()->getText();
-    } else if (ctx.STRING_LITERAL() != nullptr) {
-        base_text = ctx.STRING_LITERAL()->getText();
+    // 2. Build Base Name
+    std::string text{};
+    if (auto *id = ctx.identifier()) {
+        text = id->getText();
+    } else if (auto *lit = ctx.STRING_LITERAL()) {
+        text = lit->getText();
     } else {
-        // Shouldn't happen, but fallback
         return makeToken(ctx);
     }
 
-    // Consume consecutive selected_name_parts into base
-    const auto selected_parts
-      = parts | std::views::take_while([](auto *p) { return p->selected_name_part() != nullptr; });
-
-    for (auto *part : selected_parts) {
-        base_text += part->getText();
+    for (auto *part : std::ranges::subrange(parts.begin(), split_it)) {
+        text += part->getText();
     }
 
-    ast::Expr base = makeToken(ctx, std::move(base_text));
+    ast::Expr base = makeToken(ctx, std::move(text));
 
-    const auto structural_parts = parts | std::views::drop(std::ranges::distance(selected_parts));
-
-    // Process remaining structural parts
-    for (auto *part : structural_parts) {
-        if (auto *slice = part->slice_name_part()) {
-            base = makeSliceExpr(std::move(base), *slice);
-        } else if (auto *call = part->function_call_or_indexed_name_part()) {
-            base = makeCallExpr(std::move(base), *call);
-        } else if (auto *attr = part->attribute_name_part()) {
-            base = makeAttributeExpr(std::move(base), *attr);
+    // 3. Fold Structure
+    for (auto *part : std::ranges::subrange(split_it, parts.end())) {
+        if (auto *s = part->slice_name_part()) {
+            base = makeSliceExpr(std::move(base), *s);
+        } else if (auto *c = part->function_call_or_indexed_name_part()) {
+            base = makeCallExpr(std::move(base), *c);
+        } else if (auto *a = part->attribute_name_part()) {
+            base = makeAttributeExpr(std::move(base), *a);
         }
-        // Ignore any remaining selected_name_parts (shouldn't happen after structure)
     }
 
     return base;
