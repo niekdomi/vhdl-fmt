@@ -36,92 +36,175 @@ class Translator final
     auto operator=(Translator &&) -> Translator & = delete;
 
   private:
-    // clang-format off
-
     // Design units
-    [[nodiscard]] auto makeArchitecture(vhdlParser::Architecture_bodyContext &ctx) -> ast::Architecture;
-    [[nodiscard]] auto makeArchitectureDeclarativePart(vhdlParser::Architecture_declarative_partContext &ctx) -> std::vector<ast::DeclarativeItem>;
-    [[nodiscard]] auto makeArchitectureStatementPart(vhdlParser::Architecture_statement_partContext &ctx) -> std::vector<ast::ConcurrentStatement>;
-    [[nodiscard]] auto makeEntity(vhdlParser::Entity_declarationContext &ctx) -> ast::Entity;
+    [[nodiscard]]
+    auto makeArchitecture(vhdlParser::Architecture_bodyContext &ctx) -> ast::Architecture;
+    [[nodiscard]]
+    auto makeArchitectureDeclarativePart(vhdlParser::Architecture_declarative_partContext &ctx)
+      -> std::vector<ast::DeclarativeItem>;
+    [[nodiscard]]
+    auto makeArchitectureStatementPart(vhdlParser::Architecture_statement_partContext &ctx)
+      -> std::vector<ast::ConcurrentStatement>;
+    [[nodiscard]]
+    auto makeEntity(vhdlParser::Entity_declarationContext &ctx) -> ast::Entity;
 
     // Clauses
-    [[nodiscard]] auto makeGenericClause(vhdlParser::Generic_clauseContext &ctx) -> ast::GenericClause;
-    [[nodiscard]] auto makePortClause(vhdlParser::Port_clauseContext &ctx) -> ast::PortClause;
+    [[nodiscard]]
+    auto makeGenericClause(vhdlParser::Generic_clauseContext &ctx) -> ast::GenericClause;
+    [[nodiscard]]
+    auto makePortClause(vhdlParser::Port_clauseContext &ctx) -> ast::PortClause;
 
     // Context clauses
-    [[nodiscard]] auto makeContextClause(vhdlParser::Context_clauseContext &ctx) -> std::vector<ast::ContextItem>;
-    [[nodiscard]] auto makeLibraryClause(vhdlParser::Library_clauseContext &ctx) -> ast::LibraryClause;
-    [[nodiscard]] auto makeUseClause(vhdlParser::Use_clauseContext &ctx) -> ast::UseClause;
+    [[nodiscard]]
+    auto makeContextClause(vhdlParser::Context_clauseContext &ctx) -> std::vector<ast::ContextItem>;
+    [[nodiscard]]
+    auto makeLibraryClause(vhdlParser::Library_clauseContext &ctx) -> ast::LibraryClause;
+    [[nodiscard]]
+    auto makeUseClause(vhdlParser::Use_clauseContext &ctx) -> ast::UseClause;
 
     // Declarations
-    [[nodiscard]] auto makeComponentDecl(vhdlParser::Component_declarationContext &ctx) -> ast::ComponentDecl;
-    [[nodiscard]] auto makeConstantDecl(vhdlParser::Constant_declarationContext &ctx) -> ast::ConstantDecl;
-    [[nodiscard]] auto makeGenericParam(vhdlParser::Interface_constant_declarationContext &ctx) -> ast::GenericParam;
-    [[nodiscard]] auto makeSignalDecl(vhdlParser::Signal_declarationContext &ctx) -> ast::SignalDecl;
-    [[nodiscard]] auto makeSignalPort(vhdlParser::Interface_port_declarationContext &ctx) -> ast::Port;
-    [[nodiscard]] auto makeVariableDecl(vhdlParser::Variable_declarationContext &ctx) -> ast::VariableDecl;
-    [[nodiscard]] auto makeTypeDecl(vhdlParser::Type_declarationContext &ctx) -> ast::TypeDecl;
+    [[nodiscard]]
+    auto makeComponentDecl(vhdlParser::Component_declarationContext &ctx) -> ast::ComponentDecl;
+    [[nodiscard]]
+    auto makeConstantDecl(vhdlParser::Constant_declarationContext &ctx) -> ast::ConstantDecl;
+    [[nodiscard]]
+    auto makeGenericParam(vhdlParser::Interface_constant_declarationContext &ctx)
+      -> ast::GenericParam;
+    [[nodiscard]]
+    auto makeSignalDecl(vhdlParser::Signal_declarationContext &ctx) -> ast::SignalDecl;
+    [[nodiscard]]
+    auto makeSignalPort(vhdlParser::Interface_port_declarationContext &ctx) -> ast::Port;
+    [[nodiscard]]
+    auto makeVariableDecl(vhdlParser::Variable_declarationContext &ctx) -> ast::VariableDecl;
+    [[nodiscard]]
+    auto makeTypeDecl(vhdlParser::Type_declarationContext &ctx) -> ast::TypeDecl;
 
     // Type Definitions
-    [[nodiscard]] auto makeEnumerationType(vhdlParser::Enumeration_type_definitionContext& ctx) -> ast::EnumerationTypeDef;
-    [[nodiscard]] auto makeRecordType(vhdlParser::Record_type_definitionContext& ctx) -> ast::RecordTypeDef;
-    [[nodiscard]] auto makeRecordElement(vhdlParser::Element_declarationContext& ctx) -> ast::RecordElement;
-    [[nodiscard]] auto makeArrayType(vhdlParser::Array_type_definitionContext& ctx) -> ast::ArrayTypeDef;
-    [[nodiscard]] auto makeAccessType(vhdlParser::Access_type_definitionContext& ctx) -> ast::AccessTypeDef;
-    [[nodiscard]] auto makeFileType(vhdlParser::File_type_definitionContext& ctx) -> ast::FileTypeDef;
+    [[nodiscard]]
+    auto makeEnumerationType(vhdlParser::Enumeration_type_definitionContext &ctx)
+      -> ast::EnumerationTypeDef;
+    [[nodiscard]]
+    auto makeRecordType(vhdlParser::Record_type_definitionContext &ctx) -> ast::RecordTypeDef;
+    [[nodiscard]]
+    auto makeRecordElement(vhdlParser::Element_declarationContext &ctx) -> ast::RecordElement;
+    [[nodiscard]]
+    auto makeArrayType(vhdlParser::Array_type_definitionContext &ctx) -> ast::ArrayTypeDef;
+    [[nodiscard]]
+    auto makeAccessType(vhdlParser::Access_type_definitionContext &ctx) -> ast::AccessTypeDef;
+    [[nodiscard]]
+    auto makeFileType(vhdlParser::File_type_definitionContext &ctx) -> ast::FileTypeDef;
 
     // Statements
-    [[nodiscard]] auto makeCaseStatement(vhdlParser::Case_statementContext &ctx) -> ast::CaseStatement;
-    [[nodiscard]] auto makeConcurrentAssign(vhdlParser::Concurrent_signal_assignment_statementContext &ctx, const std::optional<std::string> &label) -> ast::ConcurrentStatement;
-    [[nodiscard]] auto makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx, const std::optional<std::string> &label) -> ast::ConditionalConcurrentAssign;
-    [[nodiscard]] auto makeConditionalWaveform(vhdlParser::Conditional_waveformsContext &ctx) -> ast::ConditionalConcurrentAssign::ConditionalWaveform;
-    [[nodiscard]] auto makeForLoop(vhdlParser::Loop_statementContext &ctx) -> ast::ForLoop;
-    [[nodiscard]] auto makeIfStatement(vhdlParser::If_statementContext &ctx) -> ast::IfStatement;
-    [[nodiscard]] auto makeLoop(vhdlParser::Loop_statementContext &ctx) -> ast::Loop;
-    [[nodiscard]] auto makeProcess(vhdlParser::Process_statementContext &ctx) -> ast::Process;
-    [[nodiscard]] auto makeProcessDeclarativeItem(vhdlParser::Process_declarative_itemContext &ctx) -> ast::Declaration;
-    [[nodiscard]] auto makeProcessStatementPart(vhdlParser::Process_statement_partContext &ctx) -> std::vector<ast::SequentialStatement>;
-    [[nodiscard]] auto makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx, const std::optional<std::string> &label) -> ast::SelectedConcurrentAssign;
-    [[nodiscard]] auto makeSelection(vhdlParser::WaveformContext &wave, vhdlParser::ChoicesContext &choices) -> ast::SelectedConcurrentAssign::Selection;
-    [[nodiscard]] auto makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext &ctx) -> std::vector<ast::SequentialStatement>;
-    [[nodiscard]] auto makeSequentialStatement(vhdlParser::Sequential_statementContext &ctx) -> ast::SequentialStatement;
-    [[nodiscard]] auto makeSignalAssign(vhdlParser::Signal_assignment_statementContext &ctx) -> ast::SignalAssign;
-    [[nodiscard]] auto makeTarget(vhdlParser::TargetContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makeVariableAssign(vhdlParser::Variable_assignment_statementContext &ctx) -> ast::VariableAssign;
-    [[nodiscard]] auto makeWaveform(vhdlParser::WaveformContext &ctx) -> ast::Waveform;
-    [[nodiscard]] auto makeWaveformElement(vhdlParser::Waveform_elementContext &ctx) -> ast::Waveform::Element;
-    [[nodiscard]] auto makeWhenClause(vhdlParser::Case_statement_alternativeContext &ctx) -> ast::CaseStatement::WhenClause;
-    [[nodiscard]] auto makeWhileLoop(vhdlParser::Loop_statementContext &ctx) -> ast::WhileLoop;
+    [[nodiscard]]
+    auto makeCaseStatement(vhdlParser::Case_statementContext &ctx) -> ast::CaseStatement;
+    [[nodiscard]]
+    auto makeConcurrentAssign(vhdlParser::Concurrent_signal_assignment_statementContext &ctx,
+                              const std::optional<std::string> &label) -> ast::ConcurrentStatement;
+    [[nodiscard]]
+    auto makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx,
+                               const std::optional<std::string> &label)
+      -> ast::ConditionalConcurrentAssign;
+    [[nodiscard]]
+    auto makeConditionalWaveform(vhdlParser::Conditional_waveformsContext &ctx)
+      -> ast::ConditionalConcurrentAssign::ConditionalWaveform;
+    [[nodiscard]]
+    auto makeForLoop(vhdlParser::Loop_statementContext &ctx) -> ast::ForLoop;
+    [[nodiscard]]
+    auto makeIfStatement(vhdlParser::If_statementContext &ctx) -> ast::IfStatement;
+    [[nodiscard]]
+    auto makeLoop(vhdlParser::Loop_statementContext &ctx) -> ast::Loop;
+    [[nodiscard]]
+    auto makeProcess(vhdlParser::Process_statementContext &ctx) -> ast::Process;
+    [[nodiscard]]
+    auto makeProcessDeclarativeItem(vhdlParser::Process_declarative_itemContext &ctx)
+      -> ast::Declaration;
+    [[nodiscard]]
+    auto makeProcessStatementPart(vhdlParser::Process_statement_partContext &ctx)
+      -> std::vector<ast::SequentialStatement>;
+    [[nodiscard]]
+    auto makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx,
+                            const std::optional<std::string> &label)
+      -> ast::SelectedConcurrentAssign;
+    [[nodiscard]]
+    auto makeSelection(vhdlParser::WaveformContext &wave, vhdlParser::ChoicesContext &choices)
+      -> ast::SelectedConcurrentAssign::Selection;
+    [[nodiscard]]
+    auto makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext &ctx)
+      -> std::vector<ast::SequentialStatement>;
+    [[nodiscard]]
+    auto makeSequentialStatement(vhdlParser::Sequential_statementContext &ctx)
+      -> ast::SequentialStatement;
+    [[nodiscard]]
+    auto makeSignalAssign(vhdlParser::Signal_assignment_statementContext &ctx) -> ast::SignalAssign;
+    [[nodiscard]]
+    auto makeTarget(vhdlParser::TargetContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeVariableAssign(vhdlParser::Variable_assignment_statementContext &ctx)
+      -> ast::VariableAssign;
+    [[nodiscard]]
+    auto makeWaveform(vhdlParser::WaveformContext &ctx) -> ast::Waveform;
+    [[nodiscard]]
+    auto makeWaveformElement(vhdlParser::Waveform_elementContext &ctx) -> ast::Waveform::Element;
+    [[nodiscard]]
+    auto makeWhenClause(vhdlParser::Case_statement_alternativeContext &ctx)
+      -> ast::CaseStatement::WhenClause;
+    [[nodiscard]]
+    auto makeWhileLoop(vhdlParser::Loop_statementContext &ctx) -> ast::WhileLoop;
 
     // Expressions
-    [[nodiscard]] auto makeAggregate(vhdlParser::AggregateContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makeAllocator(vhdlParser::AllocatorContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makeAttributeExpr(ast::Expr base, vhdlParser::Attribute_name_partContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makeCallArgument(vhdlParser::Association_elementContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makeCallExpr(ast::Expr base, vhdlParser::Function_call_or_indexed_name_partContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makeChoice(vhdlParser::ChoiceContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makeChoices(vhdlParser::ChoicesContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makeDiscreteRange(vhdlParser::Discrete_rangeContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makeElementAssociation(vhdlParser::Element_associationContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makeExpr(vhdlParser::ExpressionContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makeFactor(vhdlParser::FactorContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makeLiteral(vhdlParser::LiteralContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makeName(vhdlParser::NameContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makePrimary(vhdlParser::PrimaryContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makeRange(vhdlParser::Explicit_rangeContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makeRelation(vhdlParser::RelationContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makeShiftExpr(vhdlParser::Shift_expressionContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makeSimpleExpr(vhdlParser::Simple_expressionContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makeSliceExpr(ast::Expr base, vhdlParser::Slice_name_partContext &ctx) -> ast::Expr;
-    [[nodiscard]] auto makeTerm(vhdlParser::TermContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeAggregate(vhdlParser::AggregateContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeAllocator(vhdlParser::AllocatorContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeAttributeExpr(ast::Expr base, vhdlParser::Attribute_name_partContext &ctx)
+      -> ast::Expr;
+    [[nodiscard]]
+    auto makeCallArgument(vhdlParser::Association_elementContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeCallExpr(ast::Expr base, vhdlParser::Function_call_or_indexed_name_partContext &ctx)
+      -> ast::Expr;
+    [[nodiscard]]
+    auto makeChoice(vhdlParser::ChoiceContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeChoices(vhdlParser::ChoicesContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeDiscreteRange(vhdlParser::Discrete_rangeContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeElementAssociation(vhdlParser::Element_associationContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeExpr(vhdlParser::ExpressionContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeFactor(vhdlParser::FactorContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeLiteral(vhdlParser::LiteralContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeName(vhdlParser::NameContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makePrimary(vhdlParser::PrimaryContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeRange(vhdlParser::Explicit_rangeContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeRelation(vhdlParser::RelationContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeShiftExpr(vhdlParser::Shift_expressionContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeSimpleExpr(vhdlParser::Simple_expressionContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeSliceExpr(ast::Expr base, vhdlParser::Slice_name_partContext &ctx) -> ast::Expr;
+    [[nodiscard]]
+    auto makeTerm(vhdlParser::TermContext &ctx) -> ast::Expr;
 
     // Constraints
-    [[nodiscard]] auto makeConstraint(vhdlParser::ConstraintContext &ctx) -> std::optional<ast::Constraint>;
-    [[nodiscard]] auto makeIndexConstraint(vhdlParser::Index_constraintContext &ctx) -> ast::IndexConstraint;
-    [[nodiscard]] auto makeRangeConstraint(vhdlParser::Range_constraintContext &ctx) -> std::optional<ast::RangeConstraint>;
-
-    // clang-format on
+    [[nodiscard]]
+    auto makeConstraint(vhdlParser::ConstraintContext &ctx) -> std::optional<ast::Constraint>;
+    [[nodiscard]]
+    auto makeIndexConstraint(vhdlParser::Index_constraintContext &ctx) -> ast::IndexConstraint;
+    [[nodiscard]]
+    auto makeRangeConstraint(vhdlParser::Range_constraintContext &ctx)
+      -> std::optional<ast::RangeConstraint>;
 
     /// @brief Factory to create a NodeBuilder with trivia already bound
     template<typename T, typename Ctx>
@@ -192,6 +275,59 @@ class Translator final
         }
 
         return acc;
+    }
+
+    static auto extractNames(vhdlParser::Identifier_listContext *ctx) -> std::vector<std::string>
+    {
+        if (ctx == nullptr) {
+            return {};
+        }
+
+        return ctx->identifier()
+             | std::views::transform([](auto *id) { return id->getText(); })
+             | std::ranges::to<std::vector>();
+    }
+
+    static auto extractTypeName(vhdlParser::Subtype_indicationContext *ctx) -> std::string
+    {
+        if (ctx == nullptr || ctx->selected_name().empty()) {
+            return {};
+        }
+
+        return ctx->selected_name(0)->getText();
+    }
+
+    static auto extractTypeFullText(vhdlParser::Subtype_indicationContext *ctx) -> std::string
+    {
+        if (ctx == nullptr) {
+            return {};
+        }
+
+        return ctx->getText();
+    }
+
+    static auto extractMode(vhdlParser::Signal_modeContext *ctx) -> std::string
+    {
+        if (ctx == nullptr) {
+            return {};
+        }
+
+        return ctx->getText();
+    }
+
+    template<typename Node>
+    static void extractSubtypeInfo(Node &node,
+                            vhdlParser::Subtype_indicationContext *stype,
+                            auto &&make_constraint_fn)
+    {
+        if (stype == nullptr) {
+            return;
+        }
+
+        node.type_name = extractTypeName(stype);
+        if (auto *constr = stype->constraint()) {
+            node.constraint = make_constraint_fn(*constr);
+        }
     }
 };
 

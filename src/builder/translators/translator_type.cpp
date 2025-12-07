@@ -96,31 +96,42 @@ auto Translator::makeRecordElement(vhdlParser::Element_declarationContext &ctx)
 
 auto Translator::makeArrayType(vhdlParser::Array_type_definitionContext &ctx) -> ast::ArrayTypeDef
 {
-    auto extract_array_info = [&](auto *array_ctx, ast::ArrayTypeDef &def) {
+    auto extract_element_info = [&](auto *array_ctx, ast::ArrayTypeDef &def) {
         if (array_ctx == nullptr) {
             return;
         }
 
         auto *subtype = array_ctx->subtype_indication();
-        if (subtype && !subtype->selected_name().empty()) {
-            def.element_type = subtype->selected_name(0)->getText();
+        if (subtype == nullptr) {
+            return;
+        }
+
+        def.element_type = extractTypeName(subtype);
+
+        if (auto *constr = subtype->constraint()) {
+            def.element_constraint = makeConstraint(*constr);
         }
     };
 
     return build<ast::ArrayTypeDef>(ctx)
       .apply([&](auto &def) {
+          // Case 1: Unconstrained (array (natural range <>) of ...)
           if (auto *uncons = ctx.unconstrained_array_definition()) {
-              extract_array_info(uncons, def);
+              extract_element_info(uncons, def);
               for (auto *idx : uncons->index_subtype_definition()) {
                   if (auto *name = idx->name()) {
-                      def.index_types.push_back(name->getText());
+                      def.indices.emplace_back(name->getText());
                   }
               }
-          } else if (auto *cons = ctx.constrained_array_definition()) {
-              extract_array_info(cons, def);
-              // For constrained, we take the text of the constraint range
-              if (auto *constr = cons->index_constraint()) {
-                  def.index_types.push_back(constr->getText());
+          }
+          // Case 2: Constrained (array (7 downto 0) of ...)
+          else if (auto *cons = ctx.constrained_array_definition()) {
+              extract_element_info(cons, def);
+              if (auto *idx_constr = cons->index_constraint()) {
+                  for (auto *dr : idx_constr->discrete_range()) {
+                      // Parse the range into an AST expression
+                      def.indices.emplace_back(makeDiscreteRange(*dr));
+                  }
               }
           }
       })

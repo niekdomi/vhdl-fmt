@@ -3,78 +3,7 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
-#include <ranges>
-#include <string>
-#include <vector>
-
 namespace builder {
-
-// ============================================================================
-// Extraction Helpers
-// ============================================================================
-
-namespace {
-
-auto extractNames(vhdlParser::Identifier_listContext *ctx) -> std::vector<std::string>
-{
-    if (ctx == nullptr) {
-        return {};
-    }
-
-    return ctx->identifier()
-         | std::views::transform([](auto *id) { return id->getText(); })
-         | std::ranges::to<std::vector>();
-}
-
-auto extractTypeName(vhdlParser::Subtype_indicationContext *ctx) -> std::string
-{
-    if (ctx == nullptr || ctx->selected_name().empty()) {
-        return {};
-    }
-
-    return ctx->selected_name(0)->getText();
-}
-
-auto extractTypeFullText(vhdlParser::Subtype_indicationContext *ctx) -> std::string
-{
-    if (ctx == nullptr) {
-        return {};
-    }
-
-    return ctx->getText();
-}
-
-auto extractMode(vhdlParser::Signal_modeContext *ctx) -> std::string
-{
-    if (ctx == nullptr) {
-        return {};
-    }
-
-    return ctx->getText();
-}
-
-/// @brief Helper to extract type info from subtype_indication into node fields.
-/// @tparam Node AST node type with type_name and constraint fields.
-template<typename Node>
-void extractSubtypeInfo(Node &node,
-                        vhdlParser::Subtype_indicationContext *stype,
-                        auto &&make_constraint_fn)
-{
-    if (stype == nullptr) {
-        return;
-    }
-
-    node.type_name = extractTypeName(stype);
-    if (auto *constr = stype->constraint()) {
-        node.constraint = make_constraint_fn(*constr);
-    }
-}
-
-} // namespace
-
-// ============================================================================
-// Translator Implementation
-// ============================================================================
 
 // ---------------------- Clauses ----------------------
 

@@ -17,11 +17,15 @@ TEST_CASE("TypeDecl: Array", "[builder][type][array]")
         const auto *def = std::get_if<ast::ArrayTypeDef>(&decl->type_def.value());
         REQUIRE(def != nullptr);
         REQUIRE(def->element_type == "std_logic");
-        REQUIRE(def->index_types.size() == 1);
-        REQUIRE(def->index_types[0] == "natural");
+        REQUIRE(def->indices.size() == 1);
+
+        // Verify it is stored as the string variant
+        const auto *idx_name = std::get_if<std::string>(def->indices.data());
+        REQUIRE(idx_name != nullptr);
+        REQUIRE(*idx_name == "natural");
     }
 
-    SECTION("Constrained array")
+    SECTION("Constrained array (Discrete Range)")
     {
         const auto *decl = type_utils::parseType("type byte_t is array(7 downto 0) of bit;");
         REQUIRE(decl != nullptr);
@@ -29,22 +33,60 @@ TEST_CASE("TypeDecl: Array", "[builder][type][array]")
         const auto *def = std::get_if<ast::ArrayTypeDef>(&decl->type_def.value());
         REQUIRE(def != nullptr);
         REQUIRE(def->element_type == "bit");
-        REQUIRE(def->index_types.size() == 1);
-        // Note: The builder currently extracts the raw text for constrained ranges
-        REQUIRE(def->index_types[0] == "7 downto 0");
+        REQUIRE(def->indices.size() == 1);
+
+        // Verify it is stored as the Expr variant
+        const auto *idx_expr = std::get_if<ast::Expr>(def->indices.data());
+        REQUIRE(idx_expr != nullptr);
+
+        // Drill down to ensure it parsed the BinaryExpr correctly
+        const auto *bin = std::get_if<ast::BinaryExpr>(idx_expr);
+        REQUIRE(bin != nullptr);
+        REQUIRE(bin->op == "downto");
     }
 
-    SECTION("Multi-dimensional unconstrained")
+    SECTION("Multi-dimensional constrained")
     {
-        const auto *decl = type_utils::parseType(
-          "type matrix_t is array(integer range <>, integer range <>) of real;");
+        // Changed from invalid mixed syntax to valid 2D constrained array
+        const auto *decl
+          = type_utils::parseType("type matrix_t is array(0 to 3, 0 to 15) of real;");
         REQUIRE(decl != nullptr);
 
         const auto *def = std::get_if<ast::ArrayTypeDef>(&decl->type_def.value());
         REQUIRE(def != nullptr);
         REQUIRE(def->element_type == "real");
-        REQUIRE(def->index_types.size() == 2);
-        REQUIRE(def->index_types[0] == "integer");
-        REQUIRE(def->index_types[1] == "integer");
+        REQUIRE(def->indices.size() == 2);
+
+        // 1. 0 to 3 -> Expr
+        const auto *idx1 = std::get_if<ast::Expr>(def->indices.data());
+        REQUIRE(idx1 != nullptr);
+        REQUIRE(std::holds_alternative<ast::BinaryExpr>(*idx1));
+
+        // 2. 0 to 15 -> Expr
+        const auto *idx2 = std::get_if<ast::Expr>(&def->indices[1]);
+        REQUIRE(idx2 != nullptr);
+        REQUIRE(std::holds_alternative<ast::BinaryExpr>(*idx2));
+    }
+
+    SECTION("Array with Element Constraint")
+    {
+        const auto *decl = type_utils::parseType(
+          "type word_array is array(0 to 3) of std_logic_vector(31 downto 0);");
+        REQUIRE(decl != nullptr);
+
+        const auto *def = std::get_if<ast::ArrayTypeDef>(&decl->type_def.value());
+        REQUIRE(def != nullptr);
+        REQUIRE(def->element_type == "std_logic_vector");
+
+        // Verify element_constraint is populated
+        REQUIRE(def->element_constraint.has_value());
+        const auto *constr = std::get_if<ast::IndexConstraint>(&def->element_constraint.value());
+        REQUIRE(constr != nullptr);
+
+        // Verify the constraint expression inside
+        REQUIRE(constr->ranges.children.size() == 1);
+        const auto *range_expr = std::get_if<ast::BinaryExpr>(&constr->ranges.children[0]);
+        REQUIRE(range_expr != nullptr);
+        REQUIRE(range_expr->op == "downto");
     }
 }

@@ -32,11 +32,16 @@ struct RecordTypeDef : NodeBase
     std::optional<std::string> end_label;
 };
 
+/// @brief Represents a single dimension in an array definition.
+/// - std::string: Unconstrained index type name (e.g., "natural" in "range <>")
+/// - ast::Expr: Constrained index range (e.g., "7 downto 0")
+using ArrayDimension = std::variant<std::string, Expr>;
+
 struct ArrayTypeDef : NodeBase
 {
-    // TODO(vedivad): Complete this
     std::string element_type;
-    std::vector<std::string> index_types;
+    std::optional<Constraint> element_constraint; ///< Constraint on the element type.
+    std::vector<ArrayDimension> indices;
 };
 
 // Represents "access my_type"

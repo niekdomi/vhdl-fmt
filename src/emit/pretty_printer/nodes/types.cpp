@@ -76,15 +76,37 @@ auto PrettyPrinter::operator()(const ast::ArrayTypeDef &node) const -> Doc
 {
     Doc result = Doc::text("array");
 
-    // (natural range <>, positive range <>)
-    if (!node.index_types.empty()) {
-        const std::string indices = node.index_types
-                                  | std::views::join_with(std::string_view{ ", " })
-                                  | std::ranges::to<std::string>();
-        result += Doc::text("(") + Doc::text(indices) + Doc::text(")");
+    if (!node.indices.empty()) {
+        const Doc indices = joinMap(
+          node.indices,
+          Doc::text(", "),
+          [&](const auto &idx) -> Doc {
+              return std::visit(
+                [&](const auto &val) -> Doc {
+                    using T = std::decay_t<decltype(val)>;
+                    if constexpr (std::is_same_v<T, std::string>) {
+                        // Unconstrained: "natural range <>"
+                        return Doc::text(val + " range <>");
+                    } else {
+                        // Constrained: visit expression "7 downto 0"
+                        return visit(val);
+                    }
+                },
+                idx);
+          },
+          false);
+
+        result += Doc::text("(") + indices + Doc::text(")");
     }
 
-    return result & Doc::text("of") & Doc::text(node.element_type);
+    result &= Doc::text("of") & Doc::text(node.element_type);
+
+    // Render element constraint (e.g. vector(7 downto 0))
+    if (node.element_constraint) {
+        result += visit(node.element_constraint.value());
+    }
+
+    return result;
 }
 
 auto PrettyPrinter::operator()(const ast::AccessTypeDef &node) const -> Doc
