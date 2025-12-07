@@ -3,12 +3,13 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <memory>
+#include <utility>
 
 TEST_CASE("BinaryExpr Rendering", "[pretty_printer][expressions][binary]")
 {
     SECTION("Simple addition")
     {
-        ast::BinaryExpr binary{
+        const ast::BinaryExpr binary{
             .left{ std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "a" } }) },
             .op{ "+" },
             .right{ std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "b" } }) }
@@ -24,10 +25,10 @@ TEST_CASE("BinaryExpr Rendering", "[pretty_printer][expressions][binary]")
                                .right{
                                  std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "b" } }) } };
 
-        ast::BinaryExpr outer{ .left{ std::make_unique<ast::Expr>(std::move(inner)) },
-                               .op{ "+" },
-                               .right{
-                                 std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "c" } }) } };
+        const ast::BinaryExpr outer{ .left{ std::make_unique<ast::Expr>(std::move(inner)) },
+                                     .op{ "+" },
+                                     .right{ std::make_unique<ast::Expr>(
+                                       ast::TokenExpr{ .text{ "c" } }) } };
 
         REQUIRE(emit::test::render(outer) == "a + b + c");
     }
@@ -39,9 +40,10 @@ TEST_CASE("BinaryExpr Rendering", "[pretty_printer][expressions][binary]")
                               .right{
                                 std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "c" } }) } };
 
-        ast::BinaryExpr add{ .left{ std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "a" } }) },
-                             .op{ "+" },
-                             .right{ std::make_unique<ast::Expr>(std::move(mult)) } };
+        const ast::BinaryExpr add{ .left{
+                                     std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "a" } }) },
+                                   .op{ "+" },
+                                   .right{ std::make_unique<ast::Expr>(std::move(mult)) } };
 
         REQUIRE(emit::test::render(add) == "a + b * c");
     }

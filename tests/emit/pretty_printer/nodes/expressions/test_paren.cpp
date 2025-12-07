@@ -3,12 +3,13 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <memory>
+#include <utility>
 
 TEST_CASE("ParenExpr Rendering", "[pretty_printer][expressions][paren]")
 {
     SECTION("Simple parenthesized expression")
     {
-        ast::ParenExpr paren{ .inner{
+        const ast::ParenExpr paren{ .inner{
           std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "x" } }) } };
 
         REQUIRE(emit::test::render(paren) == "(x)");
@@ -23,10 +24,10 @@ TEST_CASE("ParenExpr Rendering", "[pretty_printer][expressions][paren]")
 
         ast::ParenExpr paren{ .inner{ std::make_unique<ast::Expr>(std::move(add)) } };
 
-        ast::BinaryExpr mult{ .left{ std::make_unique<ast::Expr>(std::move(paren)) },
-                              .op{ "*" },
-                              .right{
-                                std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "c" } }) } };
+        const ast::BinaryExpr mult{ .left{ std::make_unique<ast::Expr>(std::move(paren)) },
+                                    .op{ "*" },
+                                    .right{ std::make_unique<ast::Expr>(
+                                      ast::TokenExpr{ .text{ "c" } }) } };
 
         REQUIRE(emit::test::render(mult) == "(a + b) * c");
     }
@@ -36,7 +37,7 @@ TEST_CASE("ParenExpr Rendering", "[pretty_printer][expressions][paren]")
         ast::ParenExpr inner{ .inner{
           std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "x" } }) } };
 
-        ast::ParenExpr outer{ .inner{ std::make_unique<ast::Expr>(std::move(inner)) } };
+        const ast::ParenExpr outer{ .inner{ std::make_unique<ast::Expr>(std::move(inner)) } };
 
         REQUIRE(emit::test::render(outer) == "((x))");
     }

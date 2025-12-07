@@ -3,12 +3,13 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <memory>
+#include <utility>
 
 TEST_CASE("GroupExpr Rendering", "[pretty_printer][expressions][group]")
 {
     SECTION("Positional association")
     {
-        ast::GroupExpr group;
+        ast::GroupExpr group{};
         group.children.emplace_back(ast::TokenExpr{ .text = "'1'" });
         group.children.emplace_back(ast::TokenExpr{ .text = "'0'" });
         group.children.emplace_back(ast::TokenExpr{ .text = "'1'" });
@@ -18,12 +19,13 @@ TEST_CASE("GroupExpr Rendering", "[pretty_printer][expressions][group]")
 
     SECTION("Named association")
     {
-        ast::BinaryExpr assoc;
-        assoc.left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "addr" });
-        assoc.op = "=>";
-        assoc.right = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "x\\\"AB\\\"" });
+        ast::BinaryExpr assoc{
+            .left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "addr" }),
+            .op = "=>",
+            .right = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = R"(x\"AB\")" })
+        };
 
-        ast::GroupExpr group;
+        ast::GroupExpr group{};
         group.children.emplace_back(std::move(assoc));
 
         REQUIRE(emit::test::render(group) == "(addr => x\\\"AB\\\")");
@@ -31,12 +33,13 @@ TEST_CASE("GroupExpr Rendering", "[pretty_printer][expressions][group]")
 
     SECTION("Others association")
     {
-        ast::BinaryExpr assoc;
-        assoc.left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "others" });
-        assoc.op = "=>";
-        assoc.right = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "'0'" });
+        ast::BinaryExpr assoc{ .left
+                               = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "others" }),
+                               .op = "=>",
+                               .right
+                               = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "'0'" }) };
 
-        ast::GroupExpr group;
+        ast::GroupExpr group{};
         group.children.emplace_back(std::move(assoc));
 
         REQUIRE(emit::test::render(group) == "(others => '0')");
@@ -44,11 +47,11 @@ TEST_CASE("GroupExpr Rendering", "[pretty_printer][expressions][group]")
 
     SECTION("Nested aggregates")
     {
-        ast::GroupExpr inner;
+        ast::GroupExpr inner{};
         inner.children.emplace_back(ast::TokenExpr{ .text = "'1'" });
         inner.children.emplace_back(ast::TokenExpr{ .text = "'0'" });
 
-        ast::GroupExpr outer;
+        ast::GroupExpr outer{};
         outer.children.emplace_back(std::move(inner));
 
         REQUIRE(emit::test::render(outer) == "(('1', '0'))");

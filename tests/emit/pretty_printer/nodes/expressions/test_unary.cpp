@@ -8,7 +8,7 @@ TEST_CASE("UnaryExpr Rendering", "[pretty_printer][expressions][unary]")
 {
     SECTION("Negation")
     {
-        ast::UnaryExpr unary{
+        const ast::UnaryExpr unary{
             .op{ "-" }, .value{ std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "x" } }) }
         };
 
