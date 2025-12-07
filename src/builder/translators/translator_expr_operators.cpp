@@ -179,14 +179,11 @@ auto Translator::makeAllocator(vhdlParser::AllocatorContext &ctx) -> ast::Expr
 {
     ast::Expr operand{};
 
-    // Determine the operand type (Qualified Expression vs Subtype)
     if (auto *qual = ctx.qualified_expression()) {
         operand = makeQualifiedExpr(*qual);
     } else if (auto *subtype = ctx.subtype_indication()) {
-        // "new integer" or "new std_logic_vector(0 to 3)"
-        operand = makeToken(*subtype);
+        operand = makeToken(*subtype); // TODO(vedivad): Better handling of subtype indications
     } else {
-        // Fallback for safety
         operand = makeToken(ctx);
     }
 
