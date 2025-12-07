@@ -1,4 +1,6 @@
 #include "ast/nodes/declarations.hpp"
+#include "ast/nodes/declarations/interface.hpp"
+#include "ast/nodes/declarations/objects.hpp"
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 

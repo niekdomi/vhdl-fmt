@@ -39,7 +39,8 @@ auto PrettyPrinter::operator()(const ast::RecordElement &node) const -> Doc
                             | std::views::join_with(std::string_view{ ", " })
                             | std::ranges::to<std::string>();
 
-    Doc result = Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":") & visit(node.subtype);
+    const Doc result
+      = Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":") & visit(node.subtype);
 
     return result + Doc::text(";");
 }

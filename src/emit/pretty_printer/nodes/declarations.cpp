@@ -1,6 +1,7 @@
 #include "ast/nodes/declarations.hpp"
 
 #include "ast/nodes/declarations/interface.hpp"
+#include "ast/nodes/declarations/objects.hpp"
 #include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/doc.hpp"
 

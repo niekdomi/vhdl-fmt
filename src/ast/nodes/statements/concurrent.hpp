@@ -1,7 +1,9 @@
 #ifndef AST_NODES_STATEMENTS_CONCURRENT_HPP
 #define AST_NODES_STATEMENTS_CONCURRENT_HPP
 
-#include "ast/nodes/declarations.hpp" // Required for 'Declaration' variant
+#include "ast/node.hpp"
+#include "ast/nodes/declarations.hpp"
+#include "ast/nodes/expressions.hpp"
 #include "ast/nodes/statements/waveform.hpp"
 
 #include <optional>

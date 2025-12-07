@@ -1,8 +1,11 @@
 #ifndef AST_NODES_STATEMENTS_SEQUENTIAL_HPP
 #define AST_NODES_STATEMENTS_SEQUENTIAL_HPP
 
+#include "ast/node.hpp"
+#include "ast/nodes/expressions.hpp"
 #include "ast/nodes/statements/waveform.hpp"
 
+#include <optional>
 #include <string>
 #include <vector>
 
