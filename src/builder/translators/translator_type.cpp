@@ -116,45 +116,56 @@ auto Translator::makeRecordElement(vhdlParser::Element_declarationContext &ctx)
 
 auto Translator::makeArrayType(vhdlParser::Array_type_definitionContext &ctx) -> ast::ArrayTypeDef
 {
-    auto extract_element_info = [&](auto *array_ctx, ast::ArrayTypeDef &def) {
-        if (array_ctx == nullptr) {
-            return;
-        }
+    if (auto *uncons = ctx.unconstrained_array_definition()) {
+        return makeUnconstrainedArray(*uncons);
+    }
 
-        auto *subtype = array_ctx->subtype_indication();
-        if (subtype == nullptr) {
-            return;
-        }
+    if (auto *cons = ctx.constrained_array_definition()) {
+        return makeConstrainedArray(*cons);
+    }
 
-        def.element_type = extractTypeName(subtype);
+    // Should be unreachable given valid grammar
+    return {};
+}
 
-        if (auto *constr = subtype->constraint()) {
-            def.element_constraint = makeConstraint(*constr);
-        }
-    };
-
+auto Translator::makeUnconstrainedArray(vhdlParser::Unconstrained_array_definitionContext &ctx)
+  -> ast::ArrayTypeDef
+{
     return build<ast::ArrayTypeDef>(ctx)
+      .with(ctx.subtype_indication(),
+            [this](auto &def, auto &sub) {
+                def.element_type = extractTypeName(&sub);
+                if (auto *c = sub.constraint()) {
+                    def.element_constraint = makeConstraint(*c);
+                }
+            })
       .apply([&](auto &def) {
-          // Case 1: Unconstrained (array (natural range <>) of ...)
-          if (auto *uncons = ctx.unconstrained_array_definition()) {
-              extract_element_info(uncons, def);
-              for (auto *idx : uncons->index_subtype_definition()) {
-                  if (auto *name = idx->name()) {
-                      def.indices.emplace_back(name->getText());
-                  }
-              }
-          }
-          // Case 2: Constrained (array (7 downto 0) of ...)
-          else if (auto *cons = ctx.constrained_array_definition()) {
-              extract_element_info(cons, def);
-              if (auto *idx_constr = cons->index_constraint()) {
-                  for (auto *dr : idx_constr->discrete_range()) {
-                      // Parse the range into an AST expression
-                      def.indices.emplace_back(makeDiscreteRange(*dr));
-                  }
+          for (auto *idx : ctx.index_subtype_definition()) {
+              if (auto *name = idx->name()) {
+                  def.indices.emplace_back(name->getText());
               }
           }
       })
+      .build();
+}
+
+auto Translator::makeConstrainedArray(vhdlParser::Constrained_array_definitionContext &ctx)
+  -> ast::ArrayTypeDef
+{
+    return build<ast::ArrayTypeDef>(ctx)
+      .with(ctx.subtype_indication(),
+            [this](auto &def, auto &sub) {
+                def.element_type = extractTypeName(&sub);
+                if (auto *c = sub.constraint()) {
+                    def.element_constraint = makeConstraint(*c);
+                }
+            })
+      .with(ctx.index_constraint(),
+            [this](auto &def, auto &idx_ctx) {
+                for (auto *dr : idx_ctx.discrete_range()) {
+                    def.indices.emplace_back(makeDiscreteRange(*dr));
+                }
+            })
       .build();
 }
 

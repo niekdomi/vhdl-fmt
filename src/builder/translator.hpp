@@ -92,6 +92,10 @@ class Translator final
     [[nodiscard]]
     auto makeArrayType(vhdlParser::Array_type_definitionContext &ctx) -> ast::ArrayTypeDef;
     [[nodiscard]]
+    auto makeUnconstrainedArray(vhdlParser::Unconstrained_array_definitionContext& ctx) -> ast::ArrayTypeDef;
+    [[nodiscard]]
+    auto makeConstrainedArray(vhdlParser::Constrained_array_definitionContext& ctx) -> ast::ArrayTypeDef;
+    [[nodiscard]]
     auto makeAccessType(vhdlParser::Access_type_definitionContext &ctx) -> ast::AccessTypeDef;
     [[nodiscard]]
     auto makeFileType(vhdlParser::File_type_definitionContext &ctx) -> ast::FileTypeDef;
