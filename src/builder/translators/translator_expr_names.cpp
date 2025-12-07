@@ -83,17 +83,15 @@ auto Translator::makeCallExpr(ast::Expr base,
                               vhdlParser::Function_call_or_indexed_name_partContext &ctx)
   -> ast::Expr
 {
-    auto *assoc_list = ctx.actual_parameter_part();
-    auto *list_ctx = (assoc_list != nullptr) ? assoc_list->association_list() : nullptr;
-    auto associations = (list_ctx != nullptr) ? list_ctx->association_element()
-                                              : decltype(list_ctx->association_element()){};
+    auto *param_part = ctx.actual_parameter_part();
+    auto *assoc_list = (param_part != nullptr) ? param_part->association_list() : nullptr;
 
-    // Build GroupExpr with all arguments
-    ast::GroupExpr group;
-    if (list_ctx != nullptr) {
-        for (auto *elem : associations) {
-            group.children.push_back(makeCallArgument(*elem));
-        }
+    ast::GroupExpr group{};
+
+    if (assoc_list != nullptr) {
+        group.children = assoc_list->association_element()
+                       | std::views::transform([&](auto *elem) { return makeCallArgument(*elem); })
+                       | std::ranges::to<decltype(group.children)>();
     }
 
     return build<ast::CallExpr>(ctx)
