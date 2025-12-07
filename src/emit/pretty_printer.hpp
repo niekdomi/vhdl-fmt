@@ -7,12 +7,13 @@
 #include "ast/nodes/design_units.hpp"
 #include "ast/nodes/expressions.hpp"
 #include "ast/nodes/statements.hpp"
-#include "ast/nodes/types.hpp" // Added
+#include "ast/nodes/types.hpp"
 #include "ast/visitor.hpp"
 #include "emit/pretty_printer/doc.hpp"
 
 #include <algorithm>
 #include <functional>
+#include <ranges>
 #include <type_traits>
 #include <utility>
 
