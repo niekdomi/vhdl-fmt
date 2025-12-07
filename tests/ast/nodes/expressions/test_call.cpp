@@ -14,11 +14,9 @@ TEST_CASE("CallExpr", "[expressions][call]")
         REQUIRE(callee != nullptr);
         REQUIRE(callee->text == "rising_edge");
 
-        const auto *group = std::get_if<ast::GroupExpr>(call->args.get());
-        REQUIRE(group != nullptr);
-        REQUIRE(group->children.size() == 1);
+        REQUIRE(call->args->children.size() == 1);
 
-        const auto *arg = std::get_if<ast::TokenExpr>(group->children.data());
+        const auto *arg = std::get_if<ast::TokenExpr>(call->args->children.data());
         REQUIRE(arg != nullptr);
         REQUIRE(arg->text == "clk");
     }
@@ -33,40 +31,15 @@ TEST_CASE("CallExpr", "[expressions][call]")
         REQUIRE(callee != nullptr);
         REQUIRE(callee->text == "resize");
 
-        const auto *group = std::get_if<ast::GroupExpr>(call->args.get());
-        REQUIRE(group != nullptr);
-        REQUIRE(group->children.size() == 2);
+        REQUIRE(call->args->children.size() == 2);
 
-        const auto *arg1 = std::get_if<ast::TokenExpr>(group->children.data());
+        const auto *arg1 = std::get_if<ast::TokenExpr>(call->args->children.data());
         REQUIRE(arg1 != nullptr);
         REQUIRE(arg1->text == "data");
 
-        const auto *arg2 = std::get_if<ast::TokenExpr>(&group->children[1]);
+        const auto *arg2 = std::get_if<ast::TokenExpr>(&call->args->children[1]);
         REQUIRE(arg2 != nullptr);
         REQUIRE(arg2->text == "16");
-    }
-
-    SECTION("Slice notation")
-    {
-        const auto *expr = expr_utils::parseExpr("data(7 downto 0)");
-        const auto *call = std::get_if<ast::CallExpr>(expr);
-        REQUIRE(call != nullptr);
-
-        const auto *callee = std::get_if<ast::TokenExpr>(call->callee.get());
-        REQUIRE(callee != nullptr);
-        REQUIRE(callee->text == "data");
-
-        const auto *binary = std::get_if<ast::BinaryExpr>(call->args.get());
-        REQUIRE(binary != nullptr);
-        REQUIRE(binary->op == "downto");
-
-        const auto *left = std::get_if<ast::TokenExpr>(binary->left.get());
-        REQUIRE(left != nullptr);
-        REQUIRE(left->text == "7");
-
-        const auto *right = std::get_if<ast::TokenExpr>(binary->right.get());
-        REQUIRE(right != nullptr);
-        REQUIRE(right->text == "0");
     }
 
     SECTION("Chained calls")
@@ -82,19 +55,15 @@ TEST_CASE("CallExpr", "[expressions][call]")
         REQUIRE(inner_callee != nullptr);
         REQUIRE(inner_callee->text == "get_array");
 
-        const auto *inner_group = std::get_if<ast::GroupExpr>(inner_call->args.get());
-        REQUIRE(inner_group != nullptr);
-        REQUIRE(inner_group->children.size() == 1);
+        REQUIRE(inner_call->args->children.size() == 1);
 
-        const auto *inner_arg = std::get_if<ast::TokenExpr>(inner_group->children.data());
+        const auto *inner_arg = std::get_if<ast::TokenExpr>(inner_call->args->children.data());
         REQUIRE(inner_arg != nullptr);
         REQUIRE(inner_arg->text == "i");
 
-        const auto *outer_group = std::get_if<ast::GroupExpr>(outer_call->args.get());
-        REQUIRE(outer_group != nullptr);
-        REQUIRE(outer_group->children.size() == 1);
+        REQUIRE(outer_call->args->children.size() == 1);
 
-        const auto *outer_arg = std::get_if<ast::TokenExpr>(outer_group->children.data());
+        const auto *outer_arg = std::get_if<ast::TokenExpr>(outer_call->args->children.data());
         REQUIRE(outer_arg != nullptr);
         REQUIRE(outer_arg->text == "j");
     }

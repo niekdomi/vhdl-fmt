@@ -71,10 +71,11 @@ auto Translator::makeName(vhdlParser::NameContext &ctx) -> ast::Expr
 
 auto Translator::makeSliceExpr(ast::Expr base, vhdlParser::Slice_name_partContext &ctx) -> ast::Expr
 {
-    return build<ast::CallExpr>(ctx)
-      .setBox(&ast::CallExpr::callee, std::move(base))
-      .maybeBox(
-        &ast::CallExpr::args, ctx.discrete_range(), [&](auto &dr) { return makeDiscreteRange(dr); })
+    return build<ast::SliceExpr>(ctx)
+      .setBox(&ast::SliceExpr::prefix, std::move(base))
+      .maybeBox(&ast::SliceExpr::range,
+                ctx.discrete_range(),
+                [&](auto &dr) { return makeDiscreteRange(dr); })
       .build();
 }
 
@@ -87,32 +88,21 @@ auto Translator::makeCallExpr(ast::Expr base,
     auto associations = (list_ctx != nullptr) ? list_ctx->association_element()
                                               : decltype(list_ctx->association_element()){};
 
+    // Build GroupExpr with all arguments
+    ast::GroupExpr group;
+    if (list_ctx != nullptr) {
+        for (auto *elem : associations) {
+            group.children.push_back(makeCallArgument(*elem));
+        }
+    }
+
     return build<ast::CallExpr>(ctx)
       .setBox(&ast::CallExpr::callee, std::move(base))
-      .apply([&](auto &node) {
-          if (assoc_list == nullptr) {
-              return;
-          }
-
-          // Always create a GroupExpr for args, even for single arguments
-          ast::GroupExpr group;
-
-          if (list_ctx != nullptr) {
-              if (associations.size() == 1) {
-                  // Single argument - wrap in GroupExpr
-                  group.children.push_back(makeCallArgument(*associations[0]));
-              } else {
-                  // Multiple arguments
-                  for (auto *elem : associations) {
-                      group.children.push_back(makeCallArgument(*elem));
-                  }
-              }
-          }
-
-          node.args = std::make_unique<ast::Expr>(std::move(group));
-      })
+      .setBox(&ast::CallExpr::args, std::move(group))
       .build();
-}auto Translator::makeAttributeExpr(ast::Expr base, vhdlParser::Attribute_name_partContext &ctx)
+}
+
+auto Translator::makeAttributeExpr(ast::Expr base, vhdlParser::Attribute_name_partContext &ctx)
   -> ast::Expr
 {
     // Extract attribute name (everything after the apostrophe)

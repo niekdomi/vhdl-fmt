@@ -18,6 +18,7 @@ struct GroupExpr;
 struct ParenExpr;
 struct PhysicalLiteral;
 struct QualifiedExpr;
+struct SliceExpr;
 struct TokenExpr;
 struct UnaryExpr;
 
@@ -37,6 +38,7 @@ using Expr = std::variant<TokenExpr,
                           BinaryExpr,
                           ParenExpr,
                           CallExpr,
+                          SliceExpr,
                           AttributeExpr,
                           QualifiedExpr,
                           PhysicalLiteral>;
@@ -51,13 +53,22 @@ struct BinaryExpr : NodeBase
     Box<Expr> right; ///< Right operand (boxed for recursion).
 };
 
-/// @brief Represents a function call or indexed name.
+/// @brief Represents a function call.
 ///
-/// Example: `rising_edge(clk)`, `data(7 downto 0)`
+/// Example: `rising_edge(clk)`, `resize(data, 16)`
 struct CallExpr : NodeBase
 {
-    Box<Expr> callee; ///< Function/array name being called/indexed.
-    Box<Expr> args;   ///< Arguments (GroupExpr for calls, BinaryExpr for slices).
+    Box<Expr> callee;      ///< Function name being called.
+    Box<GroupExpr> args;   ///< Arguments (always a GroupExpr with parentheses).
+};
+
+/// @brief Represents array/signal slice notation.
+///
+/// Example: `data(7 downto 0)`, `mem(i)`
+struct SliceExpr : NodeBase
+{
+    Box<Expr> prefix; ///< Array/signal being sliced.
+    Box<Expr> range;  ///< Index or range expression.
 };
 
 /// @brief Represents an aggregate or grouped list of expressions.

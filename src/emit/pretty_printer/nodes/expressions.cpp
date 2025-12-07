@@ -69,7 +69,13 @@ auto PrettyPrinter::operator()(const ast::ParenExpr &node) const -> Doc
 
 auto PrettyPrinter::operator()(const ast::CallExpr &node) const -> Doc
 {
-    return visit(*node.callee) + Doc::text("(") + visit(*node.args) + Doc::text(")");
+    // GroupExpr already provides parentheses, so just visit directly
+    return visit(*node.callee) + visit(*node.args);
+}
+
+auto PrettyPrinter::operator()(const ast::SliceExpr &node) const -> Doc
+{
+    return visit(*node.prefix) + Doc::text("(") + visit(*node.range) + Doc::text(")");
 }
 
 } // namespace emit

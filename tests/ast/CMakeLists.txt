@@ -24,6 +24,7 @@ add_executable(
     nodes/expressions/test_paren.cpp
     nodes/expressions/test_physical.cpp
     nodes/expressions/test_qualified.cpp
+    nodes/expressions/test_slice.cpp
     nodes/expressions/test_token.cpp
     nodes/expressions/test_unary.cpp
     #
