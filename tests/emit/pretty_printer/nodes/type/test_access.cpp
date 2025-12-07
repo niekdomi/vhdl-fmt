@@ -13,7 +13,7 @@ TEST_CASE("TypeDecl: Access", "[pretty_printer][type][access]")
     SECTION("Access type")
     {
         ast::AccessTypeDef access_def;
-        access_def.pointed_type = "integer";
+        access_def.subtype.type_mark = "integer";
 
         type_decl.type_def = std::move(access_def);
 

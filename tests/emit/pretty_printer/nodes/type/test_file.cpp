@@ -13,7 +13,7 @@ TEST_CASE("TypeDecl: File", "[pretty_printer][type][file]")
     SECTION("File type")
     {
         ast::FileTypeDef file_def;
-        file_def.content_type = "character";
+        file_def.subtype.type_mark = "character";
 
         type_decl.type_def = std::move(file_def);
 

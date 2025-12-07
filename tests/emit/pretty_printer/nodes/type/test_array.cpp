@@ -16,7 +16,7 @@ TEST_CASE("TypeDecl: Array", "[pretty_printer][type][array]")
     SECTION("Unconstrained array")
     {
         ast::ArrayTypeDef array_def{};
-        array_def.element_type = "std_logic";
+        array_def.subtype.type_mark = "std_logic";
         // indices = "natural" (string variant) -> renders as "natural range <>"
         array_def.indices.emplace_back("natural");
         type_decl.type_def = std::move(array_def);
@@ -28,7 +28,7 @@ TEST_CASE("TypeDecl: Array", "[pretty_printer][type][array]")
     SECTION("Constrained array (range expression)")
     {
         ast::ArrayTypeDef array_def{};
-        array_def.element_type = "std_logic";
+        array_def.subtype.type_mark = "std_logic";
         // indices = Expr (0 to 1023)
         auto left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "0" });
         auto right = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "1023" });
@@ -47,7 +47,7 @@ TEST_CASE("TypeDecl: Array", "[pretty_printer][type][array]")
     SECTION("Multi-dimensional mixed array")
     {
         ast::ArrayTypeDef array_def{};
-        array_def.element_type = "std_logic";
+        array_def.subtype.type_mark = "std_logic";
         // indices = ["integer", Expr(0 to 3)]
         array_def.indices.emplace_back("integer"); // Unconstrained
 
@@ -71,7 +71,7 @@ TEST_CASE("TypeDecl: Array", "[pretty_printer][type][array]")
     {
         ast::ArrayTypeDef array_def{};
         // type ram_t is array (0 to 63) of std_logic_vector(7 downto 0);
-        array_def.element_type = "std_logic_vector";
+        array_def.subtype.type_mark = "std_logic_vector";
 
         // Add index constraint for the array itself
         auto arr_left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "0" });
@@ -90,7 +90,7 @@ TEST_CASE("TypeDecl: Array", "[pretty_printer][type][array]")
 
         ast::IndexConstraint constr{};
         constr.ranges.children.emplace_back(std::move(elem_range));
-        array_def.element_constraint = std::move(constr);
+        array_def.subtype.constraint = std::move(constr);
 
         type_decl.type_def = std::move(array_def);
 

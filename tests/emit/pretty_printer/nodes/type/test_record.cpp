@@ -18,11 +18,11 @@ TEST_CASE("TypeDecl: Record", "[pretty_printer][type][record]")
     {
         ast::RecordElement header{};
         header.names = { "id" };
-        header.type_name = "integer";
+        header.subtype.type_mark = "integer";
 
         ast::RecordElement payload{};
         payload.names = { "data" };
-        payload.type_name = "std_logic_vector";
+        payload.subtype.type_mark = "std_logic_vector";
 
         ast::RecordTypeDef record_def{};
         record_def.elements.push_back(std::move(header));
@@ -78,7 +78,7 @@ TEST_CASE("TypeDecl: Record", "[pretty_printer][type][record]")
     {
         ast::RecordElement elem{};
         elem.names = { "val" };
-        elem.type_name = "integer";
+        elem.subtype.type_mark = "integer";
 
         ast::RecordTypeDef record_def{};
         record_def.elements.push_back(std::move(elem));
@@ -101,7 +101,7 @@ TEST_CASE("RecordElement Rendering", "[pretty_printer][type][record]")
     SECTION("Multiple names")
     {
         elem.names = { "r", "g", "b" };
-        elem.type_name = "byte";
+        elem.subtype.type_mark = "byte";
 
         REQUIRE(emit::test::render(elem) == "r, g, b : byte;");
     }
@@ -109,7 +109,7 @@ TEST_CASE("RecordElement Rendering", "[pretty_printer][type][record]")
     SECTION("Index Constrained element (Parentheses)")
     {
         elem.names = { "addr" };
-        elem.type_name = "unsigned";
+        elem.subtype.type_mark = "unsigned";
 
         // Constraint: (31 downto 0)
         auto left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "31" });
@@ -118,7 +118,7 @@ TEST_CASE("RecordElement Rendering", "[pretty_printer][type][record]")
         ast::IndexConstraint constr{};
         constr.ranges.children.emplace_back(
           ast::BinaryExpr{ .left = std::move(left), .op = "downto", .right = std::move(right) });
-        elem.constraint = ast::Constraint(std::move(constr));
+        elem.subtype.constraint = ast::Constraint(std::move(constr));
 
         REQUIRE(emit::test::render(elem) == "addr : unsigned(31 downto 0);");
     }
@@ -126,7 +126,7 @@ TEST_CASE("RecordElement Rendering", "[pretty_printer][type][record]")
     SECTION("Range Constrained element (Keyword)")
     {
         elem.names = { "level" };
-        elem.type_name = "integer";
+        elem.subtype.type_mark = "integer";
 
         // Constraint: range 0 to 255
         auto left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "0" });
@@ -135,7 +135,7 @@ TEST_CASE("RecordElement Rendering", "[pretty_printer][type][record]")
         ast::RangeConstraint constr{};
         constr.range
           = ast::BinaryExpr{ .left = std::move(left), .op = "to", .right = std::move(right) };
-        elem.constraint = ast::Constraint(std::move(constr));
+        elem.subtype.constraint = ast::Constraint(std::move(constr));
 
         REQUIRE(emit::test::render(elem) == "level : integer range 0 to 255;");
     }
