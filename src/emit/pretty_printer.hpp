@@ -12,6 +12,7 @@
 #include "emit/pretty_printer/doc.hpp"
 
 #include <algorithm>
+#include <concepts>
 #include <functional>
 #include <ranges>
 #include <type_traits>
@@ -114,17 +115,20 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     // Allow base class to call `wrapResult`, so `wrapResult` can be private
     friend class ast::VisitorBase<Doc>;
 
+    // ---------------------- Helpers ----------------------
+
     /// @brief Generic joiner: Applies a transform function to each item.
     template<std::ranges::input_range Range, typename Transform>
+        requires requires(Transform &t, std::ranges::range_reference_t<Range> item) {
+            { std::invoke(t, item) } -> std::convertible_to<Doc>;
+        }
     auto joinMap(Range &&items, const Doc &sep, Transform &&transform) const -> Doc
     {
-        auto result = std::ranges::fold_left(
-          std::forward<Range>(items), Doc::empty(), [&](const Doc &acc, const auto &item) {
-              // Apply the user-provided transform (lambda or function object)
-              const Doc doc = std::invoke(std::forward<Transform>(transform), item);
+        return std::ranges::fold_left(
+          std::forward<Range>(items), Doc::empty(), [&](const Doc &acc, auto &&item) {
+              const Doc doc = std::invoke(transform, std::forward<decltype(item)>(item));
               return acc.isEmpty() ? doc : acc + sep + doc;
           });
-        return result;
     }
 
     /// @brief AST joiner: Automatically calls this->visit() on each item.
