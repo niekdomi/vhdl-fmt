@@ -1,4 +1,4 @@
-#include "ast/nodes/declarations.hpp"
+#include "ast/nodes/declarations/objects.hpp"
 #include "ast/nodes/expressions.hpp"
 #include "decl_utils.hpp"
 

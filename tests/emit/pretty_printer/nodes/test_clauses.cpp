@@ -1,7 +1,7 @@
 #include "ast/node.hpp"
+#include "ast/nodes/declarations/interface.hpp"
 #include "ast/nodes/expressions.hpp"
 #include "emit/test_utils.hpp"
-#include "nodes/declarations.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <memory>

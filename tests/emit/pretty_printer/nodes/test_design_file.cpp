@@ -1,8 +1,8 @@
+#include "ast/nodes/declarations/interface.hpp"
 #include "ast/nodes/design_file.hpp"
 #include "ast/nodes/design_units.hpp"
 #include "ast/nodes/expressions.hpp"
 #include "emit/test_utils.hpp"
-#include "nodes/declarations.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <string>

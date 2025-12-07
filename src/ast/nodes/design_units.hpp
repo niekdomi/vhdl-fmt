@@ -3,6 +3,7 @@
 
 #include "ast/node.hpp"
 #include "ast/nodes/declarations.hpp"
+#include "ast/nodes/declarations/interface.hpp"
 #include "ast/nodes/statements.hpp"
 
 #include <optional>
