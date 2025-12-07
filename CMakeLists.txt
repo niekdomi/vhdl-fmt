@@ -122,6 +122,19 @@ enable_testing()
 add_subdirectory(tests)
 
 # --------------------------------------------------------------------
+# Static Linking Option
+# --------------------------------------------------------------------
+option(ENABLE_STATIC_LINKING "Link C++ runtime statically for distribution" OFF)
+
+if(ENABLE_STATIC_LINKING)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        message(STATUS "  Static linking: ENABLED (C++ runtime)")
+    else()
+        message(WARNING "Static linking is only supported with GCC or Clang")
+    endif()
+endif()
+
+# --------------------------------------------------------------------
 # Coverage Targets
 # --------------------------------------------------------------------
 if(ENABLE_COVERAGE)

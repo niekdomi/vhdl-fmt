@@ -10,6 +10,14 @@ CMAKE_PRESET := conan-$(shell echo $(BUILD_TYPE) | tr A-Z a-z)
 # Coverage configuration
 ENABLE_COVERAGE ?= OFF
 
+# Static linking configuration (enabled for Release by default)
+# Use `make BUILD_TYPE=Release ENABLE_STATIC_LINKING=OFF` to disable
+ifeq ($(BUILD_TYPE),Release)
+	ENABLE_STATIC_LINKING ?= ON
+else
+	ENABLE_STATIC_LINKING ?= OFF
+endif
+
 TARGET := build/$(BUILD_TYPE)/bin/vhdl_formatter
 CONAN_STAMP := build/.conan.$(BUILD_TYPE).stamp
 BUILD_STAMP := build/.build.$(BUILD_TYPE).stamp
@@ -23,8 +31,10 @@ SOURCES_CMAKE := $(shell find src tests . -name 'CMakeLists.txt')
 all: $(BUILD_STAMP)
 
 $(BUILD_STAMP): $(SOURCES) $(SOURCES_CMAKE) $(CONAN_STAMP)
-	@echo "Building project ($(BUILD_TYPE), Coverage=$(ENABLE_COVERAGE))..."
-	@cmake --preset $(CMAKE_PRESET) -DENABLE_COVERAGE=$(ENABLE_COVERAGE)
+	@echo "Building project ($(BUILD_TYPE), Coverage=$(ENABLE_COVERAGE), Static=$(ENABLE_STATIC_LINKING))..."
+	@cmake --preset $(CMAKE_PRESET) \
+		-DENABLE_COVERAGE=$(ENABLE_COVERAGE) \
+		-DENABLE_STATIC_LINKING=$(ENABLE_STATIC_LINKING)
 	@cmake --build --preset $(CMAKE_PRESET)
 	@touch $@
 	@echo "Build complete."
