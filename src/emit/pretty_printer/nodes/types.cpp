@@ -81,7 +81,7 @@ auto PrettyPrinter::operator()(const ast::ArrayTypeDef &node) const -> Doc
         const std::string indices = node.index_types
                                   | std::views::join_with(std::string_view{ ", " })
                                   | std::ranges::to<std::string>();
-        result &= Doc::text("(") + Doc::text(indices) + Doc::text(")");
+        result += Doc::text("(") + Doc::text(indices) + Doc::text(")");
     }
 
     return result & Doc::text("of") & Doc::text(node.element_type);

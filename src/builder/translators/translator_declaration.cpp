@@ -1,12 +1,10 @@
 #include "ast/nodes/declarations.hpp"
 #include "ast/nodes/design_units.hpp"
-#include "ast/nodes/types.hpp"
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
 #include <ranges>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace builder {
