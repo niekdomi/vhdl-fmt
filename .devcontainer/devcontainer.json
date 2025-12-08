@@ -45,6 +45,11 @@
           "environment": "${envObjArray}",
           "sourceFileMap": "${sourceFileMapObj}"
         },
+        "terminal.integrated.profiles.linux": {
+          "zsh": {
+            "path": "/usr/bin/zsh"
+          }
+        },
         "cmake.ctest.testExplorerIntegrationEnabled": false
       }
     }

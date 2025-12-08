@@ -50,14 +50,31 @@ RUN dnf install -y --setopt=install_weak_deps=false \
     ccache \
     which \
     wget \
+    curl \
     procps \
+    zsh \
+    tar \
+    tree \
     && dnf clean all
 
-# Add colored prompt for root
-RUN echo 'export PS1="\[\e[31m\]\u\[\e[0m\]@\[\e[34m\]\h\[\e[0m\]:\[\e[36m\]\w\[\e[0m\] > "' >> /root/.bashrc
+# Install Oh My Zsh
+RUN RUNZSH=no CHSH=no KEEP_ZSHRC=yes \
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+
+# Copy custom Zsh theme
+COPY .devcontainer/custom.zsh-theme /root/.oh-my-zsh/custom/themes/custom.zsh-theme
+
+# Set the theme
+RUN sed -i 's/^ZSH_THEME=.*/ZSH_THEME="custom"/' /root/.zshrc
+
+# Enable useful default plugins
+RUN sed -i 's/^plugins=(git)/plugins=(git z colored-man-pages)/' /root/.zshrc
+
+# Set Zsh as default shell
+RUN chsh -s /usr/bin/zsh root
 
 WORKDIR /app
-CMD ["/bin/bash"]
+CMD ["/usr/bin/zsh"]
 
 # ==================================================
 # Stage 2.2: CI image
