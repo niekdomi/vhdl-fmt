@@ -1,5 +1,6 @@
 #include "ast/nodes/expressions.hpp"
 
+#include "common/overload.hpp"
 #include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/doc.hpp"
 
@@ -79,17 +80,22 @@ auto PrettyPrinter::operator()(const ast::SubtypeIndication &node) const -> Doc
 {
     Doc result = Doc::empty();
 
-    // 1. Resolution Function (e.g., "resolved")
+    // Resolution Function (e.g., "resolved")
     if (node.resolution_func) {
         result += Doc::text(*node.resolution_func) + Doc::text(" ");
     }
 
-    // 2. Type Mark (e.g., "std_logic")
+    // Type Mark (e.g., "std_logic")
     result += Doc::text(node.type_mark);
 
-    // 3. Constraint (e.g., "(7 downto 0)")
+    // Constraint (e.g., "(7 downto 0)")
     if (node.constraint) {
-        result += visit(node.constraint.value());
+        result += std::visit(
+          common::Overload{
+            [this](const ast::IndexConstraint &idx) -> Doc { return visit(idx); },
+            [this](const ast::RangeConstraint &rc) -> Doc { return Doc::text(" ") + visit(rc); },
+          },
+          node.constraint.value());
     }
 
     return result;
