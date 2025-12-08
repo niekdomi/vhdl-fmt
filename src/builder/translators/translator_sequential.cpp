@@ -1,5 +1,6 @@
 #include "ast/nodes/expressions.hpp"
 #include "ast/nodes/statements.hpp"
+#include "ast/nodes/statements/sequential.hpp"
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
@@ -72,6 +73,10 @@ auto Translator::makeSequentialStatement(vhdlParser::Sequential_statementContext
             }
         }
         return makeLoop(*loop_stmt);
+    }
+
+    if (ctx.NULL_() != nullptr) {
+        return build<ast::NullStatement>(ctx).build();
     }
 
     // TODO(someone): Add support for wait_statement, assertion_statement,

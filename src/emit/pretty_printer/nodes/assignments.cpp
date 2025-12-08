@@ -111,4 +111,9 @@ auto PrettyPrinter::operator()(const ast::VariableAssign &node) const -> Doc
     return Doc::group(visit(node.target) & Doc::text(":=") & Doc::hang(val)) + Doc::text(";");
 }
 
+auto PrettyPrinter::operator()(const ast::NullStatement & /*node*/) const -> Doc
+{
+    return Doc::text("null;");
+}
+
 } // namespace emit

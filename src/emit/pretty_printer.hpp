@@ -104,6 +104,7 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     auto operator()(const ast::SignalAssign &node) const -> Doc;
     auto operator()(const ast::VariableAssign &node) const -> Doc;
     auto operator()(const ast::WhileLoop &node) const -> Doc;
+    auto operator()(const ast::NullStatement &node) const -> Doc;
 
     /// @brief Wraps the core doc with trivia for the given node.
     template<typename T>

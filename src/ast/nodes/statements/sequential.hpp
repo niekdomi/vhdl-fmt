@@ -12,7 +12,7 @@
 namespace ast {
 
 // Forward declarations
-struct SequentialStatement; // This works now
+struct SequentialStatement;
 
 struct SignalAssign : NodeBase
 {
@@ -69,6 +69,10 @@ struct ForLoop : NodeBase
     Expr range;
     std::vector<SequentialStatement> body;
 };
+
+/// @brief Represents a NULL statement.
+struct NullStatement : NodeBase
+{};
 
 } // namespace ast
 

@@ -13,7 +13,7 @@
 namespace ast {
 
 // Forward declarations
-struct SequentialStatement; // This works now because SequentialStatement is a struct
+struct SequentialStatement;
 
 struct ConditionalConcurrentAssign : NodeBase
 {
