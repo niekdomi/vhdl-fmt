@@ -1,5 +1,7 @@
+#include "ast/nodes/declarations.hpp"
 #include "ast/nodes/declarations/objects.hpp"
 #include "ast/nodes/statements/concurrent.hpp"
+#include "ast/nodes/statements/sequential.hpp"
 #include "ast/nodes/statements/stmt_utils.hpp"
 
 #include <catch2/catch_test_macros.hpp>

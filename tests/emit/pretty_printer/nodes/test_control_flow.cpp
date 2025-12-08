@@ -1,5 +1,7 @@
 #include "ast/nodes/expressions.hpp"
 #include "ast/nodes/statements.hpp"
+#include "ast/nodes/statements/sequential.hpp"
+#include "ast/nodes/statements/waveform.hpp"
 #include "emit/test_utils.hpp"
 
 #include <catch2/catch_test_macros.hpp>
@@ -132,7 +134,7 @@ TEST_CASE("Control Flow Rendering", "[pretty_printer][control_flow]")
 
     SECTION("Null Statement")
     {
-        ast::NullStatement stmt;
+        const ast::NullStatement stmt;
         constexpr std::string_view EXPECTED = "null;";
         REQUIRE(emit::test::render(stmt) == EXPECTED);
     }

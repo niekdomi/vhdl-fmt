@@ -73,8 +73,8 @@ TEST_CASE("Concurrent Assignment: Conditional", "[statements][concurrent_assign]
     // Conditional assignment with label
     SECTION("Labeled Conditional Assignment")
     {
-        const auto *assign = parseConditionalAssign(
-          "mux_select: data_out <= data_in when sel = '1' else '0';");
+        const auto *assign
+          = parseConditionalAssign("mux_select: data_out <= data_in when sel = '1' else '0';");
         REQUIRE(assign != nullptr);
 
         REQUIRE(assign->label.has_value());
@@ -98,8 +98,8 @@ TEST_CASE("Concurrent Assignment: Selected", "[statements][selected_assign]")
     // Simple Selected Assignment: result <= "00" when '0', "11" when others
     SECTION("Basic Selection (Bits)")
     {
-        const auto *assign = parseSelectedAssign(
-          "with sel select result <= '1' when '0', '0' when others;");
+        const auto *assign
+          = parseSelectedAssign("with sel select result <= '1' when '0', '0' when others;");
         REQUIRE(assign != nullptr);
 
         CHECK(getExpr<ast::TokenExpr>(assign->selector)->text == "sel");
