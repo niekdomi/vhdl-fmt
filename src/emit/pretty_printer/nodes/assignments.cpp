@@ -9,9 +9,11 @@ namespace emit {
 auto PrettyPrinter::operator()(const ast::Waveform::Element &node, const bool is_last) const -> Doc
 {
     Doc doc = visit(node.value);
+
     if (node.after) {
         doc += Doc::text(" after ") + visit(*node.after);
     }
+
     return is_last ? doc : doc + Doc::text(",");
 }
 
@@ -31,9 +33,11 @@ auto PrettyPrinter::operator()(
   const ast::ConditionalConcurrentAssign::ConditionalWaveform &node) const -> Doc
 {
     Doc d = visit(node.waveform);
+
     if (node.condition) {
         d &= Doc::text("when") & visit(*node.condition);
     }
+
     return d;
 }
 
@@ -65,6 +69,7 @@ auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign::Selection &n
 {
     const Doc val = visit(node.waveform);
     const Doc choices = join(node.choices, Doc::text(" | "));
+
     return val & Doc::text("when") & choices;
 }
 

@@ -79,19 +79,20 @@ constexpr auto findInMap(const std::array<std::pair<std::string_view, T>, N> &ma
             return map_val;
         }
     }
+
     return std::nullopt;
 }
 
 /// Checks if a node exists and is not null
 [[nodiscard]]
-inline auto isValid(const YAML::Node &node) -> bool
+constexpr auto isValid(const YAML::Node &node) -> bool
 {
     return node && !node.IsNull();
 }
 
 /// Helper to get a nested YAML node if it exists and is valid
 [[nodiscard]]
-inline auto getNestedNode(const YAML::Node &parent, std::string_view path) -> YAML::Node
+constexpr auto getNestedNode(const YAML::Node &parent, std::string_view path) -> YAML::Node
 {
     if (!isValid(parent)) {
         return YAML::Node{};
@@ -103,7 +104,7 @@ inline auto getNestedNode(const YAML::Node &parent, std::string_view path) -> YA
 
 template<typename T>
 [[nodiscard]]
-auto tryParseYaml(const YAML::Node &node, std::string_view name) -> std::optional<T>
+constexpr auto tryParseYaml(const YAML::Node &node, std::string_view name) -> std::optional<T>
 {
     if (!isValid(node)) {
         return std::nullopt;
@@ -119,11 +120,11 @@ auto tryParseYaml(const YAML::Node &node, std::string_view name) -> std::optiona
 
 template<typename T, std::size_t N, typename KeyType>
 [[nodiscard]]
-auto mapValueToConfig(const KeyType &style,
-                      const std::array<std::pair<std::string_view, T>, N> &map,
-                      std::string_view error_context) -> T
+constexpr auto mapValueToConfig(const KeyType &style,
+                                const std::array<std::pair<std::string_view, T>, N> &map,
+                                std::string_view error_context) -> T
 {
-    if (auto result = findInMap(map, style)) {
+    if (const auto result = findInMap(map, style)) {
         return *result;
     }
 
@@ -132,12 +133,12 @@ auto mapValueToConfig(const KeyType &style,
 
 /// Helper to parse and map a YAML value to a config enum
 template<typename T, std::size_t N>
-inline auto parseAndMapYamlValue(const YAML::Node &node,
-                                 std::string_view key,
-                                 const std::array<std::pair<std::string_view, T>, N> &map,
-                                 std::string_view error_context) -> std::optional<T>
+constexpr auto parseAndMapYamlValue(const YAML::Node &node,
+                                    std::string_view key,
+                                    const std::array<std::pair<std::string_view, T>, N> &map,
+                                    std::string_view error_context) -> std::optional<T>
 {
-    if (auto value_str = tryParseYaml<std::string>(node[key], key)) {
+    if (const auto value_str = tryParseYaml<std::string>(node[key], key)) {
         return mapValueToConfig(*value_str, map, error_context);
     }
     return std::nullopt;
@@ -203,7 +204,8 @@ auto ConfigReader::readConfigFile() -> std::expected<common::Config, ConfigReadE
 // Config Readers
 //===----------------------------------------------------------------------===//
 
-auto ConfigReader::readLineconfig(const YAML::Node &root_node, const common::LineConfig &defaults)
+constexpr auto ConfigReader::readLineconfig(const YAML::Node &root_node,
+                                            const common::LineConfig &defaults)
   -> common::LineConfig
 {
     auto line_config = defaults;
@@ -215,7 +217,8 @@ auto ConfigReader::readLineconfig(const YAML::Node &root_node, const common::Lin
     const auto indent_node = getNestedNode(root_node, "indentation");
 
     if (isValid(indent_node)) {
-        if (auto value = tryParseYaml<std::uint8_t>(indent_node["size"], "indentation.size")) {
+        if (const auto value
+            = tryParseYaml<std::uint8_t>(indent_node["size"], "indentation.size")) {
             line_config.indent_size = *value;
         }
     }
@@ -227,8 +230,8 @@ auto ConfigReader::readLineconfig(const YAML::Node &root_node, const common::Lin
     return line_config;
 }
 
-auto ConfigReader::readIndentationStyle(const YAML::Node &root_node,
-                                        const common::IndentationStyle &defaults)
+constexpr auto ConfigReader::readIndentationStyle(const YAML::Node &root_node,
+                                                  const common::IndentationStyle &defaults)
   -> common::IndentationStyle
 {
     auto indent_style = defaults;
@@ -236,7 +239,7 @@ auto ConfigReader::readIndentationStyle(const YAML::Node &root_node,
     const auto indent_node = getNestedNode(root_node, "indentation");
 
     if (isValid(indent_node)) {
-        if (auto result = parseAndMapYamlValue<common::IndentationStyle, 2>(
+        if (const auto result = parseAndMapYamlValue<common::IndentationStyle, 2>(
               indent_node, "style", INDENTATION_STYLE_MAP, "indentation style")) {
             indent_style = *result;
         }
@@ -245,12 +248,12 @@ auto ConfigReader::readIndentationStyle(const YAML::Node &root_node,
     return indent_style;
 }
 
-auto ConfigReader::readEndOfLine(const YAML::Node &root_node, const common::EndOfLine &defaults)
-  -> common::EndOfLine
+constexpr auto ConfigReader::readEndOfLine(const YAML::Node &root_node,
+                                           const common::EndOfLine &defaults) -> common::EndOfLine
 {
     auto eol = defaults;
 
-    if (auto result = parseAndMapYamlValue<common::EndOfLine, 3>(
+    if (const auto result = parseAndMapYamlValue<common::EndOfLine, 3>(
           root_node, "end_of_line", EOL_STYLE_MAP, "end of line style")) {
         eol = *result;
     }
@@ -258,8 +261,9 @@ auto ConfigReader::readEndOfLine(const YAML::Node &root_node, const common::EndO
     return eol;
 }
 
-auto ConfigReader::readPortMapConfig(const YAML::Node &root_node,
-                                     const common::PortMapConfig &defaults) -> common::PortMapConfig
+constexpr auto ConfigReader::readPortMapConfig(const YAML::Node &root_node,
+                                               const common::PortMapConfig &defaults)
+  -> common::PortMapConfig
 {
     auto port_map = defaults;
 
@@ -268,7 +272,7 @@ auto ConfigReader::readPortMapConfig(const YAML::Node &root_node,
 
     if (isValid(port_map_node)) {
         for (const auto &[key, member_ptr] : PORT_MAP_ASSIGNMENTS_MAP) {
-            if (auto value = tryParseYaml<bool>(port_map_node[key], key)) {
+            if (const auto value = tryParseYaml<bool>(port_map_node[key], key)) {
                 port_map.*member_ptr = *value;
             }
         }
@@ -277,8 +281,8 @@ auto ConfigReader::readPortMapConfig(const YAML::Node &root_node,
     return port_map;
 }
 
-auto ConfigReader::readDeclarationConfig(const YAML::Node &root_node,
-                                         const common::DeclarationConfig &defaults)
+constexpr auto ConfigReader::readDeclarationConfig(const YAML::Node &root_node,
+                                                   const common::DeclarationConfig &defaults)
   -> common::DeclarationConfig
 {
     auto declarations = defaults;
@@ -288,7 +292,7 @@ auto ConfigReader::readDeclarationConfig(const YAML::Node &root_node,
 
     if (isValid(declarations_node)) {
         for (const auto &[key, member_ptr] : DECLARATION_ASSIGNMENTS_MAP) {
-            if (auto value = tryParseYaml<bool>(declarations_node[key], key)) {
+            if (const auto value = tryParseYaml<bool>(declarations_node[key], key)) {
                 declarations.*member_ptr = *value;
             }
         }
@@ -297,8 +301,9 @@ auto ConfigReader::readDeclarationConfig(const YAML::Node &root_node,
     return declarations;
 }
 
-auto ConfigReader::readCasingConfig(const YAML::Node &root_node,
-                                    const common::CasingConfig &defaults) -> common::CasingConfig
+constexpr auto ConfigReader::readCasingConfig(const YAML::Node &root_node,
+                                              const common::CasingConfig &defaults)
+  -> common::CasingConfig
 {
     auto casing = defaults;
 
@@ -307,7 +312,7 @@ auto ConfigReader::readCasingConfig(const YAML::Node &root_node,
 
     if (isValid(casing_node)) {
         for (const auto &[key, member_ptr] : CASING_ASSIGNMENTS_MAP) {
-            if (auto result = parseAndMapYamlValue<common::CaseStyle, 2>(
+            if (const auto result = parseAndMapYamlValue<common::CaseStyle, 2>(
                   casing_node, key, CASE_STYLE_MAP, "casing")) {
                 casing.*member_ptr = *result;
             }

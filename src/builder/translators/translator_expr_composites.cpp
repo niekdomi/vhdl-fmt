@@ -114,8 +114,8 @@ auto Translator::makeRangeConstraint(vhdlParser::Range_constraintContext &ctx)
         return std::nullopt;
     }
 
-    const auto range_expr = makeRange(*explicit_r);
-    const auto *bin = std::get_if<ast::BinaryExpr>(&range_expr);
+    auto range_expr = makeRange(*explicit_r);
+    auto *bin = std::get_if<ast::BinaryExpr>(&range_expr);
     if (bin == nullptr) {
         return std::nullopt;
     }
@@ -128,7 +128,7 @@ auto Translator::makeRangeConstraint(vhdlParser::Range_constraintContext &ctx)
 auto Translator::makeRange(vhdlParser::Explicit_rangeContext &ctx) -> ast::Expr
 {
     // If there's no direction, it's just a simple expression (single value, not a range)
-    if (ctx.direction() == nullptr || ctx.simple_expression().size() < 2) {
+    if ((ctx.direction() == nullptr) || (ctx.simple_expression().size() < 2)) {
         return makeSimpleExpr(*ctx.simple_expression(0));
     }
 
@@ -145,6 +145,7 @@ auto Translator::makeDiscreteRange(vhdlParser::Discrete_rangeContext &ctx) -> as
         if (auto *er = rd->explicit_range()) {
             return makeRange(*er);
         }
+
         return makeToken(*rd);
     }
 
@@ -157,7 +158,7 @@ auto Translator::makeSubtypeIndication(vhdlParser::Subtype_indicationContext &ct
 {
     return build<ast::SubtypeIndication>(ctx)
       .apply([&](auto &node) {
-          auto names = ctx.selected_name();
+          const auto names = ctx.selected_name();
 
           // Grammar: selected_name (selected_name)? ...
           if (names.size() >= 2) {

@@ -68,7 +68,7 @@ inline auto ensureSafety(antlr4::CommonTokenStream &original, antlr4::CommonToke
     auto [it_orig, it_fmt] = std::ranges::mismatch(orig_view, fmt_view, token_match);
 
     // If both iterators reached the end, the streams are identical
-    if (it_orig == orig_view.end() && it_fmt == fmt_view.end()) {
+    if ((it_orig == orig_view.end()) && (it_fmt == fmt_view.end())) {
         return {}; // Success
     }
 

@@ -33,29 +33,31 @@ class ConfigReader final
 
   private:
     [[nodiscard]]
-    static auto readLineconfig(const YAML::Node &root_node, const common::LineConfig &defaults)
-      -> common::LineConfig;
+    static constexpr auto readLineconfig(const YAML::Node &root_node,
+                                         const common::LineConfig &defaults) -> common::LineConfig;
 
     [[nodiscard]]
-    static auto readIndentationStyle(const YAML::Node &root_node,
-                                     const common::IndentationStyle &defaults)
+    static constexpr auto readIndentationStyle(const YAML::Node &root_node,
+                                               const common::IndentationStyle &defaults)
       -> common::IndentationStyle;
 
     [[nodiscard]]
-    static auto readEndOfLine(const YAML::Node &root_node, const common::EndOfLine &defaults)
-      -> common::EndOfLine;
+    static constexpr auto readEndOfLine(const YAML::Node &root_node,
+                                        const common::EndOfLine &defaults) -> common::EndOfLine;
 
     [[nodiscard]]
-    static auto readPortMapConfig(const YAML::Node &root_node,
-                                  const common::PortMapConfig &defaults) -> common::PortMapConfig;
+    static constexpr auto readPortMapConfig(const YAML::Node &root_node,
+                                            const common::PortMapConfig &defaults)
+      -> common::PortMapConfig;
 
     [[nodiscard]]
-    static auto readDeclarationConfig(const YAML::Node &root_node,
-                                      const common::DeclarationConfig &defaults)
+    static constexpr auto readDeclarationConfig(const YAML::Node &root_node,
+                                                const common::DeclarationConfig &defaults)
       -> common::DeclarationConfig;
 
     [[nodiscard]]
-    static auto readCasingConfig(const YAML::Node &root_node, const common::CasingConfig &defaults)
+    static constexpr auto readCasingConfig(const YAML::Node &root_node,
+                                           const common::CasingConfig &defaults)
       -> common::CasingConfig;
 
     std::optional<std::filesystem::path> config_file_path_;
