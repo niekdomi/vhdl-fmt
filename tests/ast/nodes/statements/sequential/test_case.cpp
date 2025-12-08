@@ -1,4 +1,6 @@
 #include "ast/nodes/design_units.hpp"
+#include "ast/nodes/statements/concurrent.hpp"
+#include "ast/nodes/statements/sequential.hpp"
 #include "builder/ast_builder.hpp"
 
 #include <catch2/catch_test_macros.hpp>
