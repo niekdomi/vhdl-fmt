@@ -9,9 +9,12 @@ add_executable(
     #
     # Declarations
     nodes/declarations/test_component.cpp
-    nodes/declarations/test_constant.cpp
-    nodes/declarations/test_signal.cpp
-    nodes/declarations/test_variable.cpp
+    nodes/declarations/test_type_decl.cpp
+    nodes/declarations/objects/test_constant.cpp
+    nodes/declarations/objects/test_signal.cpp
+    nodes/declarations/objects/test_variable.cpp
+    nodes/declarations/interface/test_generic.cpp
+    nodes/declarations/interface/test_port.cpp
     #
     # Types
     nodes/types/test_access.cpp

@@ -1,5 +1,5 @@
+#include "ast/nodes/declarations/decl_utils.hpp"
 #include "ast/nodes/declarations/objects.hpp"
-#include "decl_utils.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
