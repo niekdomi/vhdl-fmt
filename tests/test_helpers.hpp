@@ -1,6 +1,7 @@
 #ifndef TESTS_TEST_HELPERS_HPP
 #define TESTS_TEST_HELPERS_HPP
 
+#include "ast/node.hpp"
 #include "ast/nodes/declarations.hpp"
 #include "ast/nodes/declarations/objects.hpp"
 #include "ast/nodes/design_file.hpp"

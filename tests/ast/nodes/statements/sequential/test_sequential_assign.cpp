@@ -1,8 +1,9 @@
-#include "ast/nodes/expressions.hpp" // For TokenExpr, BinaryExpr, GroupExpr
+#include "ast/nodes/expressions.hpp"
 #include "ast/nodes/statements/sequential.hpp"
 #include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <variant>
 
 TEST_CASE("Sequential Assignments", "[statements][assignment]")
 {

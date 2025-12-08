@@ -5,6 +5,7 @@
 #include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <format>
 #include <string_view>
 #include <variant>
 

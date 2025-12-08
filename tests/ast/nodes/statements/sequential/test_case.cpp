@@ -1,7 +1,9 @@
+#include "ast/nodes/expressions.hpp"
 #include "ast/nodes/statements/sequential.hpp"
 #include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <variant>
 
 TEST_CASE("CaseStatement", "[statements][case]")
 {
@@ -61,7 +63,8 @@ TEST_CASE("CaseStatement", "[statements][case]")
 
         // Check first pattern
         CHECK(std::get<ast::TokenExpr>(case_stmt->when_clauses[0].choices[0]).text == "\"00\"");
-        const auto *body0 = std::get_if<ast::VariableAssign>(case_stmt->when_clauses[0].body.data());
+        const auto *body0
+          = std::get_if<ast::VariableAssign>(case_stmt->when_clauses[0].body.data());
         CHECK(std::get<ast::TokenExpr>(body0->value).text == "ADD");
     }
 
