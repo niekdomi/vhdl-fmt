@@ -19,7 +19,7 @@ struct ConcurrentStatement
 };
 
 struct SequentialStatement
-  : std::variant<VariableAssign, SignalAssign, IfStatement, CaseStatement, ForLoop, WhileLoop, Loop>
+  : std::variant<VariableAssign, SignalAssign, IfStatement, CaseStatement, ForLoop, WhileLoop, Loop, NullStatement>
 {
     using variant::variant; // Inherit constructors
 };

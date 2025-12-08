@@ -74,6 +74,10 @@ auto Translator::makeSequentialStatement(vhdlParser::Sequential_statementContext
         return makeLoop(*loop_stmt);
     }
 
+    if (ctx.NULL_() != nullptr) {
+        return build<ast::NullStatement>(ctx).build();
+    }
+
     // TODO(someone): Add support for wait_statement, assertion_statement,
     // report_statement, next_statement, exit_statement, return_statement, etc.
 
