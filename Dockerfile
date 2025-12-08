@@ -50,20 +50,28 @@ RUN dnf install -y --setopt=install_weak_deps=false \
     ccache \
     which \
     wget \
+    curl \
     procps \
     zsh \
+    tar \
     tree \
     && dnf clean all
 
-# Install Oh My Zsh and set it as the default shell
-RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+# Install Oh My Zsh
+RUN RUNZSH=no CHSH=no KEEP_ZSHRC=yes \
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 
-# Set Zsh as the default shell
+# Copy custom Zsh theme
+COPY .devcontainer/custom.zsh-theme /root/.oh-my-zsh/custom/themes/custom.zsh-theme
+
+# Set the theme
+RUN sed -i 's/^ZSH_THEME=.*/ZSH_THEME="custom"/' /root/.zshrc
+
+# Enable useful default plugins
+RUN sed -i 's/^plugins=(git)/plugins=(git z colored-man-pages)/' /root/.zshrc
+
+# Set Zsh as default shell
 RUN chsh -s /usr/bin/zsh root
-
-# Use the custom theme
-COPY .devcontainer/custom.zsh-theme /root/.oh-my-zsh/custom/themes/
-RUN sed -i 's/ZSH_THEME="robbyrussell"/ZSH_THEME="custom"/g' /root/.zshrc
 
 WORKDIR /app
 CMD ["/usr/bin/zsh"]
