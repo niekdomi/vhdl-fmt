@@ -141,8 +141,7 @@ TEST_CASE("Process", "[builder][statements][process]")
     {
         SECTION("Multiple Statements")
         {
-            // We aren't testing the statements deeply (that's for sequential/test_*.cpp),
-            // just that the process captures them in order.
+            // Verify order and types of statements in the process body
             const auto *proc = parseProcessBody("counter := counter + 1;\n"
                                                 "null;");
             REQUIRE(proc != nullptr);
@@ -154,7 +153,6 @@ TEST_CASE("Process", "[builder][statements][process]")
 
         SECTION("Empty Body")
         {
-            // VHDL requires at least one statement, or empty?
             // Technically an empty process is valid syntax: `begin end process;`
             // But it creates an infinite simulation loop.
             const auto *proc = parseProcessBody("");
