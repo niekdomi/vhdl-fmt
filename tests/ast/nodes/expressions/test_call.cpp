@@ -1,5 +1,5 @@
 #include "ast/nodes/expressions.hpp"
-#include "expr_utils.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <variant>
@@ -8,7 +8,7 @@ TEST_CASE("CallExpr", "[expressions][call]")
 {
     SECTION("Simple function call")
     {
-        const auto *expr = expr_utils::parseExpr("rising_edge(clk)");
+        const auto *expr = test_helpers::parseExpr("rising_edge(clk)");
         const auto *call = std::get_if<ast::CallExpr>(expr);
         REQUIRE(call != nullptr);
 
@@ -25,7 +25,7 @@ TEST_CASE("CallExpr", "[expressions][call]")
 
     SECTION("Multiple arguments")
     {
-        const auto *expr = expr_utils::parseExpr("resize(data, 16)");
+        const auto *expr = test_helpers::parseExpr("resize(data, 16)");
         const auto *call = std::get_if<ast::CallExpr>(expr);
         REQUIRE(call != nullptr);
 
@@ -46,7 +46,7 @@ TEST_CASE("CallExpr", "[expressions][call]")
 
     SECTION("Chained calls")
     {
-        const auto *expr = expr_utils::parseExpr("get_array(i)(j)");
+        const auto *expr = test_helpers::parseExpr("get_array(i)(j)");
         const auto *outer_call = std::get_if<ast::CallExpr>(expr);
         REQUIRE(outer_call != nullptr);
 
@@ -72,7 +72,7 @@ TEST_CASE("CallExpr", "[expressions][call]")
 
     SECTION("Nested function call as argument")
     {
-        const auto *expr = expr_utils::parseExpr("to_integer(unsigned(sig))");
+        const auto *expr = test_helpers::parseExpr("to_integer(unsigned(sig))");
         const auto *outer_call = std::get_if<ast::CallExpr>(expr);
         REQUIRE(outer_call != nullptr);
 

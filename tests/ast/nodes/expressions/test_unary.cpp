@@ -1,5 +1,5 @@
 #include "ast/nodes/expressions.hpp"
-#include "expr_utils.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <variant>
@@ -8,7 +8,7 @@ TEST_CASE("UnaryExpr", "[expressions][unary]")
 {
     SECTION("Negation operator")
     {
-        const auto *expr = expr_utils::parseExpr("-42");
+        const auto *expr = test_helpers::parseExpr("-42");
         const auto *unary = std::get_if<ast::UnaryExpr>(expr);
         REQUIRE(unary != nullptr);
         REQUIRE(unary->op == "-");
@@ -20,7 +20,7 @@ TEST_CASE("UnaryExpr", "[expressions][unary]")
 
     SECTION("Plus operator")
     {
-        const auto *expr = expr_utils::parseExpr("+42");
+        const auto *expr = test_helpers::parseExpr("+42");
         const auto *unary = std::get_if<ast::UnaryExpr>(expr);
         REQUIRE(unary != nullptr);
         REQUIRE(unary->op == "+");
@@ -32,7 +32,7 @@ TEST_CASE("UnaryExpr", "[expressions][unary]")
 
     SECTION("Not operator")
     {
-        const auto *expr = expr_utils::parseExpr("not ready");
+        const auto *expr = test_helpers::parseExpr("not ready");
         const auto *unary = std::get_if<ast::UnaryExpr>(expr);
         REQUIRE(unary != nullptr);
         REQUIRE(unary->op == "not");

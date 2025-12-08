@@ -1,13 +1,15 @@
-#include "ast/nodes/declarations/decl_utils.hpp"
 #include "ast/nodes/declarations/objects.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
 TEST_CASE("Declaration: Variable", "[builder][decl][variable]")
 {
+    auto parse_decl = test_helpers::parseDecl<ast::VariableDecl>;
+
     SECTION("Process variable")
     {
-        const auto *decl = decl_utils::parse<ast::VariableDecl>("variable cnt : integer := 0;");
+        const auto *decl = parse_decl("variable cnt : integer := 0;");
         REQUIRE(decl != nullptr);
 
         REQUIRE(decl->names.size() == 1);
@@ -18,7 +20,7 @@ TEST_CASE("Declaration: Variable", "[builder][decl][variable]")
 
     SECTION("Shared variable")
     {
-        const auto *decl = decl_utils::parse<ast::VariableDecl>("shared variable mem : memory_t;");
+        const auto *decl = parse_decl("shared variable mem : memory_t;");
         REQUIRE(decl != nullptr);
 
         REQUIRE(decl->names[0] == "mem");

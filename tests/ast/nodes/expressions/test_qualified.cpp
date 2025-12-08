@@ -1,5 +1,5 @@
-#include "expr_utils.hpp"
 #include "nodes/expressions.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <variant>
@@ -8,7 +8,7 @@ TEST_CASE("QualifiedExpr", "[expressions][qualified]")
 {
     SECTION("Simple type qualification")
     {
-        const auto *expr = expr_utils::parseExpr("integer'(42)");
+        const auto *expr = test_helpers::parseExpr("integer'(42)");
         const auto *qual = std::get_if<ast::QualifiedExpr>(expr);
         REQUIRE(qual != nullptr);
         REQUIRE(qual->type_mark.type_mark == "integer");
@@ -24,7 +24,7 @@ TEST_CASE("QualifiedExpr", "[expressions][qualified]")
 
     SECTION("Type qualification with aggregate")
     {
-        const auto *expr = expr_utils::parseExpr("array_type'(1, 2, 3)");
+        const auto *expr = test_helpers::parseExpr("array_type'(1, 2, 3)");
         const auto *qual = std::get_if<ast::QualifiedExpr>(expr);
         REQUIRE(qual != nullptr);
         REQUIRE(qual->type_mark.type_mark == "array_type");
@@ -37,7 +37,7 @@ TEST_CASE("QualifiedExpr", "[expressions][qualified]")
 
     SECTION("Type qualification with named association")
     {
-        const auto *expr = expr_utils::parseExpr("record_type'(field => value)");
+        const auto *expr = test_helpers::parseExpr("record_type'(field => value)");
         const auto *qual = std::get_if<ast::QualifiedExpr>(expr);
         REQUIRE(qual != nullptr);
         REQUIRE(qual->type_mark.type_mark == "record_type");
@@ -54,7 +54,7 @@ TEST_CASE("QualifiedExpr", "[expressions][qualified]")
     SECTION("Qualified expression with subtype constraint")
     {
         // Example: vector(7 downto 0)'(others => '0')
-        const auto *expr = expr_utils::parseExpr("vector(7 downto 0)'(others => '0')");
+        const auto *expr = test_helpers::parseExpr("vector(7 downto 0)'(others => '0')");
         const auto *qual = std::get_if<ast::QualifiedExpr>(expr);
 
         REQUIRE(qual != nullptr);
