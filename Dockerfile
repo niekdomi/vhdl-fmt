@@ -51,13 +51,22 @@ RUN dnf install -y --setopt=install_weak_deps=false \
     which \
     wget \
     procps \
+    zsh \
+    tree \
     && dnf clean all
 
-# Add colored prompt for root
-RUN echo 'export PS1="\[\e[31m\]\u\[\e[0m\]@\[\e[34m\]\h\[\e[0m\]:\[\e[36m\]\w\[\e[0m\] > "' >> /root/.bashrc
+# Install Oh My Zsh and set it as the default shell
+RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+
+# Set Zsh as the default shell
+RUN chsh -s /usr/bin/zsh root
+
+# Use the custom theme
+COPY .devcontainer/custom.zsh-theme /root/.oh-my-zsh/custom/themes/
+RUN sed -i 's/ZSH_THEME="robbyrussell"/ZSH_THEME="custom"/g' /root/.zshrc
 
 WORKDIR /app
-CMD ["/bin/bash"]
+CMD ["/usr/bin/zsh"]
 
 # ==================================================
 # Stage 2.2: CI image
