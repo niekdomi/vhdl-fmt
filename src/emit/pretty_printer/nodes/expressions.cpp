@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <variant>
 
 namespace emit {
 
