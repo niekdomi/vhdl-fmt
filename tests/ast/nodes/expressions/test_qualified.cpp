@@ -1,4 +1,4 @@
-#include "nodes/expressions.hpp"
+#include "ast/nodes/expressions.hpp"
 #include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
