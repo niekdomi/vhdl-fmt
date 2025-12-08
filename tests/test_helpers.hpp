@@ -21,7 +21,7 @@
 namespace test_helpers {
 
 // =============================================================================
-// Trivia Helpers (from test_utils.hpp)
+// Trivia Helpers
 // =============================================================================
 
 /// @brief Extract comment texts from a trivia span
@@ -184,6 +184,18 @@ inline auto parseType(std::string_view type_decl_str) -> const ast::TypeDecl *
 
     const auto *decl_item = arch->decls.data();
     return std::get_if<ast::TypeDecl>(decl_item);
+}
+
+/// Parse a single design unit from code string.
+template<typename T>
+inline auto parseDesignUnit(std::string_view code) -> const T *
+{
+    static ast::DesignFile design;
+    design = builder::buildFromString(code);
+    if (design.units.empty()) {
+        return nullptr;
+    }
+    return std::get_if<T>(&design.units.front());
 }
 
 } // namespace test_helpers
