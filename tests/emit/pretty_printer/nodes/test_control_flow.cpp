@@ -129,4 +129,11 @@ TEST_CASE("Control Flow Rendering", "[pretty_printer][control_flow]")
 
         REQUIRE(emit::test::render(stmt) == EXPECTED);
     }
+
+    SECTION("Null Statement")
+    {
+        ast::NullStatement stmt;
+        constexpr std::string_view EXPECTED = "null;";
+        REQUIRE(emit::test::render(stmt) == EXPECTED);
+    }
 }

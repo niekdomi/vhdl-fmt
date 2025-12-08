@@ -37,16 +37,15 @@ add_executable(
     nodes/expressions/test_unary.cpp
     #
     # Statements
-    nodes/statements/test_case.cpp
-    nodes/statements/test_concurrent_assign.cpp
-    nodes/statements/test_control_flow.cpp
-    nodes/statements/test_for_loop.cpp
-    nodes/statements/test_loop.cpp
-    nodes/statements/test_process.cpp
-    nodes/statements/test_selected_assign.cpp
-    nodes/statements/test_sequential_assign.cpp
     nodes/statements/test_waveforms.cpp
-    nodes/statements/test_while_loop.cpp
+    nodes/statements/concurrent/test_assign.cpp
+    nodes/statements/concurrent/test_process.cpp
+    nodes/statements/sequential/test_case.cpp
+    nodes/statements/sequential/test_control_flow.cpp
+    nodes/statements/sequential/test_for_loop.cpp
+    nodes/statements/sequential/test_loop.cpp
+    nodes/statements/sequential/test_sequential_assign.cpp
+    nodes/statements/sequential/test_while_loop.cpp
 )
 
 target_link_libraries(
