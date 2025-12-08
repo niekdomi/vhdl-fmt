@@ -20,7 +20,8 @@ TriviaBinder::TriviaBinder(antlr4::CommonTokenStream &ts) : tokens_(ts), used_(t
 
 auto TriviaBinder::extractTrivia(std::span<antlr4::Token *const> range) -> std::vector<ast::Trivia>
 {
-    constexpr unsigned BREAK_BREAKOFF = 2; // Minimum newlines to register a Break trivia
+    // Minimum newlines to register a Break trivia
+    constexpr unsigned BREAK_BREAKOFF = 2;
 
     std::vector<ast::Trivia> result{};
 

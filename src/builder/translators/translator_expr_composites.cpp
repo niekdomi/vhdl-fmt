@@ -114,8 +114,8 @@ auto Translator::makeRangeConstraint(vhdlParser::Range_constraintContext &ctx)
         return std::nullopt;
     }
 
-    auto range_expr = makeRange(*explicit_r);
-    auto *bin = std::get_if<ast::BinaryExpr>(&range_expr);
+    const auto range_expr = makeRange(*explicit_r);
+    const auto *bin = std::get_if<ast::BinaryExpr>(&range_expr);
     if (bin == nullptr) {
         return std::nullopt;
     }

@@ -107,7 +107,7 @@ auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContex
              [this](auto &t) { return makeTarget(t); })
       .with(ctx.selected_waveforms(),
             [&](auto &node, auto &sel_waves) {
-                for (auto [wave, choice] :
+                for (const auto &[wave, choice] :
                      std::views::zip(sel_waves.waveform(), sel_waves.choices())) {
                     node.selections.emplace_back(makeSelection(*wave, *choice));
                 }
