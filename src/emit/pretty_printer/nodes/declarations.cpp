@@ -1,8 +1,9 @@
 #include "ast/nodes/declarations.hpp"
 
+#include "ast/nodes/declarations/interface.hpp"
+#include "ast/nodes/declarations/objects.hpp"
 #include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/doc.hpp"
-#include "emit/pretty_printer/doc_utils.hpp"
 
 #include <ranges>
 #include <string>
@@ -13,7 +14,7 @@ namespace emit {
 struct AlignmentLevel
 {
     static constexpr int NAME = 0; ///< Column 0: Used for names (port, generic, signal, etc.)
-    static constexpr int TYPE = 1; ///< Column 1: Used for mode/type (port mode, type name)
+    static constexpr int MODE = 1; ///< Column 1: Used for mode (port modes like "in", "out", etc.)
 };
 
 auto PrettyPrinter::operator()(const ast::GenericParam &node, const bool is_last) const -> Doc
@@ -22,9 +23,7 @@ auto PrettyPrinter::operator()(const ast::GenericParam &node, const bool is_last
                             | std::views::join_with(std::string_view{ ", " })
                             | std::ranges::to<std::string>();
 
-    Doc result = Doc::alignText(names, AlignmentLevel::NAME)
-               & Doc::text(":")
-               & Doc::alignText(node.type_name, AlignmentLevel::TYPE);
+    Doc result = Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":") & visit(node.subtype);
 
     if (node.default_expr) {
         result &= Doc::text(":=") & visit(node.default_expr.value());
@@ -41,13 +40,8 @@ auto PrettyPrinter::operator()(const ast::Port &node, const bool is_last) const 
 
     Doc result = Doc::alignText(names, AlignmentLevel::NAME)
                & Doc::text(":")
-               & Doc::alignText(node.mode, AlignmentLevel::TYPE)
-               & Doc::text(node.type_name);
-
-    // Constraint (e.g., (7 downto 0) or range 0 to 255)
-    if (node.constraint) {
-        result += visit(node.constraint.value());
-    }
+               & Doc::alignText(node.mode, AlignmentLevel::MODE)
+               & visit(node.subtype);
 
     if (node.default_expr) {
         result &= Doc::text(":=") & visit(node.default_expr.value());
@@ -65,11 +59,7 @@ auto PrettyPrinter::operator()(const ast::SignalDecl &node) const -> Doc
     Doc result = Doc::text("signal") & Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":");
 
     // Type definition
-    result &= Doc::alignText(node.type_name, AlignmentLevel::TYPE);
-
-    if (node.constraint) {
-        result += visit(node.constraint.value());
-    }
+    result &= visit(node.subtype);
 
     if (node.has_bus_kw) {
         result &= Doc::text("bus");
@@ -92,7 +82,7 @@ auto PrettyPrinter::operator()(const ast::ConstantDecl &node) const -> Doc
     Doc result
       = Doc::text("constant") & Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":");
 
-    result &= Doc::alignText(node.type_name, AlignmentLevel::TYPE);
+    result &= visit(node.subtype);
 
     if (node.init_expr) {
         result &= Doc::text(":=") & visit(node.init_expr.value());
@@ -111,34 +101,10 @@ auto PrettyPrinter::operator()(const ast::VariableDecl &node) const -> Doc
     Doc result = Doc::text(node.shared ? "shared variable" : "variable")
                & Doc::alignText(names, AlignmentLevel::NAME)
                & Doc::text(":")
-               & Doc::alignText(node.type_name, AlignmentLevel::TYPE);
+               & visit(node.subtype);
 
-    // Constraint (e.g., (7 downto 0) or range 0 to 255)
-    if (node.constraint) {
-        result += visit(node.constraint.value());
-    }
-
-    // ":= 0"
     if (node.init_expr) {
         result &= Doc::text(":=") & visit(node.init_expr.value());
-    }
-
-    return result + Doc::text(";");
-}
-
-auto PrettyPrinter::operator()(const ast::RecordElement &node) const -> Doc
-{
-    const std::string names = node.names
-                            | std::views::join_with(std::string_view{ ", " })
-                            | std::ranges::to<std::string>();
-
-    Doc result = Doc::alignText(names, AlignmentLevel::NAME)
-               & Doc::text(":")
-               & Doc::alignText(node.type_name, AlignmentLevel::TYPE);
-
-    // Constraint (e.g., (7 downto 0) or range 0 to 255)
-    if (node.constraint) {
-        result += visit(node.constraint.value());
     }
 
     return result + Doc::text(";");
@@ -148,43 +114,13 @@ auto PrettyPrinter::operator()(const ast::TypeDecl &node) const -> Doc
 {
     Doc result = Doc::text("type") & Doc::text(node.name);
 
-    // Handle different `type` kinds
-    switch (node.kind) {
-        case ast::TypeKind::ENUMERATION: {
-            // type state_t is (IDLE, BUSY, DONE);
-            if (!node.enum_literals.empty()) {
-                const std::string literals = node.enum_literals
-                                           | std::views::join_with(std::string_view{ ", " })
-                                           | std::ranges::to<std::string>();
-
-                result &= Doc::text("is") & Doc::text("(") + Doc::text(literals) + Doc::text(")");
-            }
-            break;
-        }
-        case ast::TypeKind::RECORD: {
-            // type record_t is record ... end record;
-            const Doc head = result & Doc::text("is") & Doc::text("record");
-            Doc end = Doc::text("end") & Doc::text("record");
-
-            if (node.end_label) {
-                end &= Doc::text(node.end_label.value());
-            }
-
-            result = node.record_elements.empty()
-                     ? head / end
-                     : Doc::bracket(head,
-                                    joinMap(node.record_elements, Doc::line(), toDoc(*this), false),
-                                    end);
-            break;
-        }
-        case ast::TypeKind::OTHER: {
-            // For other types (array, access, file, range, etc.), use stored text
-            if (!node.other_definition.empty()) {
-                result &= Doc::text("is") & Doc::text(node.other_definition);
-            }
-            break;
-        }
+    if (!node.type_def.has_value()) {
+        // Incomplete type declaration: "type <name>;"
+        return result + Doc::text(";");
     }
+
+    // "is <definition>"
+    result &= Doc::text("is") & visit(node.type_def.value());
 
     return result + Doc::text(";");
 }

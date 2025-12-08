@@ -22,6 +22,7 @@ struct QualifiedExpr;
 struct SliceExpr;
 struct TokenExpr;
 struct UnaryExpr;
+struct SubtypeIndication;
 
 /// @brief Helper alias for boxed recursive types.
 ///
@@ -42,7 +43,8 @@ using Expr = std::variant<TokenExpr,
                           SliceExpr,
                           AttributeExpr,
                           QualifiedExpr,
-                          PhysicalLiteral>;
+                          PhysicalLiteral,
+                          SubtypeIndication>;
 
 /// @brief Represents a binary expression.
 ///
@@ -124,15 +126,6 @@ struct AttributeExpr : NodeBase
     std::optional<Box<Expr>> arg; ///< Optional parameter for attributes like 'stable(5 ns).
 };
 
-/// @brief Represents a qualified expression (type qualification).
-///
-/// Example: `std_logic_vector'(x"AB")`, `integer'(42)`
-struct QualifiedExpr : NodeBase
-{
-    std::string type_mark; ///< Type qualifier/mark (e.g., "std_logic_vector", "integer").
-    Box<Expr> operand;     ///< Expression being qualified (aggregate or parenthesized expression).
-};
-
 // -------------------------------------------------------
 
 /// @brief Represents an index constraint with parentheses.
@@ -153,6 +146,28 @@ struct RangeConstraint : NodeBase
 
 /// @brief Variant type for constraints used in type declarations.
 using Constraint = std::variant<IndexConstraint, RangeConstraint>;
+
+// -------------------------------------------------------
+
+/// @brief Represents a subtype indication.
+///
+/// Example: `std_logic_vector(7 downto 0)`, `resolved std_logic`
+struct SubtypeIndication : NodeBase
+{
+    std::optional<std::string>
+      resolution_func;                    ///< Optional resolution function (e.g., "resolved").
+    std::string type_mark;                ///< The base type name (e.g., "std_logic").
+    std::optional<Constraint> constraint; ///< Optional constraint (range or index).
+};
+
+/// @brief Represents a qualified expression (type qualification).
+///
+/// Example: `std_logic_vector'(x"AB")`, `integer'(42)`
+struct QualifiedExpr : NodeBase
+{
+    SubtypeIndication type_mark; ///< Type qualifier/mark (e.g., "std_logic_vector", "integer").
+    Box<Expr> operand; ///< Expression being qualified (aggregate or parenthesized expression).
+};
 
 } // namespace ast
 

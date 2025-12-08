@@ -1,7 +1,7 @@
 #ifndef EXPR_UTILS_HPP
 #define EXPR_UTILS_HPP
 
-#include "ast/nodes/declarations.hpp"
+#include "ast/nodes/declarations/objects.hpp"
 #include "ast/nodes/design_file.hpp"
 #include "ast/nodes/design_units.hpp"
 #include "ast/nodes/expressions.hpp"
@@ -35,10 +35,9 @@ inline auto parseExpr(std::string_view init_expr) -> const ast::Expr *
     if ((arch == nullptr) || arch->decls.empty()) {
         return nullptr;
     }
-    const auto *decl_item = std::get_if<ast::Declaration>(arch->decls.data());
-    if (decl_item == nullptr) {
-        return nullptr;
-    }
+
+    const auto *decl_item = arch->decls.data();
+
     const auto *signal = std::get_if<ast::SignalDecl>(decl_item);
     if ((signal == nullptr) || !signal->init_expr.has_value()) {
         return nullptr;

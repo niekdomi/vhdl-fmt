@@ -1,7 +1,9 @@
 #include "ast/nodes/declarations.hpp"
+#include "ast/nodes/declarations/interface.hpp"
+#include "ast/nodes/declarations/objects.hpp"
 #include "ast/nodes/design_units.hpp"
+#include "ast/nodes/expressions.hpp"
 #include "emit/test_utils.hpp"
-#include "nodes/expressions.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <string>
@@ -54,7 +56,7 @@ TEST_CASE("ComponentDecl: Component with generic clause", "[pretty_printer][comp
 
     ast::GenericParam gen;
     gen.names = { "WIDTH" };
-    gen.type_name = "integer";
+    gen.subtype = ast::SubtypeIndication{ .type_mark = "integer" };
     gen.default_expr = ast::TokenExpr{ .text = "8" };
     comp.generic_clause.generics.push_back(std::move(gen));
 
@@ -74,13 +76,13 @@ TEST_CASE("ComponentDecl: Component with port clause", "[pretty_printer][compone
     ast::Port port1;
     port1.names = { "data_in" };
     port1.mode = "in";
-    port1.type_name = "bit";
+    port1.subtype = ast::SubtypeIndication{ .type_mark = "bit" };
     comp.port_clause.ports.push_back(std::move(port1));
 
     ast::Port port2;
     port2.names = { "data_out" };
     port2.mode = "out";
-    port2.type_name = "bit";
+    port2.subtype = ast::SubtypeIndication{ .type_mark = "bit" };
     comp.port_clause.ports.push_back(std::move(port2));
 
     const std::string result = emit::test::render(comp);
@@ -100,26 +102,26 @@ TEST_CASE("ComponentDecl: Component with both generic and port clauses",
 
     ast::GenericParam gen;
     gen.names = { "WIDTH" };
-    gen.type_name = "integer";
+    gen.subtype = ast::SubtypeIndication{ .type_mark = "integer" };
     gen.default_expr = ast::TokenExpr{ .text = "8" };
     comp.generic_clause.generics.push_back(std::move(gen));
 
     ast::Port port1;
     port1.names = { "a" };
     port1.mode = "in";
-    port1.type_name = "bit";
+    port1.subtype = ast::SubtypeIndication{ .type_mark = "bit" };
     comp.port_clause.ports.push_back(std::move(port1));
 
     ast::Port port2;
     port2.names = { "b" };
     port2.mode = "in";
-    port2.type_name = "bit";
+    port2.subtype = ast::SubtypeIndication{ .type_mark = "bit" };
     comp.port_clause.ports.push_back(std::move(port2));
 
     ast::Port port3;
     port3.names = { "sum" };
     port3.mode = "out";
-    port3.type_name = "bit";
+    port3.subtype = ast::SubtypeIndication{ .type_mark = "bit" };
     comp.port_clause.ports.push_back(std::move(port3));
 
     const std::string result = emit::test::render(comp);
@@ -140,9 +142,9 @@ TEST_CASE("Architecture: Order preserved - constant, component, signal",
     // Add constant
     ast::ConstantDecl const_decl;
     const_decl.names = { "MAX_VALUE" };
-    const_decl.type_name = "integer";
+    const_decl.subtype = ast::SubtypeIndication{ .type_mark = "integer" };
     const_decl.init_expr = ast::TokenExpr{ .text = "100" };
-    arch.decls.emplace_back(ast::Declaration(std::move(const_decl)));
+    arch.decls.emplace_back(std::move(const_decl));
 
     // Add component
     ast::ComponentDecl comp;
@@ -153,8 +155,8 @@ TEST_CASE("Architecture: Order preserved - constant, component, signal",
     // Add signal
     ast::SignalDecl sig_decl;
     sig_decl.names = { "counter" };
-    sig_decl.type_name = "integer";
-    arch.decls.emplace_back(ast::Declaration(std::move(sig_decl)));
+    sig_decl.subtype = ast::SubtypeIndication{ .type_mark = "integer" };
+    arch.decls.emplace_back(std::move(sig_decl));
 
     const std::string result = emit::test::render(arch);
     constexpr std::string_view EXPECTED = "architecture rtl of test_entity is\n"
@@ -177,8 +179,8 @@ TEST_CASE("Architecture: Order preserved - signal, component, constant",
     // Add signal
     ast::SignalDecl sig_decl;
     sig_decl.names = { "enable" };
-    sig_decl.type_name = "bit";
-    arch.decls.emplace_back(ast::Declaration(std::move(sig_decl)));
+    sig_decl.subtype = ast::SubtypeIndication{ .type_mark = "bit" };
+    arch.decls.emplace_back(std::move(sig_decl));
 
     // Add component
     ast::ComponentDecl comp;
@@ -189,9 +191,9 @@ TEST_CASE("Architecture: Order preserved - signal, component, constant",
     // Add constant
     ast::ConstantDecl const_decl;
     const_decl.names = { "TIMEOUT" };
-    const_decl.type_name = "integer";
+    const_decl.subtype = ast::SubtypeIndication{ .type_mark = "integer" };
     const_decl.init_expr = ast::TokenExpr{ .text = "50" };
-    arch.decls.emplace_back(ast::Declaration(std::move(const_decl)));
+    arch.decls.emplace_back(std::move(const_decl));
 
     const std::string result = emit::test::render(arch);
     constexpr std::string_view EXPECTED = "architecture rtl of test_entity is\n"
@@ -213,15 +215,15 @@ TEST_CASE("Architecture: Complex interleaved declarations", "[pretty_printer][co
     // C1
     ast::ConstantDecl c1;
     c1.names = { "C1" };
-    c1.type_name = "integer";
+    c1.subtype = ast::SubtypeIndication{ .type_mark = "integer" };
     c1.init_expr = ast::TokenExpr{ .text = "1" };
-    arch.decls.emplace_back(ast::Declaration(std::move(c1)));
+    arch.decls.emplace_back(std::move(c1));
 
     // S1
     ast::SignalDecl s1;
     s1.names = { "S1" };
-    s1.type_name = "bit";
-    arch.decls.emplace_back(ast::Declaration(std::move(s1)));
+    s1.subtype = ast::SubtypeIndication{ .type_mark = "bit" };
+    arch.decls.emplace_back(std::move(s1));
 
     // COMP1
     ast::ComponentDecl comp1;
@@ -231,9 +233,9 @@ TEST_CASE("Architecture: Complex interleaved declarations", "[pretty_printer][co
     // C2
     ast::ConstantDecl c2;
     c2.names = { "C2" };
-    c2.type_name = "integer";
+    c2.subtype = ast::SubtypeIndication{ .type_mark = "integer" };
     c2.init_expr = ast::TokenExpr{ .text = "2" };
-    arch.decls.emplace_back(ast::Declaration(std::move(c2)));
+    arch.decls.emplace_back(std::move(c2));
 
     // COMP2
     ast::ComponentDecl comp2;
@@ -243,15 +245,15 @@ TEST_CASE("Architecture: Complex interleaved declarations", "[pretty_printer][co
     // S2
     ast::SignalDecl s2;
     s2.names = { "S2" };
-    s2.type_name = "bit";
-    arch.decls.emplace_back(ast::Declaration(std::move(s2)));
+    s2.subtype = ast::SubtypeIndication{ .type_mark = "bit" };
+    arch.decls.emplace_back(std::move(s2));
 
     // C3
     ast::ConstantDecl c3;
     c3.names = { "C3" };
-    c3.type_name = "integer";
+    c3.subtype = ast::SubtypeIndication{ .type_mark = "integer" };
     c3.init_expr = ast::TokenExpr{ .text = "3" };
-    arch.decls.emplace_back(ast::Declaration(std::move(c3)));
+    arch.decls.emplace_back(std::move(c3));
 
     const std::string result = emit::test::render(arch);
 

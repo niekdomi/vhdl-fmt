@@ -1,8 +1,7 @@
 #include "ast/node.hpp"
-#include "ast/nodes/design_units.hpp"
+#include "ast/nodes/declarations/interface.hpp"
 #include "ast/nodes/expressions.hpp"
 #include "emit/test_utils.hpp"
-#include "nodes/declarations.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <memory>
@@ -16,7 +15,7 @@ namespace {
 auto makeGeneric(std::string name, std::string type, std::string def_val) -> ast::GenericParam
 {
     return ast::GenericParam{ .names = { std::move(name) },
-                              .type_name = std::move(type),
+                              .subtype = ast::SubtypeIndication{ .type_mark = std::move(type) },
                               .default_expr = ast::TokenExpr{ .text = std::move(def_val) } };
 }
 
@@ -24,7 +23,7 @@ auto makePort(std::string name, std::string mode, std::string type) -> ast::Port
 {
     return ast::Port{ .names = { std::move(name) },
                       .mode = std::move(mode),
-                      .type_name = std::move(type) };
+                      .subtype = ast::SubtypeIndication{ .type_mark = std::move(type) } };
 }
 
 auto makeVectorPort(std::string name, std::string mode, std::string high, std::string low)
@@ -37,10 +36,13 @@ auto makeVectorPort(std::string name, std::string mode, std::string high, std::s
     idx_constraint.ranges.children.emplace_back(
       ast::BinaryExpr{ .left = std::move(left), .op = "downto", .right = std::move(right) });
 
-    return ast::Port{ .names = { std::move(name) },
-                      .mode = std::move(mode),
-                      .type_name = "std_logic_vector",
-                      .constraint = ast::Constraint(std::move(idx_constraint)) };
+    return ast::Port{
+        .names = { std::move(name) },
+        .mode = std::move(mode),
+        .subtype
+        = ast::SubtypeIndication{ .type_mark = "std_logic_vector",
+                  .constraint = ast::Constraint(std::move(idx_constraint)) }
+    };
 }
 
 } // namespace

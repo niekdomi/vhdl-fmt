@@ -3,13 +3,22 @@
 
 #include "ast/node.hpp"
 #include "ast/nodes/declarations.hpp"
+#include "ast/nodes/declarations/interface.hpp"
+#include "ast/nodes/declarations/objects.hpp"
 #include "ast/nodes/design_file.hpp"
 #include "ast/nodes/design_units.hpp"
 #include "ast/nodes/expressions.hpp"
-#include "ast/nodes/statements.hpp"
+#include "ast/nodes/statements/concurrent.hpp"
+#include "ast/nodes/statements/sequential.hpp"
+#include "ast/nodes/statements/waveform.hpp"
+#include "ast/nodes/types.hpp"
 #include "ast/visitor.hpp"
 #include "emit/pretty_printer/doc.hpp"
 
+#include <algorithm>
+#include <concepts>
+#include <functional>
+#include <ranges>
 #include <type_traits>
 #include <utility>
 
@@ -48,10 +57,17 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
 
     // Declarations
     auto operator()(const ast::ConstantDecl &node) const -> Doc;
-    auto operator()(const ast::RecordElement &node) const -> Doc;
     auto operator()(const ast::SignalDecl &node) const -> Doc;
     auto operator()(const ast::TypeDecl &node) const -> Doc;
     auto operator()(const ast::VariableDecl &node) const -> Doc;
+
+    // Type Definitions
+    auto operator()(const ast::AccessTypeDef &node) const -> Doc;
+    auto operator()(const ast::ArrayTypeDef &node) const -> Doc;
+    auto operator()(const ast::EnumerationTypeDef &node) const -> Doc;
+    auto operator()(const ast::FileTypeDef &node) const -> Doc;
+    auto operator()(const ast::RecordTypeDef &node) const -> Doc;
+    auto operator()(const ast::RecordElement &node) const -> Doc;
 
     // Expressions
     auto operator()(const ast::AttributeExpr &node) const -> Doc;
@@ -64,6 +80,7 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     auto operator()(const ast::SliceExpr &node) const -> Doc;
     auto operator()(const ast::TokenExpr &node) const -> Doc;
     auto operator()(const ast::UnaryExpr &node) const -> Doc;
+    auto operator()(const ast::SubtypeIndication &node) const -> Doc;
 
     // Constraints
     auto operator()(const ast::IndexConstraint &node) const -> Doc;
@@ -102,6 +119,30 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
 
     // Allow base class to call `wrapResult`, so `wrapResult` can be private
     friend class ast::VisitorBase<Doc>;
+
+    // ---------------------- Helpers ----------------------
+
+    /// @brief Generic joiner: Applies a transform function to each item.
+    template<std::ranges::input_range Range, typename Transform>
+        requires requires(Transform &t, std::ranges::range_reference_t<Range> item) {
+            { std::invoke(t, item) } -> std::convertible_to<Doc>;
+        }
+    auto joinMap(Range &&items, const Doc &sep, Transform &&transform) const -> Doc
+    {
+        return std::ranges::fold_left(
+          std::forward<Range>(items), Doc::empty(), [&](const Doc &acc, auto &&item) {
+              const Doc doc = std::invoke(transform, std::forward<decltype(item)>(item));
+              return acc.isEmpty() ? doc : acc + sep + doc;
+          });
+    }
+
+    /// @brief AST joiner: Automatically calls this->visit() on each item.
+    template<std::ranges::input_range Range>
+    auto join(Range &&items, const Doc &sep) const -> Doc
+    {
+        return joinMap(
+          std::forward<Range>(items), sep, [this](const auto &node) { return this->visit(node); });
+    }
 };
 
 } // namespace emit

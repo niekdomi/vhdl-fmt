@@ -170,7 +170,7 @@ auto Translator::makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx)
     }
 
     return build<ast::QualifiedExpr>(ctx)
-      .set(&ast::QualifiedExpr::type_mark, subtype->getText())
+      .set(&ast::QualifiedExpr::type_mark, makeSubtypeIndication(*subtype))
       .setBox(&ast::QualifiedExpr::operand, std::move(operand))
       .build();
 }
@@ -182,7 +182,7 @@ auto Translator::makeAllocator(vhdlParser::AllocatorContext &ctx) -> ast::Expr
     if (auto *qual = ctx.qualified_expression()) {
         operand = makeQualifiedExpr(*qual);
     } else if (auto *subtype = ctx.subtype_indication()) {
-        operand = makeToken(*subtype); // TODO(vedivad): Better handling of subtype indications
+        operand = makeSubtypeIndication(*subtype);
     } else {
         operand = makeToken(ctx);
     }

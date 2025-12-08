@@ -11,7 +11,7 @@ TEST_CASE("QualifiedExpr", "[expressions][qualified]")
         const auto *expr = expr_utils::parseExpr("integer'(42)");
         const auto *qual = std::get_if<ast::QualifiedExpr>(expr);
         REQUIRE(qual != nullptr);
-        REQUIRE(qual->type_mark == "integer");
+        REQUIRE(qual->type_mark.type_mark == "integer");
         REQUIRE(qual->operand != nullptr);
 
         const auto *group = std::get_if<ast::GroupExpr>(qual->operand.get());
@@ -27,7 +27,7 @@ TEST_CASE("QualifiedExpr", "[expressions][qualified]")
         const auto *expr = expr_utils::parseExpr("array_type'(1, 2, 3)");
         const auto *qual = std::get_if<ast::QualifiedExpr>(expr);
         REQUIRE(qual != nullptr);
-        REQUIRE(qual->type_mark == "array_type");
+        REQUIRE(qual->type_mark.type_mark == "array_type");
         REQUIRE(qual->operand != nullptr);
 
         const auto *group = std::get_if<ast::GroupExpr>(qual->operand.get());
@@ -40,7 +40,7 @@ TEST_CASE("QualifiedExpr", "[expressions][qualified]")
         const auto *expr = expr_utils::parseExpr("record_type'(field => value)");
         const auto *qual = std::get_if<ast::QualifiedExpr>(expr);
         REQUIRE(qual != nullptr);
-        REQUIRE(qual->type_mark == "record_type");
+        REQUIRE(qual->type_mark.type_mark == "record_type");
         REQUIRE(qual->operand != nullptr);
 
         const auto *group = std::get_if<ast::GroupExpr>(qual->operand.get());
@@ -49,5 +49,23 @@ TEST_CASE("QualifiedExpr", "[expressions][qualified]")
         const auto *binary = std::get_if<ast::BinaryExpr>(group->children.data());
         REQUIRE(binary != nullptr);
         REQUIRE(binary->op == "=>");
+    }
+
+    SECTION("Qualified expression with subtype constraint")
+    {
+        // Example: vector(7 downto 0)'(others => '0')
+        const auto *expr = expr_utils::parseExpr("vector(7 downto 0)'(others => '0')");
+        const auto *qual = std::get_if<ast::QualifiedExpr>(expr);
+
+        REQUIRE(qual != nullptr);
+        REQUIRE(qual->type_mark.type_mark == "vector");
+
+        // Check that the constraint was captured
+        REQUIRE(qual->type_mark.constraint.has_value());
+
+        // Verify it is an index constraint (parens)
+        const auto *idx_constr
+          = std::get_if<ast::IndexConstraint>(&qual->type_mark.constraint.value());
+        REQUIRE(idx_constr != nullptr);
     }
 }

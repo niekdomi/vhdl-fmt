@@ -1,7 +1,8 @@
-#include "ast/nodes/statements.hpp"
+#include "ast/nodes/statements/concurrent.hpp"
+#include "ast/nodes/statements/sequential.hpp"
+#include "ast/nodes/statements/waveform.hpp"
 #include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/doc.hpp"
-#include "emit/pretty_printer/doc_utils.hpp"
 
 namespace emit {
 
@@ -20,14 +21,10 @@ auto PrettyPrinter::operator()(const ast::Waveform &node) const -> Doc
         return Doc::text("unaffected");
     }
 
-    return joinMap(
-      node.elements,
-      Doc::line(),
-      [&](const auto &elem) {
-          const bool is_last = (&elem == &node.elements.back());
-          return visit(elem, is_last);
-      },
-      false);
+    return joinMap(node.elements, Doc::line(), [&](const auto &elem) {
+        const bool is_last = (&elem == &node.elements.back());
+        return visit(elem, is_last);
+    });
 }
 
 auto PrettyPrinter::operator()(
@@ -57,8 +54,7 @@ auto PrettyPrinter::operator()(const ast::ConditionalConcurrentAssign &node) con
 
     // Join with "else" + SoftLine
     // If it breaks, the next line starts at the hung indent level.
-    const Doc waveforms
-      = joinMap(node.waveforms, Doc::text(" else") + Doc::line(), toDoc(*this), false);
+    const Doc waveforms = join(node.waveforms, Doc::text(" else") + Doc::line());
 
     const Doc assignment = Doc::group(target & Doc::hang(waveforms)) + Doc::text(";");
 
@@ -68,7 +64,7 @@ auto PrettyPrinter::operator()(const ast::ConditionalConcurrentAssign &node) con
 auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign::Selection &node) const -> Doc
 {
     const Doc val = visit(node.waveform);
-    const Doc choices = joinMap(node.choices, Doc::text(" | "), toDoc(*this), false);
+    const Doc choices = join(node.choices, Doc::text(" | "));
     return val & Doc::text("when") & choices;
 }
 
@@ -89,8 +85,7 @@ auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign &node) const 
     const Doc target = visit(node.target) & Doc::text("<=");
 
     // Join selections with comma + SoftLine
-    const Doc selections
-      = joinMap(node.selections, Doc::text(",") + Doc::line(), toDoc(*this), false);
+    const Doc selections = join(node.selections, Doc::text(",") + Doc::line());
 
     // For selected assignment, the target itself is nested under the header,
     // and the selections hang off the target.

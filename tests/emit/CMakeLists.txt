@@ -5,7 +5,6 @@ add_executable(
     pretty_printer/test_optimizer.cpp
     pretty_printer/nodes/test_declarations.cpp
     pretty_printer/nodes/test_clauses.cpp
-    pretty_printer/nodes/test_type.cpp
     pretty_printer/nodes/test_component.cpp
     pretty_printer/nodes/test_context_clauses.cpp
     pretty_printer/nodes/test_control_flow.cpp
@@ -26,6 +25,14 @@ add_executable(
     pretty_printer/nodes/expressions/test_slice.cpp
     pretty_printer/nodes/expressions/test_token.cpp
     pretty_printer/nodes/expressions/test_unary.cpp
+    #
+    # Types
+    pretty_printer/nodes/type/test_access.cpp
+    pretty_printer/nodes/type/test_array.cpp
+    pretty_printer/nodes/type/test_enumeration.cpp
+    pretty_printer/nodes/type/test_file.cpp
+    pretty_printer/nodes/type/test_incomplete.cpp
+    pretty_printer/nodes/type/test_record.cpp
 )
 
 target_link_libraries(

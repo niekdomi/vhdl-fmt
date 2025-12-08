@@ -87,21 +87,23 @@ auto Translator::makeArchitecture(vhdlParser::Architecture_bodyContext &ctx) -> 
 }
 
 auto Translator::makeArchitectureDeclarativePart(
-  vhdlParser::Architecture_declarative_partContext &ctx) -> std::vector<ast::DeclarativeItem>
+  vhdlParser::Architecture_declarative_partContext &ctx) -> std::vector<ast::Declaration>
 {
-    std::vector<ast::DeclarativeItem> items{};
+    std::vector<ast::Declaration> items{};
 
     for (auto *item : ctx.block_declarative_item()) {
         if (auto *const_ctx = item->constant_declaration()) {
-            items.emplace_back(ast::Declaration(makeConstantDecl(*const_ctx)));
+            items.emplace_back(makeConstantDecl(*const_ctx));
         } else if (auto *sig_ctx = item->signal_declaration()) {
-            items.emplace_back(ast::Declaration(makeSignalDecl(*sig_ctx)));
+            items.emplace_back(makeSignalDecl(*sig_ctx));
         } else if (auto *type_ctx = item->type_declaration()) {
-            items.emplace_back(ast::Declaration(makeTypeDecl(*type_ctx)));
+            items.emplace_back(makeTypeDecl(*type_ctx));
         } else if (auto *comp_ctx = item->component_declaration()) {
             items.emplace_back(makeComponentDecl(*comp_ctx));
+        } else if (auto *var_ctx = item->variable_declaration()) {
+            items.emplace_back(makeVariableDecl(*var_ctx));
         }
-        // TODO(someone): Add more declaration types as needed (variables, subprograms, etc.)
+        // TODO(vedivad): Add more declaration types as needed (subprograms, etc.)
     }
 
     return items;

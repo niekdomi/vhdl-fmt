@@ -2,7 +2,6 @@
 
 #include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/doc.hpp"
-#include "emit/pretty_printer/doc_utils.hpp"
 
 #include <ranges>
 
@@ -14,8 +13,7 @@ auto PrettyPrinter::operator()(const ast::DesignFile &node) const -> Doc
         return Doc::empty();
     }
 
-    const auto result
-      = joinMap(node.units, Doc::line(), [this](const auto &u) { return visit(u); }, false);
+    const auto result = join(node.units, Doc::line());
 
     return result + Doc::line(); // Trailing newline
 }

@@ -1,7 +1,8 @@
+#include "ast/nodes/declarations/interface.hpp"
 #include "ast/nodes/design_file.hpp"
 #include "ast/nodes/design_units.hpp"
+#include "ast/nodes/expressions.hpp"
 #include "emit/test_utils.hpp"
-#include "nodes/declarations.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <string>
@@ -57,7 +58,9 @@ TEST_CASE("DesignFile Rendering", "[pretty_printer][design_file]")
             // 1. Entity
             ast::Entity entity{ .name = "counter" };
             entity.port_clause.ports.emplace_back(
-              ast::Port{ .names = { "clk" }, .mode = "in", .type_name = "std_logic" });
+              ast::Port{ .names = { "clk" },
+                         .mode = "in",
+                         .subtype = ast::SubtypeIndication{ .type_mark = "std_logic" } });
             entity.end_label = "counter";
             entity.has_end_entity_keyword = true;
 

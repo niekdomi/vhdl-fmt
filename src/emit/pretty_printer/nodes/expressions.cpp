@@ -1,11 +1,12 @@
 #include "ast/nodes/expressions.hpp"
 
+#include "common/overload.hpp"
 #include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/doc.hpp"
-#include "emit/pretty_printer/doc_utils.hpp"
 
 #include <algorithm>
 #include <cctype>
+#include <variant>
 
 namespace emit {
 
@@ -21,9 +22,7 @@ auto PrettyPrinter::operator()(const ast::PhysicalLiteral &node) const -> Doc
 
 auto PrettyPrinter::operator()(const ast::GroupExpr &node) const -> Doc
 {
-    const Doc result
-      = joinMap(node.children, Doc::text(", "), [this](const auto &c) { return visit(c); }, false);
-
+    const Doc result = join(node.children, Doc::text(", "));
     return Doc::text("(") + result + Doc::text(")");
 }
 
@@ -59,7 +58,7 @@ auto PrettyPrinter::operator()(const ast::AttributeExpr &node) const -> Doc
 
 auto PrettyPrinter::operator()(const ast::QualifiedExpr &node) const -> Doc
 {
-    return Doc::text(node.type_mark) + Doc::text("'") + visit(*node.operand);
+    return visit(node.type_mark) + Doc::text("'") + visit(*node.operand);
 }
 
 auto PrettyPrinter::operator()(const ast::ParenExpr &node) const -> Doc
@@ -76,6 +75,31 @@ auto PrettyPrinter::operator()(const ast::CallExpr &node) const -> Doc
 auto PrettyPrinter::operator()(const ast::SliceExpr &node) const -> Doc
 {
     return visit(*node.prefix) + Doc::text("(") + visit(*node.range) + Doc::text(")");
+}
+
+auto PrettyPrinter::operator()(const ast::SubtypeIndication &node) const -> Doc
+{
+    Doc result = Doc::empty();
+
+    // Resolution Function (e.g., "resolved")
+    if (node.resolution_func) {
+        result += Doc::text(*node.resolution_func) + Doc::text(" ");
+    }
+
+    // Type Mark (e.g., "std_logic")
+    result += Doc::text(node.type_mark);
+
+    // Constraint (e.g., "(7 downto 0)")
+    if (node.constraint) {
+        result += std::visit(
+          common::Overload{
+            [this](const ast::IndexConstraint &idx) -> Doc { return visit(idx); },
+            [this](const ast::RangeConstraint &rc) -> Doc { return Doc::text(" ") + visit(rc); },
+          },
+          node.constraint.value());
+    }
+
+    return result;
 }
 
 } // namespace emit
