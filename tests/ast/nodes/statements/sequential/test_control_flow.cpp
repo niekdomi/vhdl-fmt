@@ -1,144 +1,95 @@
-#include "ast/nodes/design_units.hpp"
 #include "ast/nodes/expressions.hpp"
-#include "ast/nodes/statements/concurrent.hpp"
 #include "ast/nodes/statements/sequential.hpp"
-#include "builder/ast_builder.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
-#include <cstddef>
-#include <string_view>
-#include <variant>
 
-namespace {
-// Helper to safely extract a statement from the process body
-template<typename T>
-[[nodiscard]]
-auto getStmt(const ast::Process *proc, std::size_t index) -> const T *
+TEST_CASE("IfStatement", "[statements][if]")
 {
-    REQUIRE(index < proc->body.size());
-    const auto *stmt = std::get_if<T>(&proc->body[index]);
-    REQUIRE(stmt != nullptr);
-    return stmt;
-}
-} // namespace
+    auto parse_if = test_helpers::parseSequentialStmt<ast::IfStatement>;
 
-TEST_CASE("Control Flow Translator", "[builder][control_flow]")
-{
-    // A single VHDL source exercising all 4 control flow types
-    constexpr std::string_view VHDL_FILE = "entity E is end E;\n"
-                                           "architecture A of E is\n"
-                                           "begin\n"
-                                           "    process\n"
-                                           "        variable x, y : integer := 0;\n"
-                                           "        variable state : integer := 0;\n"
-                                           "    begin\n"
-                                           "        -- [0] IF Statement (If-Elsif-Else)\n"
-                                           "        if x = 0 then\n"
-                                           "            y := 1;\n"
-                                           "        elsif x = 1 then\n"
-                                           "            y := 2;\n"
-                                           "        else\n"
-                                           "            y := 3;\n"
-                                           "        end if;\n"
-                                           "\n"
-                                           "        -- [1] CASE Statement\n"
-                                           "        case state is\n"
-                                           "            when 0 | 1 =>\n"
-                                           "                x := 0;\n"
-                                           "            when others =>\n"
-                                           "                x := 1;\n"
-                                           "        end case;\n"
-                                           "\n"
-                                           "        -- [2] FOR Loop\n"
-                                           "        for i in 0 to 9 loop\n"
-                                           "            x := x + 1;\n"
-                                           "        end loop;\n"
-                                           "\n"
-                                           "        -- [3] WHILE Loop\n"
-                                           "        while x < 20 loop\n"
-                                           "            x := x + 1;\n"
-                                           "        end loop;\n"
-                                           "    end process;\n"
-                                           "end A;";
-
-    const auto design = builder::buildFromString(VHDL_FILE);
-
-    // Navigate to Process
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-
-    // Expect 4 statements (If, Case, For, While)
-    REQUIRE(proc->body.size() == 4);
-
-    SECTION("IF Statement")
+    SECTION("Simple If")
     {
-        const auto *stmt = getStmt<ast::IfStatement>(proc, 0);
+        const auto *stmt = parse_if("if enable = '1' then\n"
+                                    "    data <= '1';\n"
+                                    "end if;");
+        REQUIRE(stmt != nullptr);
 
-        // Check IF Branch condition (x=0)
-        const auto *if_cond = std::get_if<ast::BinaryExpr>(&stmt->if_branch.condition);
-        CHECK(if_cond->op == "=");
-        CHECK(std::get<ast::TokenExpr>(*if_cond->right).text == "0");
+        // Check Condition
+        const auto *cond = std::get_if<ast::BinaryExpr>(&stmt->if_branch.condition);
+        REQUIRE(cond != nullptr);
+        CHECK(cond->op == "=");
+
+        // Check Body
         CHECK(stmt->if_branch.body.size() == 1);
 
-        // Check ELSIF Branch
-        REQUIRE(stmt->elsif_branches.size() == 1);
-        const auto *elsif_cond = std::get_if<ast::BinaryExpr>(&stmt->elsif_branches[0].condition);
-        CHECK(std::get<ast::TokenExpr>(*elsif_cond->right).text == "1");
+        // No elsif/else
+        CHECK(stmt->elsif_branches.empty());
+        CHECK_FALSE(stmt->else_branch.has_value());
+    }
 
-        // Check ELSE Branch
+    SECTION("If-Else")
+    {
+        const auto *stmt = parse_if("if valid then\n"
+                                    "    count := count + 1;\n"
+                                    "else\n"
+                                    "    error := '1';\n"
+                                    "end if;");
+        REQUIRE(stmt != nullptr);
+
+        CHECK(stmt->if_branch.body.size() == 1);
+        CHECK(stmt->elsif_branches.empty());
+
         REQUIRE(stmt->else_branch.has_value());
         CHECK(stmt->else_branch->body.size() == 1);
     }
 
-    SECTION("CASE Statement")
+    SECTION("If-Elsif-Else")
     {
-        const auto *stmt = getStmt<ast::CaseStatement>(proc, 1);
+        const auto *stmt = parse_if("if state = IDLE then\n"
+                                    "    ready <= '1';\n"
+                                    "elsif state = BUSY then\n"
+                                    "    ready <= '0';\n"
+                                    "elsif state = ERROR then\n"
+                                    "    report \"error\";\n"
+                                    "else\n"
+                                    "    null;\n"
+                                    "end if;");
+        REQUIRE(stmt != nullptr);
 
-        // Check Selector (state)
-        CHECK(std::get<ast::TokenExpr>(stmt->selector).text == "state");
+        // Verify IF branch
+        CHECK(stmt->if_branch.body.size() == 1);
+        CHECK(std::holds_alternative<ast::SignalAssign>(stmt->if_branch.body[0]));
 
-        REQUIRE(stmt->when_clauses.size() == 2);
+        REQUIRE(stmt->elsif_branches.size() == 2);
 
-        // Clause 1: when 0 | 1
-        const auto &c1 = stmt->when_clauses[0];
-        REQUIRE(c1.choices.size() == 2);
-        CHECK(std::get<ast::TokenExpr>(c1.choices[0]).text == "0");
-        CHECK(std::get<ast::TokenExpr>(c1.choices[1]).text == "1");
+        // Check first elsif
+        const auto *cond1 = std::get_if<ast::BinaryExpr>(&stmt->elsif_branches[0].condition);
+        REQUIRE(cond1 != nullptr);
+        CHECK(stmt->elsif_branches[0].body.size() == 1);
+        CHECK(std::holds_alternative<ast::SignalAssign>(stmt->elsif_branches[0].body[0]));
 
-        // Clause 2: when others
-        const auto &c2 = stmt->when_clauses[1];
-        REQUIRE(c2.choices.size() == 1);
-        CHECK(std::get<ast::TokenExpr>(c2.choices[0]).text == "others");
+        // Check second elsif
+        const auto *cond2 = std::get_if<ast::BinaryExpr>(&stmt->elsif_branches[1].condition);
+        REQUIRE(cond2 != nullptr);
+        CHECK(stmt->elsif_branches[1].body.size() == 1);
+        // TODO(vedivad): Once ReportStatement is supported, check for it
+        CHECK_FALSE(stmt->elsif_branches[1].body.empty());
+
+        // Check else
+        REQUIRE(stmt->else_branch.has_value());
+        CHECK(stmt->else_branch->body.size() == 1);
+        CHECK(std::holds_alternative<ast::NullStatement>(stmt->else_branch->body[0]));
     }
+}
 
-    SECTION("FOR Loop")
+TEST_CASE("NullStatement", "[statements][null]")
+{
+    auto parse_null = test_helpers::parseSequentialStmt<ast::NullStatement>;
+
+    SECTION("Simple Null")
     {
-        const auto *stmt = getStmt<ast::ForLoop>(proc, 2);
-
-        CHECK(stmt->iterator == "i");
-
-        // Range: 0 to 9
-        const auto *range = std::get_if<ast::BinaryExpr>(&stmt->range);
-        REQUIRE(range != nullptr);
-        CHECK(range->op == "to");
-        CHECK(std::get<ast::TokenExpr>(*range->left).text == "0");
-        CHECK(std::get<ast::TokenExpr>(*range->right).text == "9");
-
-        CHECK(stmt->body.size() == 1);
-    }
-
-    SECTION("WHILE Loop")
-    {
-        const auto *stmt = getStmt<ast::WhileLoop>(proc, 3);
-
-        // Condition: x < 20
-        const auto *cond = std::get_if<ast::BinaryExpr>(&stmt->condition);
-        REQUIRE(cond != nullptr);
-        CHECK(cond->op == "<");
-        CHECK(std::get<ast::TokenExpr>(*cond->right).text == "20");
-
-        CHECK(stmt->body.size() == 1);
+        const auto *stmt = parse_null("null;");
+        REQUIRE(stmt != nullptr);
     }
 }

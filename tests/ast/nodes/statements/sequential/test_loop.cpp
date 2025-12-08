@@ -1,95 +1,53 @@
-#include "ast/nodes/design_units.hpp"
-#include "ast/nodes/statements/concurrent.hpp"
 #include "ast/nodes/statements/sequential.hpp"
-#include "builder/ast_builder.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
-#include <string_view>
-#include <variant>
 
-TEST_CASE("Loop: Simple infinite loop", "[statements][loop]")
+TEST_CASE("Loop", "[statements][loop]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process
-            begin
-                loop
-                    wait until clk = '1';
-                end loop;
-            end process;
-        end RTL;
-    )";
+    auto parse_loop = test_helpers::parseSequentialStmt<ast::Loop>;
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
+    SECTION("Simple infinite loop")
+    {
+        const auto *loop = parse_loop("loop null; end loop;");
+        REQUIRE(loop != nullptr);
+        REQUIRE(loop->body.size() == 1);
+        CHECK(std::holds_alternative<ast::NullStatement>(loop->body[0]));
+        CHECK_FALSE(loop->label.has_value());
+    }
 
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-    REQUIRE_FALSE(proc->body.empty());
+    SECTION("Labeled infinite loop")
+    {
+        const auto *loop = parse_loop("main_loop: loop count := count + 1; end loop;");
+        REQUIRE(loop != nullptr);
+        REQUIRE(loop->label.has_value());
+        CHECK(loop->label.value() == "main_loop");
+    }
 
-    const auto *loop = std::get_if<ast::Loop>(proc->body.data());
-    REQUIRE(loop != nullptr);
-    REQUIRE_FALSE(loop->label.has_value());
-}
+    SECTION("Labeled loop")
+    {
+        const auto *loop = parse_loop("my_loop: loop\n"
+                                      "    x := x + 1;\n"
+                                      "    null;\n"
+                                      "end loop my_loop;");
+        REQUIRE(loop != nullptr);
 
-TEST_CASE("Loop: Labeled infinite loop", "[statements][loop]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process
-            begin
-                main_loop: loop
-                    count := count + 1;
-                end loop;
-            end process;
-        end RTL;
-    )";
+        REQUIRE(loop->label.has_value());
+        CHECK(loop->label.value() == "my_loop");
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
+        REQUIRE(loop->body.size() == 2);
+        CHECK(std::holds_alternative<ast::VariableAssign>(loop->body[0]));
+        CHECK(std::holds_alternative<ast::NullStatement>(loop->body[1]));
+    }
 
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-    REQUIRE_FALSE(proc->body.empty());
-
-    const auto *loop = std::get_if<ast::Loop>(proc->body.data());
-    REQUIRE(loop != nullptr);
-    REQUIRE(loop->label.has_value());
-    REQUIRE(loop->label.value() == "main_loop");
-}
-
-TEST_CASE("Loop: Infinite loop with multiple statements", "[statements][loop]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process
-            begin
-                loop
-                    data_out <= data_in;
-                    count := count + 1;
-                    status <= '1';
-                end loop;
-            end process;
-        end RTL;
-    )";
-
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
-
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-    REQUIRE_FALSE(proc->body.empty());
-
-    const auto *loop = std::get_if<ast::Loop>(proc->body.data());
-    REQUIRE(loop != nullptr);
-    REQUIRE(loop->body.size() == 3);
+    SECTION("Infinite loop with multiple statements")
+    {
+        const auto *loop = parse_loop("loop\n"
+                                      "    data_out <= data_in;\n"
+                                      "    count := count + 1;\n"
+                                      "    status <= '1';\n"
+                                      "end loop;");
+        REQUIRE(loop != nullptr);
+        CHECK(loop->body.size() == 3);
+    }
 }
