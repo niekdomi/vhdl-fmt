@@ -44,7 +44,7 @@ auto PrettyPrinter::operator()(const ast::BinaryExpr &node) const -> Doc
 {
     // Only wrap in keyword() if it is a word like "and", "xor", "mod"
     const bool is_word_op
-      = std::ranges::any_of(node.op, [](char c) -> int { return std::isalpha(c); });
+      = std::ranges::any_of(node.op, [](unsigned char c) -> int { return std::isalpha(c); });
 
     const Doc op_doc = is_word_op ? Doc::text(keyword(node.op)) : Doc::text(node.op);
 

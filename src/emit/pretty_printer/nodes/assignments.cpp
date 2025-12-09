@@ -54,7 +54,8 @@ auto PrettyPrinter::operator()(const ast::ConditionalConcurrentAssign &node) con
 
     // Join with "else" + SoftLine
     // If it breaks, the next line starts at the hung indent level.
-    const Doc waveforms = join(node.waveforms, Doc::text(keyword(" else")) + Doc::line());
+    const Doc waveforms
+      = join(node.waveforms, Doc::text(" ") + Doc::text(keyword("else")) + Doc::line());
 
     const Doc assignment = Doc::group(target & Doc::hang(waveforms)) + Doc::text(";");
 
