@@ -146,7 +146,7 @@ void traverseChildren(const Node &node, const Fn &fn)
     // Leaf nodes (Text, Empty, etc.) have no children to traverse
 }
 
-/// Recursive document transformer
+/// @brief Recursive document transformer
 template<typename Fn>
 auto transformImpl(const DocPtr &doc, const Fn &fn) -> DocPtr
 {
@@ -163,6 +163,7 @@ auto transformImpl(const DocPtr &doc, const Fn &fn) -> DocPtr
       doc->value);
 }
 
+/// @brief Recursive document folder
 template<typename T, typename Fn>
 auto foldImpl(const DocPtr &doc, T init, const Fn &fn) -> T
 {
@@ -180,6 +181,7 @@ auto foldImpl(const DocPtr &doc, T init, const Fn &fn) -> T
       doc->value);
 }
 
+/// @brief Recursive document traversal for side-effect operations
 template<typename Fn>
 void traverseImpl(const DocPtr &doc, const Fn &fn)
 {
