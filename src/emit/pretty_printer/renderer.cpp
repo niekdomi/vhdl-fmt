@@ -10,13 +10,6 @@
 
 namespace emit {
 
-Renderer::Renderer(const common::Config &config) :
-  width_(config.line_config.line_length),
-  indent_size_(config.line_config.indent_size),
-  align_(config.port_map.align_signals)
-{
-}
-
 auto Renderer::render(const DocPtr &doc) -> std::string
 {
     output_.clear();
@@ -66,14 +59,16 @@ void Renderer::renderDoc(int indent, Mode mode, const DocPtr &doc)
         },
 
         // Nest (increases indentation)
-        [&](const Nest &node) -> void { renderDoc(indent + indent_size_, mode, node.doc); },
+        [&](const Nest &node) -> void {
+            renderDoc(indent + config_.line_config.indent_size, mode, node.doc);
+        },
 
         [&](const Hang &node) -> void { renderDoc(column_, mode, node.doc); },
 
         // Align (conditional pre-processing)
         [&](const Align &node) -> void {
             DocPtr doc_to_render = node.doc;
-            if (align_) {
+            if (config_.port_map.align_signals) {
                 // Run the two-pass logic to resolve alignment
                 doc_to_render = resolveAlignment(node.doc);
             }
@@ -88,7 +83,7 @@ void Renderer::renderDoc(int indent, Mode mode, const DocPtr &doc)
         // Union (decision point)
         [&](const Union &node) -> void {
             // Decide: use flat or broken layout?
-            if (mode == Mode::FLAT || fits(width_ - column_, node.flat)) {
+            if (mode == Mode::FLAT || fits(config_.line_config.line_length - column_, node.flat)) {
                 // Fits on current line - use flat version
                 renderDoc(indent, Mode::FLAT, node.flat);
             } else {
