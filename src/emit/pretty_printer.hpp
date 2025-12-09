@@ -17,12 +17,9 @@
 #include "emit/pretty_printer/doc.hpp"
 
 #include <algorithm>
-#include <cctype>
 #include <concepts>
 #include <functional>
 #include <ranges>
-#include <string>
-#include <string_view>
 #include <type_traits>
 #include <utility>
 
@@ -138,24 +135,6 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     friend class ast::VisitorBase<Doc>;
 
     // ---------------------- Helpers ----------------------
-
-    /// @brief Converts a keyword to the specified case style.
-    /// @param keyword The keyword to convert.
-    /// @return The converted keyword as a Doc.
-    [[nodiscard]]
-    auto keyword(std::string_view keyword) const -> std::string
-    {
-        const auto to_upper
-          = [](unsigned char c) -> char { return static_cast<char>(std::toupper(c)); };
-        const auto to_lower
-          = [](unsigned char c) -> char { return static_cast<char>(std::tolower(c)); };
-
-        if (config_.casing.keywords == common::CaseStyle::UPPER) {
-            return keyword | std::views::transform(to_upper) | std::ranges::to<std::string>();
-        }
-
-        return keyword | std::views::transform(to_lower) | std::ranges::to<std::string>();
-    }
 
     /// @brief Generic joiner: Applies a transform function to each item.
     template<std::ranges::input_range Range, typename Transform>

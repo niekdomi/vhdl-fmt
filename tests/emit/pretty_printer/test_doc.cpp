@@ -199,15 +199,14 @@ TEST_CASE("Alignment Logic", "[doc][alignment]")
 
     SECTION("Basic Alignment")
     {
-        const Doc doc
-          = Doc::align(Doc::alignText("1", 1) / Doc::alignText("12", 1) / Doc::alignText("123", 1));
+        const Doc doc = Doc::align(Doc::text("1", 1) / Doc::text("12", 1) / Doc::text("123", 1));
         REQUIRE(doc.render(config) == "1  \n12 \n123");
     }
 
     SECTION("Multiple Alignment Columns")
     {
-        const Doc row1 = Doc::alignText("col1", 1) & Doc::text(":") & Doc::alignText("val1", 2);
-        const Doc row2 = Doc::alignText("c1", 1) & Doc::text(":") & Doc::alignText("v1", 2);
+        const Doc row1 = Doc::text("col1", 1) & Doc::text(":") & Doc::text("val1", 2);
+        const Doc row2 = Doc::text("c1", 1) & Doc::text(":") & Doc::text("v1", 2);
 
         const Doc doc = Doc::align(row1 / row2);
 

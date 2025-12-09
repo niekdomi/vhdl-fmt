@@ -21,7 +21,22 @@ auto makeEmpty() -> DocPtr
 
 auto makeText(std::string_view text) -> DocPtr
 {
-    return std::make_shared<DocImpl>(Text{ std::string(text) });
+    return std::make_shared<DocImpl>(Text{ .content = std::string{ text }, .level = -1 });
+}
+
+auto makeText(std::string_view text, int level) -> DocPtr
+{
+    return std::make_shared<DocImpl>(Text{ .content = std::string{ text }, .level = level });
+}
+
+auto makeKeyword(std::string_view text) -> DocPtr
+{
+    return std::make_shared<DocImpl>(Keyword{ .content = std::string{ text }, .level = -1 });
+}
+
+auto makeKeyword(std::string_view text, int level) -> DocPtr
+{
+    return std::make_shared<DocImpl>(Keyword{ .content = std::string{ text }, .level = level });
 }
 
 auto makeLine() -> DocPtr
@@ -56,7 +71,9 @@ auto makeConcat(DocPtr left, DocPtr right) -> DocPtr
     if (auto *left_text = std::get_if<Text>(&left->value)) {
         if (auto *right_text = std::get_if<Text>(&right->value)) {
             // Create a new merged text node directly
-            return makeText(left_text->content + right_text->content);
+            if (left_text->level < 0 && right_text->level < 0) {
+                return makeText(left_text->content + right_text->content, -1);
+            }
         }
     }
 
@@ -99,11 +116,6 @@ auto makeUnion(DocPtr flat, DocPtr broken) -> DocPtr
     return std::make_shared<DocImpl>(Union{ .flat = std::move(flat), .broken = std::move(broken) });
 }
 
-auto makeAlignText(std::string_view text, int level) -> DocPtr
-{
-    return std::make_shared<DocImpl>(AlignText{ .content = std::string(text), .level = level });
-}
-
 auto makeAlign(DocPtr doc) -> DocPtr
 {
     return std::make_shared<DocImpl>(Align{ .doc = std::move(doc) });
@@ -119,23 +131,19 @@ auto flatten(const DocPtr &doc) -> DocPtr
     return transformImpl(doc, [](auto &&node) -> DocPtr {
         using T = std::decay_t<decltype(node)>;
 
-        // 1. Convert SoftLine to Space
+        // Convert SoftLine to Space
         if constexpr (std::is_same_v<T, SoftLine>) {
-            return makeText(" ");
+            return makeText(" ", -1);
         }
-        // 2. Unwrap Unions (Pick the pre-flattened branch)
+        // Unwrap Unions (Pick the pre-flattened branch)
         else if constexpr (std::is_same_v<T, Union>) {
             return node.flat;
         }
-        // 3. Convert AlignText to simple Text
-        else if constexpr (std::is_same_v<T, AlignText>) {
-            return makeText(node.content);
-        }
-        // 4. Unwrap Align scopes
+        // Unwrap Align scopes
         else if constexpr (std::is_same_v<T, Align>) {
             return node.doc;
         }
-        // 5. Default: Pass everything else through (Concat, Text, HardLine, etc.)
+        // Default: Pass everything else through (Concat, Text, HardLine, etc.)
         else {
             return std::make_shared<DocImpl>(std::forward<decltype(node)>(node));
         }
@@ -152,7 +160,10 @@ auto resolveAlignment(const DocPtr &doc) -> DocPtr
     std::map<int, int> max_widths;
     traverseImpl(doc, [&](const auto &node) {
         using T = std::decay_t<decltype(node)>;
-        if constexpr (std::is_same_v<T, AlignText>) {
+        if constexpr (IS_ANY_OF_V<T, Text, Keyword>) {
+            if (node.level < 0) {
+                return;
+            }
             const int len = static_cast<int>(node.content.length());
             if (len > max_widths[node.level]) {
                 max_widths[node.level] = len;
@@ -167,7 +178,10 @@ auto resolveAlignment(const DocPtr &doc) -> DocPtr
     // 2: Apply padding
     return transformImpl(doc, [&](const auto &node) -> DocPtr {
         using T = std::decay_t<decltype(node)>;
-        if constexpr (std::is_same_v<T, AlignText>) {
+        if constexpr (IS_ANY_OF_V<T, Text, Keyword>) {
+            if (node.level < 0) {
+                return std::make_shared<DocImpl>(node);
+            }
             const int max_width = max_widths.at(node.level);
             const int padding = max_width - static_cast<int>(node.content.length());
             return makeText(node.content + std::string(padding, ' '));

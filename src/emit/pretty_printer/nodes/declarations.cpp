@@ -23,7 +23,7 @@ auto PrettyPrinter::operator()(const ast::GenericParam &node, const bool is_last
                             | std::views::join_with(std::string_view{ ", " })
                             | std::ranges::to<std::string>();
 
-    Doc result = Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":") & visit(node.subtype);
+    Doc result = Doc::text(names, AlignmentLevel::NAME) & Doc::text(":") & visit(node.subtype);
 
     if (node.default_expr) {
         result &= Doc::text(":=") & visit(node.default_expr.value());
@@ -38,9 +38,9 @@ auto PrettyPrinter::operator()(const ast::Port &node, const bool is_last) const 
                             | std::views::join_with(std::string_view{ ", " })
                             | std::ranges::to<std::string>();
 
-    Doc result = Doc::alignText(names, AlignmentLevel::NAME)
+    Doc result = Doc::text(names, AlignmentLevel::NAME)
                & Doc::text(":")
-               & Doc::alignText(keyword(node.mode), AlignmentLevel::MODE)
+               & Doc::keyword(node.mode, AlignmentLevel::MODE)
                & visit(node.subtype);
 
     if (node.default_expr) {
@@ -56,14 +56,13 @@ auto PrettyPrinter::operator()(const ast::SignalDecl &node) const -> Doc
                             | std::views::join_with(std::string_view{ ", " })
                             | std::ranges::to<std::string>();
 
-    Doc result
-      = Doc::text(keyword("signal")) & Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":");
+    Doc result = Doc::keyword(("signal")) & Doc::text(names, AlignmentLevel::NAME) & Doc::text(":");
 
     // Type definition
     result &= visit(node.subtype);
 
     if (node.has_bus_kw) {
-        result &= Doc::text(keyword("bus"));
+        result &= Doc::keyword(("bus"));
     }
 
     // Initialization
@@ -80,9 +79,8 @@ auto PrettyPrinter::operator()(const ast::ConstantDecl &node) const -> Doc
                             | std::views::join_with(std::string_view{ ", " })
                             | std::ranges::to<std::string>();
 
-    Doc result = Doc::text(keyword("constant"))
-               & Doc::alignText(names, AlignmentLevel::NAME)
-               & Doc::text(":");
+    Doc result
+      = Doc::keyword(("constant")) & Doc::text(names, AlignmentLevel::NAME) & Doc::text(":");
 
     result &= visit(node.subtype);
 
@@ -100,9 +98,9 @@ auto PrettyPrinter::operator()(const ast::VariableDecl &node) const -> Doc
                             | std::ranges::to<std::string>();
 
     // "variable x, y : integer"
-    Doc result = (node.shared ? (Doc::text(keyword("shared")) & Doc::text(keyword("variable")))
-                              : Doc::text(keyword("variable")))
-               & Doc::alignText(names, AlignmentLevel::NAME)
+    Doc result = (node.shared ? (Doc::keyword(("shared")) & Doc::keyword(("variable")))
+                              : Doc::keyword(("variable")))
+               & Doc::text(names, AlignmentLevel::NAME)
                & Doc::text(":")
                & visit(node.subtype);
 
@@ -115,7 +113,7 @@ auto PrettyPrinter::operator()(const ast::VariableDecl &node) const -> Doc
 
 auto PrettyPrinter::operator()(const ast::TypeDecl &node) const -> Doc
 {
-    Doc result = Doc::text(keyword("type")) & Doc::text(node.name);
+    Doc result = Doc::keyword(("type")) & Doc::text(node.name);
 
     if (!node.type_def.has_value()) {
         // Incomplete type declaration: "type <name>;"
@@ -123,7 +121,7 @@ auto PrettyPrinter::operator()(const ast::TypeDecl &node) const -> Doc
     }
 
     // "is <definition>"
-    result &= Doc::text(keyword("is")) & visit(node.type_def.value());
+    result &= Doc::keyword(("is")) & visit(node.type_def.value());
 
     return result + Doc::text(";");
 }

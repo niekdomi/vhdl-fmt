@@ -13,7 +13,7 @@ auto PrettyPrinter::operator()(const ast::IndexConstraint &node) const -> Doc
 auto PrettyPrinter::operator()(const ast::RangeConstraint &node) const -> Doc
 {
     // Range constraints have the RANGE keyword: range 0 to 255
-    return Doc::text(keyword("range")) & visit(node.range);
+    return Doc::keyword(("range")) & visit(node.range);
 }
 
 } // namespace emit

@@ -22,6 +22,13 @@ struct Empty
 struct Text
 {
     std::string content;
+    int level{ -1 };
+};
+
+struct Keyword
+{
+    std::string content;
+    int level{ -1 };
 };
 
 /// Line break (space when flattened, newline when broken)
@@ -64,12 +71,6 @@ struct Union
     DocPtr broken;
 };
 
-struct AlignText
-{
-    std::string content;
-    int level{};
-};
-
 struct Align
 {
     DocPtr doc;
@@ -78,18 +79,9 @@ struct Align
 /// Internal document representation using variant
 struct DocImpl
 {
-    std::variant<Empty,
-                 Text,
-                 SoftLine,
-                 HardLine,
-                 HardLines,
-                 Concat,
-                 Nest,
-                 Hang,
-                 Union,
-                 AlignText,
-                 Align>
-      value;
+    std::
+      variant<Empty, Text, Keyword, SoftLine, HardLine, HardLines, Concat, Nest, Hang, Union, Align>
+        value;
 };
 
 // Helper trait to check if T is one of the types in the list
@@ -200,6 +192,9 @@ void traverseImpl(const DocPtr &doc, const Fn &fn)
 // Factory functions for creating documents
 auto makeEmpty() -> DocPtr;
 auto makeText(std::string_view text) -> DocPtr;
+auto makeText(std::string_view text, int level) -> DocPtr;
+auto makeKeyword(std::string_view text) -> DocPtr;
+auto makeKeyword(std::string_view text, int level) -> DocPtr;
 auto makeLine() -> DocPtr;
 auto makeHardLine() -> DocPtr;
 auto makeHardLines(unsigned count) -> DocPtr;
@@ -207,7 +202,7 @@ auto makeConcat(DocPtr left, DocPtr right) -> DocPtr;
 auto makeNest(DocPtr doc) -> DocPtr;
 auto makeHang(DocPtr doc) -> DocPtr;
 auto makeUnion(DocPtr flat, DocPtr broken) -> DocPtr;
-auto makeAlignText(std::string_view text, int level) -> DocPtr;
+auto makeAlignText(DocPtr doc) -> DocPtr;
 auto makeAlign(DocPtr doc) -> DocPtr;
 
 // Utility functions

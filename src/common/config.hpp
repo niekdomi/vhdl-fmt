@@ -58,7 +58,7 @@ enum class CaseStyle : std::uint8_t
 /// Specific casing configuration that overwrites the default casing
 struct CasingConfig final
 {
-    CaseStyle keywords{ CaseStyle::LOWER };
+    CaseStyle keywords{ CaseStyle::UPPER };
     CaseStyle constants{ CaseStyle::UPPER };
     CaseStyle identifiers{ CaseStyle::LOWER };
 };

@@ -42,6 +42,20 @@ class Doc final
     /// @note The text must not contain newlines.
     static auto text(std::string_view str) -> Doc;
 
+    /// @brief Creates a document from a string.
+    /// @note The text must not contain newlines.
+    /// @param level The level of the document.
+    static auto text(std::string_view str, int level) -> Doc;
+
+    /// @brief Creates a document from a keyword.
+    /// @note The text must not contain newlines.
+    static auto keyword(std::string_view str) -> Doc;
+
+    /// @brief Creates a document from a keyword.
+    /// @note The text must not contain newlines.
+    /// @param level The level of the document.
+    static auto keyword(std::string_view str, int level) -> Doc;
+
     /// @brief A "soft" line break. Renders as a space if it fits,
     ///        or a newline and indent if in "break" mode.
     static auto line() -> Doc;
@@ -53,13 +67,6 @@ class Doc final
     /// @param count The number of hard line breaks to insert.
     /// @note Can be zero to mark something that should not break.
     static auto hardlines(unsigned count) -> Doc;
-
-    /// @brief Creates a special text for alignment.
-    /// @note The renderer will append spaces based on other
-    ///       texts within the same alignment group.
-    /// @param str The text content for this text.
-    /// @param level An integer key that defines the alignment group.
-    static auto alignText(std::string_view str, int level) -> Doc;
 
     // ========================================================================
     // Low-Level Combinators (Operators)

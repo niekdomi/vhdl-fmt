@@ -6,7 +6,7 @@ namespace emit {
 
 auto PrettyPrinter::operator()(const ast::Process &node) const -> Doc
 {
-    Doc head = Doc::text(keyword("process"));
+    Doc head = Doc::keyword(("process"));
 
     // Label: label:
     if (node.label) {
@@ -26,9 +26,9 @@ auto PrettyPrinter::operator()(const ast::Process &node) const -> Doc
         head <<= join(node.decls, Doc::line());
     }
 
-    head /= Doc::text(keyword("begin"));
+    head /= Doc::keyword(("begin"));
 
-    const Doc end = Doc::text(keyword("end")) & Doc::text(keyword("process")) + Doc::text(";");
+    const Doc end = Doc::keyword(("end")) & Doc::keyword(("process")) + Doc::text(";");
 
     if (node.body.empty()) {
         return head / end;

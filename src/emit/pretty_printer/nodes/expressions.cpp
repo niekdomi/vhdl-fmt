@@ -34,7 +34,7 @@ auto PrettyPrinter::operator()(const ast::UnaryExpr &node) const -> Doc
 
     // If keyword, add space between operator and value
     if (is_keyword) {
-        return Doc::text(keyword(node.op)) & visit(*node.value);
+        return Doc::keyword((node.op)) & visit(*node.value);
     }
 
     return Doc::text(node.op) + visit(*node.value);
@@ -46,7 +46,7 @@ auto PrettyPrinter::operator()(const ast::BinaryExpr &node) const -> Doc
     const bool is_word_op
       = std::ranges::any_of(node.op, [](unsigned char c) -> int { return std::isalpha(c); });
 
-    const Doc op_doc = is_word_op ? Doc::text(keyword(node.op)) : Doc::text(node.op);
+    const Doc op_doc = is_word_op ? Doc::keyword((node.op)) : Doc::text(node.op);
 
     return visit(*node.left) & op_doc & visit(*node.right);
 }

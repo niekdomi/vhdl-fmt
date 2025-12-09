@@ -4,6 +4,8 @@
 #include "common/overload.hpp"
 #include "emit/pretty_printer/doc_impl.hpp"
 
+#include <cctype>
+#include <ranges>
 #include <string>
 #include <utility>
 #include <variant>
@@ -32,6 +34,21 @@ void Renderer::renderDoc(int indent, Mode mode, const DocPtr &doc)
 
         // Text
         [&](const Text &node) -> void { write(node.content); },
+
+        // Keyword
+        [&](const Keyword &node) -> void {
+            if (config_.casing.keywords == common::CaseStyle::LOWER) {
+                write(node.content
+                      | std::views::transform(
+                        [](unsigned char c) -> char { return static_cast<char>(std::tolower(c)); })
+                      | std::ranges::to<std::string>());
+            } else {
+                write(node.content
+                      | std::views::transform(
+                        [](unsigned char c) -> char { return static_cast<char>(std::toupper(c)); })
+                      | std::ranges::to<std::string>());
+            }
+        },
 
         // SoftLine (depends on mode)
         [&](const SoftLine &) -> void {
@@ -77,9 +94,6 @@ void Renderer::renderDoc(int indent, Mode mode, const DocPtr &doc)
             renderDoc(indent, mode, doc_to_render);
         },
 
-        // AlignText (base case for alignment, renders as text)
-        [&](const AlignText &node) -> void { write(node.content); },
-
         // Union (decision point)
         [&](const Union &node) -> void {
             // Decide: use flat or broken layout?
@@ -118,6 +132,9 @@ auto Renderer::fitsImpl(int width, const DocPtr &doc) -> int
         // Text
         [&](const Text &node) -> int { return width - static_cast<int>(node.content.length()); },
 
+        // Keyword
+        [&](const Keyword &node) -> int { return width - static_cast<int>(node.content.length()); },
+
         // SoftLine (becomes space)
         [&](const SoftLine &) -> int { return width - 1; },
 
@@ -137,11 +154,6 @@ auto Renderer::fitsImpl(int width, const DocPtr &doc) -> int
         [&](const Union &node) -> int {
             // Check flat version only for fitting
             return fitsImpl(width, node.flat);
-        },
-
-        // AlignText (acts like Text)
-        [&](const AlignText &node) -> int {
-            return width - static_cast<int>(node.content.length());
         },
 
         // All others (HardLine, HardLines) do not fit
