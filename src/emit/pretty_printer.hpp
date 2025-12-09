@@ -145,19 +145,16 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     [[nodiscard]]
     auto keyword(std::string_view keyword) const -> std::string
     {
-        std::string str{ keyword };
+        const auto to_upper
+          = [](unsigned char c) -> char { return static_cast<char>(std::toupper(c)); };
+        const auto to_lower
+          = [](unsigned char c) -> char { return static_cast<char>(std::tolower(c)); };
 
         if (config_.casing.keywords == common::CaseStyle::UPPER) {
-            for (auto &c : str) {
-                c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
-            }
-        } else {
-            for (auto &c : str) {
-                c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-            }
+            return keyword | std::views::transform(to_upper) | std::ranges::to<std::string>();
         }
 
-        return str;
+        return keyword | std::views::transform(to_lower) | std::ranges::to<std::string>();
     }
 
     /// @brief Generic joiner: Applies a transform function to each item.
