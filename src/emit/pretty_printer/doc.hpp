@@ -17,10 +17,13 @@ struct DocImpl;
 using DocPtr = std::shared_ptr<DocImpl>;
 
 template<typename Fn>
-auto transformImpl(const DocPtr &doc, Fn &&fn) -> DocPtr;
+auto transformImpl(const DocPtr &doc, const Fn &fn) -> DocPtr;
 
 template<typename T, typename Fn>
-auto foldImpl(const DocPtr &doc, T init, Fn &&fn) -> T;
+auto foldImpl(const DocPtr &doc, T init, const Fn &fn) -> T;
+
+template<typename Fn>
+auto traverseImpl(const DocPtr &doc, const Fn &fn) -> void;
 
 /// @brief An immutable abstraction for a pretty-printable document.
 /// @note This class is a lightweight handle (PImpl pattern) to the underlying
@@ -153,6 +156,15 @@ class Doc final
     auto fold(T init, Fn &&fn) const -> T
     {
         return foldImpl(impl_, std::move(init), std::forward<Fn>(fn));
+    }
+
+    /// @brief Traverses the document tree.
+    /// @param fn A callable that takes a `DocImpl` variant node (e.g., `Text`,
+    ///           `Concat`) and returns void.
+    template<typename Fn>
+    auto traverse(Fn &&fn) const -> void
+    {
+        traverseImpl(impl_, std::forward<Fn>(fn));
     }
 
     // ========================================================================

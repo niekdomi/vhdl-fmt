@@ -1,10 +1,10 @@
 #ifndef EMIT_DOC_IMPL_HPP
 #define EMIT_DOC_IMPL_HPP
 
-#include <concepts>
 #include <memory>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 #include <variant>
 
@@ -14,96 +14,28 @@ namespace emit {
 struct DocImpl;
 using DocPtr = std::shared_ptr<DocImpl>;
 
-template<typename T>
-concept DocNode = requires(const T &node) {
-    { node.fmap(std::declval<DocPtr(const DocPtr &)>()) } -> std::same_as<T>;
-    {
-        node.fold(std::declval<int>(), std::declval<int(int, const DocPtr &)>())
-    } -> std::same_as<int>;
-};
-
 /// Empty document
 struct Empty
-{
-    template<typename Fn>
-    auto fmap(Fn && /* fn */) const -> Empty
-    {
-        return {};
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn && /* fn */) const -> T
-    {
-        return init;
-    }
-};
+{};
 
 /// Text (no newlines allowed)
 struct Text
 {
     std::string content;
-
-    template<typename Fn>
-    auto fmap(Fn && /* fn */) const -> Text
-    {
-        return { content };
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn && /* fn */) const -> T
-    {
-        return init;
-    }
 };
 
 /// Line break (space when flattened, newline when broken)
 struct SoftLine
-{
-    template<typename Fn>
-    auto fmap(Fn && /* fn */) const -> SoftLine
-    {
-        return {};
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn && /* fn */) const -> T
-    {
-        return init;
-    }
-};
+{};
 
 /// Hard line break (always newline, never becomes space)
 struct HardLine
-{
-    template<typename Fn>
-    auto fmap(Fn && /* fn */) const -> HardLine
-    {
-        return {};
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn && /* fn */) const -> T
-    {
-        return init;
-    }
-};
+{};
 
 /// Multiple hard line breaks
 struct HardLines
 {
     unsigned count{};
-
-    template<typename Fn>
-    auto fmap(Fn && /* fn */) const -> HardLines
-    {
-        return { count };
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn && /* fn */) const -> T
-    {
-        return init;
-    }
 };
 
 /// Concatenation of two documents
@@ -111,55 +43,18 @@ struct Concat
 {
     DocPtr left;
     DocPtr right;
-
-    template<typename Fn>
-    auto fmap(Fn &&fn) const -> Concat
-    {
-        return { std::forward<Fn>(fn)(left), std::forward<Fn>(fn)(right) };
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn &&fn) const -> T
-    {
-        T new_value = std::forward<Fn>(fn)(std::move(init), left);
-        return std::forward<Fn>(fn)(std::move(new_value), right);
-    }
 };
 
 /// Increase indentation level
 struct Nest
 {
     DocPtr doc;
-
-    template<typename Fn>
-    auto fmap(Fn &&fn) const -> Nest
-    {
-        return { std::forward<Fn>(fn)(doc) };
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn &&fn) const -> T
-    {
-        return std::forward<Fn>(fn)(std::move(init), doc);
-    }
 };
 
 /// Set indentation level to the current column
 struct Hang
 {
     DocPtr doc;
-
-    template<typename Fn>
-    auto fmap(Fn &&fn) const -> Hang
-    {
-        return { std::forward<Fn>(fn)(doc) };
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn &&fn) const -> T
-    {
-        return std::forward<Fn>(fn)(std::move(init), doc);
-    }
 };
 
 /// Choice between flat and broken layout
@@ -167,56 +62,17 @@ struct Union
 {
     DocPtr flat;
     DocPtr broken;
-
-    template<typename Fn>
-    auto fmap(Fn &&fn) const -> Union
-    {
-        return { std::forward<Fn>(fn)(flat), std::forward<Fn>(fn)(broken) };
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn &&fn) const -> T
-    {
-        // Only the broken branch is to be considered
-        return std::forward<Fn>(fn)(std::move(init), broken);
-    }
 };
 
 struct AlignText
 {
     std::string content;
     int level{};
-
-    template<typename Fn>
-    auto fmap(Fn && /* fn */) const -> AlignText
-    {
-        return { .content = content, .level = level };
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn && /* fn */) const -> T
-    {
-        // These nodes have no children, so they just return the accumulator.
-        return init;
-    }
 };
 
 struct Align
 {
     DocPtr doc;
-
-    template<typename Fn>
-    auto fmap(Fn &&fn) const -> Align
-    {
-        return { std::forward<Fn>(fn)(doc) };
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn &&fn) const -> T
-    {
-        // Align knows it has one child.
-        return std::forward<Fn>(fn)(std::move(init), doc);
-    }
 };
 
 /// Internal document representation using variant
@@ -236,34 +92,107 @@ struct DocImpl
       value;
 };
 
-/// Recursive document transformer using fmap
-template<typename Fn>
-auto transformImpl(const DocPtr &doc, Fn &&fn) -> DocPtr
+// Helper trait to check if T is one of the types in the list
+template<typename T, typename... Types>
+inline constexpr bool IS_ANY_OF_V = (std::is_same_v<T, Types> || ...);
+
+template<typename Node, typename Fn>
+auto mapChildren(const Node &node, Fn fn) -> Node
 {
+    using T = std::decay_t<Node>;
+
+    if constexpr (std::is_same_v<T, Concat>) {
+        return Concat{ .left = fn(node.left), .right = fn(node.right) };
+    } else if constexpr (std::is_same_v<T, Union>) {
+        return Union{ .flat = fn(node.flat), .broken = fn(node.broken) };
+    } else if constexpr (IS_ANY_OF_V<T, Nest, Hang, Align>) {
+        return T{ .doc = fn(node.doc) };
+    } else {
+        return node;
+    }
+}
+
+template<typename Node, typename Acc, typename Fn>
+auto foldChildren(const Node &node, Acc init, Fn fn) -> Acc
+{
+    using T = std::decay_t<Node>;
+
+    if constexpr (std::is_same_v<T, Concat>) {
+        init = fn(node.left, std::move(init));
+        return fn(node.right, std::move(init));
+    } else if constexpr (std::is_same_v<T, Union>) {
+        return fn(node.broken, std::move(init));
+    } else if constexpr (IS_ANY_OF_V<T, Nest, Hang, Align>) {
+        return fn(node.doc, std::move(init));
+    } else {
+        return init;
+    }
+}
+
+template<typename Node, typename Fn>
+void traverseChildren(const Node &node, const Fn &fn)
+{
+    using T = std::decay_t<Node>;
+
+    if constexpr (std::is_same_v<T, Concat>) {
+        fn(node.left);
+        fn(node.right);
+    } else if constexpr (std::is_same_v<T, Union>) {
+        // Same as fold, only analyze the 'broken' branch
+        fn(node.broken);
+    } else if constexpr (IS_ANY_OF_V<T, Nest, Hang, Align>) {
+        fn(node.doc);
+    }
+    // Leaf nodes (Text, Empty, etc.) have no children to traverse
+}
+
+/// @brief Recursive document transformer
+template<typename Fn>
+auto transformImpl(const DocPtr &doc, const Fn &fn) -> DocPtr
+{
+    if (!doc) {
+        return doc;
+    }
+
     return std::visit(
-      [&fn](const DocNode auto &node) -> DocPtr {
-          const auto mapped
-            = node.fmap([&fn](const DocPtr &inner) { return transformImpl(inner, fn); });
-          return std::forward<Fn>(fn)(mapped);
+      [&](const auto &node) -> DocPtr {
+          auto new_node
+            = mapChildren(node, [&](const DocPtr &child) { return transformImpl(child, fn); });
+          return fn(std::move(new_node));
       },
       doc->value);
 }
 
+/// @brief Recursive document folder
 template<typename T, typename Fn>
-auto foldImpl(const DocPtr &doc, T init, Fn &&fn) -> T
+auto foldImpl(const DocPtr &doc, T init, const Fn &fn) -> T
 {
     if (!doc) {
         return init;
     }
 
     return std::visit(
-      [&](const DocNode auto &node) -> T {
-          T new_value = std::forward<Fn>(fn)(std::move(init), node);
+      [&](const auto &node) -> T {
+          T acc = fn(std::move(init), node);
+          return foldChildren(node, std::move(acc), [&](const DocPtr &child, T inner_acc) {
+              return foldImpl(child, std::move(inner_acc), fn);
+          });
+      },
+      doc->value);
+}
 
-          const auto recurse_step
-            = [&fn](T acc, const DocPtr &child) { return foldImpl(child, std::move(acc), fn); };
+/// @brief Recursive document traversal for side-effect operations
+template<typename Fn>
+void traverseImpl(const DocPtr &doc, const Fn &fn)
+{
+    if (!doc) {
+        return;
+    }
 
-          return node.fold(std::move(new_value), recurse_step);
+    std::visit(
+      [&](const auto &node) {
+          fn(node);
+          traverseChildren(node, [&](const DocPtr &child) { traverseImpl(child, fn); });
       },
       doc->value);
 }
