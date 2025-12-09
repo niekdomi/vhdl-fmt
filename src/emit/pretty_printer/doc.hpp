@@ -17,10 +17,10 @@ struct DocImpl;
 using DocPtr = std::shared_ptr<DocImpl>;
 
 template<typename Fn>
-auto transformImpl(const DocPtr &doc, Fn &&fn) -> DocPtr;
+auto transformImpl(const DocPtr &doc, const Fn &fn) -> DocPtr;
 
 template<typename T, typename Fn>
-auto foldImpl(const DocPtr &doc, T init, Fn &&fn) -> T;
+auto foldImpl(const DocPtr &doc, T init, const Fn &fn) -> T;
 
 /// @brief An immutable abstraction for a pretty-printable document.
 /// @note This class is a lightweight handle (PImpl pattern) to the underlying
