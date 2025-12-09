@@ -1,7 +1,8 @@
 #ifndef EMIT_DOC_IMPL_HPP
 #define EMIT_DOC_IMPL_HPP
 
-#include <concepts>
+#include "common/overload.hpp"
+
 #include <memory>
 #include <string>
 #include <string_view>
@@ -14,96 +15,28 @@ namespace emit {
 struct DocImpl;
 using DocPtr = std::shared_ptr<DocImpl>;
 
-template<typename T>
-concept DocNode = requires(const T &node) {
-    { node.fmap(std::declval<DocPtr(const DocPtr &)>()) } -> std::same_as<T>;
-    {
-        node.fold(std::declval<int>(), std::declval<int(int, const DocPtr &)>())
-    } -> std::same_as<int>;
-};
-
 /// Empty document
 struct Empty
-{
-    template<typename Fn>
-    auto fmap(Fn && /* fn */) const -> Empty
-    {
-        return {};
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn && /* fn */) const -> T
-    {
-        return init;
-    }
-};
+{};
 
 /// Text (no newlines allowed)
 struct Text
 {
     std::string content;
-
-    template<typename Fn>
-    auto fmap(Fn && /* fn */) const -> Text
-    {
-        return { content };
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn && /* fn */) const -> T
-    {
-        return init;
-    }
 };
 
 /// Line break (space when flattened, newline when broken)
 struct SoftLine
-{
-    template<typename Fn>
-    auto fmap(Fn && /* fn */) const -> SoftLine
-    {
-        return {};
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn && /* fn */) const -> T
-    {
-        return init;
-    }
-};
+{};
 
 /// Hard line break (always newline, never becomes space)
 struct HardLine
-{
-    template<typename Fn>
-    auto fmap(Fn && /* fn */) const -> HardLine
-    {
-        return {};
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn && /* fn */) const -> T
-    {
-        return init;
-    }
-};
+{};
 
 /// Multiple hard line breaks
 struct HardLines
 {
     unsigned count{};
-
-    template<typename Fn>
-    auto fmap(Fn && /* fn */) const -> HardLines
-    {
-        return { count };
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn && /* fn */) const -> T
-    {
-        return init;
-    }
 };
 
 /// Concatenation of two documents
@@ -111,55 +44,18 @@ struct Concat
 {
     DocPtr left;
     DocPtr right;
-
-    template<typename Fn>
-    auto fmap(Fn &&fn) const -> Concat
-    {
-        return { std::forward<Fn>(fn)(left), std::forward<Fn>(fn)(right) };
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn &&fn) const -> T
-    {
-        T new_value = std::forward<Fn>(fn)(std::move(init), left);
-        return std::forward<Fn>(fn)(std::move(new_value), right);
-    }
 };
 
 /// Increase indentation level
 struct Nest
 {
     DocPtr doc;
-
-    template<typename Fn>
-    auto fmap(Fn &&fn) const -> Nest
-    {
-        return { std::forward<Fn>(fn)(doc) };
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn &&fn) const -> T
-    {
-        return std::forward<Fn>(fn)(std::move(init), doc);
-    }
 };
 
 /// Set indentation level to the current column
 struct Hang
 {
     DocPtr doc;
-
-    template<typename Fn>
-    auto fmap(Fn &&fn) const -> Hang
-    {
-        return { std::forward<Fn>(fn)(doc) };
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn &&fn) const -> T
-    {
-        return std::forward<Fn>(fn)(std::move(init), doc);
-    }
 };
 
 /// Choice between flat and broken layout
@@ -167,56 +63,17 @@ struct Union
 {
     DocPtr flat;
     DocPtr broken;
-
-    template<typename Fn>
-    auto fmap(Fn &&fn) const -> Union
-    {
-        return { std::forward<Fn>(fn)(flat), std::forward<Fn>(fn)(broken) };
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn &&fn) const -> T
-    {
-        // Only the broken branch is to be considered
-        return std::forward<Fn>(fn)(std::move(init), broken);
-    }
 };
 
 struct AlignText
 {
     std::string content;
     int level{};
-
-    template<typename Fn>
-    auto fmap(Fn && /* fn */) const -> AlignText
-    {
-        return { .content = content, .level = level };
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn && /* fn */) const -> T
-    {
-        // These nodes have no children, so they just return the accumulator.
-        return init;
-    }
 };
 
 struct Align
 {
     DocPtr doc;
-
-    template<typename Fn>
-    auto fmap(Fn &&fn) const -> Align
-    {
-        return { std::forward<Fn>(fn)(doc) };
-    }
-
-    template<typename T, typename Fn>
-    auto fold(T init, Fn &&fn) const -> T
-    {
-        // Align knows it has one child.
-        return std::forward<Fn>(fn)(std::move(init), doc);
-    }
 };
 
 /// Internal document representation using variant
@@ -236,16 +93,37 @@ struct DocImpl
       value;
 };
 
-/// Recursive document transformer using fmap
+/// Recursive document transformer
 template<typename Fn>
 auto transformImpl(const DocPtr &doc, Fn &&fn) -> DocPtr
 {
+    if (!doc) {
+        return doc;
+    }
+
     return std::visit(
-      [&fn](const DocNode auto &node) -> DocPtr {
-          const auto mapped
-            = node.fmap([&fn](const DocPtr &inner) { return transformImpl(inner, fn); });
-          return std::forward<Fn>(fn)(mapped);
-      },
+      common::Overload(
+        [&fn](const Concat &node) -> DocPtr {
+            return std::forward<Fn>(fn)(Concat{ .left = transformImpl(node.left, fn),
+                                                .right = transformImpl(node.right, fn) });
+        },
+        [&fn](const Union &node) -> DocPtr {
+            return std::forward<Fn>(fn)(Union{ .flat = transformImpl(node.flat, fn),
+                                               .broken = transformImpl(node.broken, fn) });
+        },
+        [&fn](const Nest &node) -> DocPtr {
+            return std::forward<Fn>(fn)(Nest{ .doc = transformImpl(node.doc, fn) });
+        },
+        [&fn](const Hang &node) -> DocPtr {
+            return std::forward<Fn>(fn)(Hang{ .doc = transformImpl(node.doc, fn) });
+        },
+        [&fn](const Align &node) -> DocPtr {
+            return std::forward<Fn>(fn)(Align{ .doc = transformImpl(node.doc, fn) });
+        },
+        [&fn](const auto &node) -> DocPtr {
+            // Leaf nodes (Text, Empty, etc.) are just passed through to the function
+            return std::forward<Fn>(fn)(node);
+        }),
       doc->value);
 }
 
@@ -256,16 +134,34 @@ auto foldImpl(const DocPtr &doc, T init, Fn &&fn) -> T
         return init;
     }
 
-    return std::visit(
-      [&](const DocNode auto &node) -> T {
-          T new_value = std::forward<Fn>(fn)(std::move(init), node);
-
-          const auto recurse_step
-            = [&fn](T acc, const DocPtr &child) { return foldImpl(child, std::move(acc), fn); };
-
-          return node.fold(std::move(new_value), recurse_step);
-      },
-      doc->value);
+    return std::visit(common::Overload(
+                        [&](const Concat &node) -> T {
+                            T acc = std::forward<Fn>(fn)(std::move(init), node);
+                            acc = foldImpl(node.left, std::move(acc), fn);
+                            return foldImpl(node.right, std::move(acc), fn);
+                        },
+                        [&](const Union &node) -> T {
+                            T acc = std::forward<Fn>(fn)(std::move(init), node);
+                            // Only the broken branch is to be considered for folding
+                            return foldImpl(node.broken, std::move(acc), fn);
+                        },
+                        [&](const Nest &node) -> T {
+                            T acc = std::forward<Fn>(fn)(std::move(init), node);
+                            return foldImpl(node.doc, std::move(acc), fn);
+                        },
+                        [&](const Hang &node) -> T {
+                            T acc = std::forward<Fn>(fn)(std::move(init), node);
+                            return foldImpl(node.doc, std::move(acc), fn);
+                        },
+                        [&](const Align &node) -> T {
+                            T acc = std::forward<Fn>(fn)(std::move(init), node);
+                            return foldImpl(node.doc, std::move(acc), fn);
+                        },
+                        [&](const auto &node) -> T {
+                            // Leaf nodes
+                            return std::forward<Fn>(fn)(std::move(init), node);
+                        }),
+                      doc->value);
 }
 
 // Factory functions for creating documents
