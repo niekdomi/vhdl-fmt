@@ -1,151 +1,80 @@
-#include "ast/nodes/design_units.hpp"
-#include "ast/nodes/statements/concurrent.hpp"
+#include "ast/nodes/expressions.hpp"
 #include "ast/nodes/statements/sequential.hpp"
-#include "builder/ast_builder.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
-#include <string_view>
 #include <variant>
 
-TEST_CASE("WhileLoop: Simple while loop", "[statements][while_loop]")
+TEST_CASE("WhileLoop", "[statements][while_loop]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process
-            begin
-                while count < 10 loop
-                    count := count + 1;
-                end loop;
-            end process;
-        end RTL;
-    )";
+    auto parse_loop = test_helpers::parseSequentialStmt<ast::WhileLoop>;
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
+    SECTION("Simple while loop")
+    {
+        const auto *loop = parse_loop("while count < 10 loop count := count + 1; end loop;");
+        REQUIRE(loop != nullptr);
 
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-    REQUIRE_FALSE(proc->body.empty());
+        // Verify Condition: count < 10
+        const auto *cond = std::get_if<ast::BinaryExpr>(&loop->condition);
+        REQUIRE(cond != nullptr);
+        CHECK(cond->op == "<");
+        CHECK(std::get<ast::TokenExpr>(*cond->left).text == "count");
+        CHECK(std::get<ast::TokenExpr>(*cond->right).text == "10");
 
-    const auto *while_loop = std::get_if<ast::WhileLoop>(proc->body.data());
-    REQUIRE(while_loop != nullptr);
+        // Verify Body
+        REQUIRE_FALSE(loop->body.empty());
+        const auto *assign = std::get_if<ast::VariableAssign>(loop->body.data());
+        REQUIRE(assign != nullptr);
+        CHECK(std::get<ast::TokenExpr>(assign->target).text == "count");
+    }
+
+    SECTION("Comparison condition")
+    {
+        const auto *loop = parse_loop("while index <= max_value loop\n"
+                                      "    data(index) := '0';\n"
+                                      "    index := index + 1;\n"
+                                      "end loop;");
+        REQUIRE(loop != nullptr);
+
+        // Verify Condition: index <= max_value
+        const auto *cond = std::get_if<ast::BinaryExpr>(&loop->condition);
+        REQUIRE(cond != nullptr);
+        CHECK(cond->op == "<=");
+        CHECK(std::get<ast::TokenExpr>(*cond->left).text == "index");
+        CHECK(std::get<ast::TokenExpr>(*cond->right).text == "max_value");
+
+        REQUIRE(loop->body.size() == 2);
+    }
+
+    SECTION("Boolean condition")
+    {
+        const auto *loop = parse_loop("while not done loop\n"
+                                      "    process_data;\n"
+                                      "    check_status;\n"
+                                      "end loop;");
+        REQUIRE(loop != nullptr);
+
+        // Verify Condition: not done
+        const auto *cond = std::get_if<ast::UnaryExpr>(&loop->condition);
+        REQUIRE(cond != nullptr);
+        CHECK(cond->op == "not");
+        CHECK(std::get<ast::TokenExpr>(*cond->value).text == "done");
+
+        CHECK(loop->body.size() == 2);
+    }
+
+    SECTION("Logical operators")
+    {
+        const auto *loop = parse_loop("while enable = '1' and ready = '1' loop\n"
+                                      "    transfer_data;\n"
+                                      "end loop;");
+        REQUIRE(loop != nullptr);
+
+        // Verify Condition: (enable = '1') and (ready = '1')
+        const auto *cond = std::get_if<ast::BinaryExpr>(&loop->condition);
+        REQUIRE(cond != nullptr);
+        CHECK(cond->op == "and");
+
+        CHECK(loop->body.size() == 1);
+    }
 }
-
-TEST_CASE("WhileLoop: While loop with comparison condition", "[statements][while_loop]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process
-            begin
-                while index <= max_value loop
-                    data(index) := '0';
-                    index := index + 1;
-                end loop;
-            end process;
-        end RTL;
-    )";
-
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
-
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-    REQUIRE_FALSE(proc->body.empty());
-
-    const auto *while_loop = std::get_if<ast::WhileLoop>(proc->body.data());
-    REQUIRE(while_loop != nullptr);
-}
-
-TEST_CASE("WhileLoop: While loop with boolean condition", "[statements][while_loop]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process
-            begin
-                while not done loop
-                    process_data;
-                    check_status;
-                end loop;
-            end process;
-        end RTL;
-    )";
-
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
-
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-    REQUIRE_FALSE(proc->body.empty());
-
-    const auto *while_loop = std::get_if<ast::WhileLoop>(proc->body.data());
-    REQUIRE(while_loop != nullptr);
-}
-
-TEST_CASE("WhileLoop: While loop with logical operators", "[statements][while_loop]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process
-            begin
-                while enable = '1' and ready = '1' loop
-                    transfer_data;
-                end loop;
-            end process;
-        end RTL;
-    )";
-
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
-
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-    REQUIRE_FALSE(proc->body.empty());
-
-    const auto *while_loop = std::get_if<ast::WhileLoop>(proc->body.data());
-    REQUIRE(while_loop != nullptr);
-}
-
-/*
-TEST_CASE("WhileLoop: While loop with multiple statements", "[statements][while_loop]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process
-            begin
-                while counter < limit loop
-                    temp := data_in;
-                    result := temp + offset;
-                    counter := counter + 1;
-                    valid := '1';
-                end loop;
-            end process;
-        end RTL;
-    )";
-
-    auto design = builder::buildFromString(VHDL_FILE);
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
-
-    auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-    REQUIRE_FALSE(proc->body.empty());
-
-    auto *while_loop = std::get_if<ast::WhileLoop>(proc->body.data());
-    REQUIRE(while_loop != nullptr);
-    REQUIRE_FALSE(while_loop->body.empty());
-}
-*/

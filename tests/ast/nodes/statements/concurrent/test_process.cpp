@@ -2,7 +2,7 @@
 #include "ast/nodes/declarations/objects.hpp"
 #include "ast/nodes/statements/concurrent.hpp"
 #include "ast/nodes/statements/sequential.hpp"
-#include "ast/nodes/statements/stmt_utils.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <format>
@@ -15,15 +15,15 @@ namespace {
 [[nodiscard]]
 auto parseProcess(std::string_view process_code) -> const ast::Process *
 {
-    return stmt_utils::parseConcurrent<ast::Process>(process_code);
+    return test_helpers::parseConcurrentStmt<ast::Process>(process_code);
 }
 
 /// @brief Helper for testing Process Declarations.
 [[nodiscard]]
 auto parseProcessDecls(std::string_view decls) -> const ast::Process *
 {
-    const auto code = std::format("process(clk)\n{}\nbegin\n    null;\nend process;", decls);
-    return stmt_utils::parseConcurrent<ast::Process>(code);
+    const auto code = std::format("process(clk)\n{}\nbegin\nend process;", decls);
+    return test_helpers::parseConcurrentStmt<ast::Process>(code);
 }
 
 /// @brief Helper for testing Process Body.
@@ -31,7 +31,7 @@ auto parseProcessDecls(std::string_view decls) -> const ast::Process *
 auto parseProcessBody(std::string_view body) -> const ast::Process *
 {
     const auto code = std::format("process(clk)\nbegin\n{}\nend process;", body);
-    return stmt_utils::parseConcurrent<ast::Process>(code);
+    return test_helpers::parseConcurrentStmt<ast::Process>(code);
 }
 
 } // namespace

@@ -1,64 +1,101 @@
 #include "ast/nodes/design_units.hpp"
-#include "builder/ast_builder.hpp"
+#include "ast/nodes/expressions.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
-#include <string_view>
 #include <variant>
 
-TEST_CASE("Entity: Basic entity declaration with ports and generics", "[design_units][entity]")
+TEST_CASE("Entity", "[design_units][entity]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
-        entity MyEntity is
-            generic (WIDTH : integer := 8);
-            port (clk : in std_logic; data : out std_logic_vector(7 downto 0));
-        end MyEntity;
-    )";
+    auto parse_entity = test_helpers::parseDesignUnit<ast::Entity>;
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    REQUIRE(design.units.size() == 1);
+    SECTION("Basic entity with ports and generics")
+    {
+        const auto *entity = parse_entity(R"(
+            entity MyEntity is
+                generic (WIDTH : integer := 8);
+                port (clk : in std_logic; data : out std_logic_vector(7 downto 0));
+            end MyEntity;
+        )");
+        REQUIRE(entity != nullptr);
+        CHECK(entity->name == "MyEntity");
+        CHECK(entity->end_label.value_or("") == "MyEntity");
 
-    const auto *entity = std::get_if<ast::Entity>(design.units.data());
-    REQUIRE(entity != nullptr);
-    REQUIRE(entity->name == "MyEntity");
-    REQUIRE(entity->end_label.has_value());
-    REQUIRE(entity->end_label.value() == "MyEntity");
-    REQUIRE(entity->generic_clause.generics.size() == 1);
-    REQUIRE(entity->port_clause.ports.size() == 2);
-}
+        // Generics
+        REQUIRE(entity->generic_clause.generics.size() == 1);
+        const auto &g1 = entity->generic_clause.generics[0];
+        CHECK(g1.names[0] == "WIDTH");
+        CHECK(g1.subtype.type_mark == "integer");
 
-TEST_CASE("Entity: Multiple generics", "[design_units][entity]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Counter is
-            generic (
-                WIDTH : integer := 8;
-                RESET_VAL : integer := 0;
-                ENABLE_ASYNC : boolean := false
-            );
-            port (clk : in std_logic);
-        end Counter;
-    )";
+        REQUIRE(g1.default_expr.has_value());
+        CHECK(std::get<ast::TokenExpr>(*g1.default_expr).text == "8");
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *entity = std::get_if<ast::Entity>(design.units.data());
-    REQUIRE(entity != nullptr);
-    REQUIRE(entity->generic_clause.generics.size() == 3);
-    REQUIRE(entity->generic_clause.generics[0].names[0] == "WIDTH");
-    REQUIRE(entity->generic_clause.generics[1].names[0] == "RESET_VAL");
-    REQUIRE(entity->generic_clause.generics[2].names[0] == "ENABLE_ASYNC");
-}
+        // Ports
+        REQUIRE(entity->port_clause.ports.size() == 2);
 
-TEST_CASE("Entity: Minimal entity without ports or generics", "[design_units][entity]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity MinimalEntity is
-        end MinimalEntity;
-    )";
+        // Port 1: clk
+        const auto &p1 = entity->port_clause.ports[0];
+        CHECK(p1.names[0] == "clk");
+        CHECK(p1.mode == "in");
+        CHECK(p1.subtype.type_mark == "std_logic");
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *entity = std::get_if<ast::Entity>(design.units.data());
-    REQUIRE(entity != nullptr);
-    REQUIRE(entity->name == "MinimalEntity");
-    REQUIRE(entity->generic_clause.generics.empty());
-    REQUIRE(entity->port_clause.ports.empty());
+        // Port 2: data
+        const auto &p2 = entity->port_clause.ports[1];
+        CHECK(p2.names[0] == "data");
+        CHECK(p2.mode == "out");
+        CHECK(p2.subtype.type_mark == "std_logic_vector");
+
+        REQUIRE(p2.subtype.constraint.has_value());
+        const auto *idx_cstr = std::get_if<ast::IndexConstraint>(&*p2.subtype.constraint);
+        REQUIRE(idx_cstr != nullptr);
+        REQUIRE(idx_cstr->ranges.children.size() == 1);
+
+        const auto *range = std::get_if<ast::BinaryExpr>(idx_cstr->ranges.children.data());
+        REQUIRE(range != nullptr);
+        CHECK(std::get<ast::TokenExpr>(*range->left).text == "7");
+        CHECK(range->op == "downto");
+        CHECK(std::get<ast::TokenExpr>(*range->right).text == "0");
+    }
+
+    SECTION("Multiple generics")
+    {
+        const auto *entity = parse_entity(R"(
+            entity Counter is
+                generic (
+                    WIDTH : integer := 8;
+                    RESET_VAL : integer := 0;
+                    ENABLE_ASYNC : boolean := false
+                );
+                port (clk : in std_logic);
+            end Counter;
+        )");
+        REQUIRE(entity != nullptr);
+
+        REQUIRE(entity->generic_clause.generics.size() == 3);
+
+        // Check types and default values
+        CHECK(entity->generic_clause.generics[0].names[0] == "WIDTH");
+        CHECK(entity->generic_clause.generics[0].subtype.type_mark == "integer");
+
+        CHECK(entity->generic_clause.generics[1].names[0] == "RESET_VAL");
+        CHECK(std::get<ast::TokenExpr>(*entity->generic_clause.generics[1].default_expr).text
+              == "0");
+
+        CHECK(entity->generic_clause.generics[2].names[0] == "ENABLE_ASYNC");
+        CHECK(entity->generic_clause.generics[2].subtype.type_mark == "boolean");
+        CHECK(std::get<ast::TokenExpr>(*entity->generic_clause.generics[2].default_expr).text
+              == "false");
+    }
+
+    SECTION("Minimal entity")
+    {
+        const auto *entity = parse_entity(R"(
+            entity MinimalEntity is
+            end MinimalEntity;
+        )");
+        REQUIRE(entity != nullptr);
+        CHECK(entity->name == "MinimalEntity");
+        CHECK(entity->generic_clause.generics.empty());
+        CHECK(entity->port_clause.ports.empty());
+    }
 }

@@ -1,5 +1,5 @@
 #include "ast/nodes/expressions.hpp"
-#include "expr_utils.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <variant>
@@ -8,7 +8,7 @@ TEST_CASE("BinaryExpr", "[expressions][binary]")
 {
     SECTION("Simple binary operation")
     {
-        const auto *expr = expr_utils::parseExpr("10 + 20");
+        const auto *expr = test_helpers::parseExpr("10 + 20");
         const auto *binary = std::get_if<ast::BinaryExpr>(expr);
         REQUIRE(binary != nullptr);
         REQUIRE(binary->op == "+");
@@ -24,7 +24,7 @@ TEST_CASE("BinaryExpr", "[expressions][binary]")
 
     SECTION("Left-associative chaining")
     {
-        const auto *expr = expr_utils::parseExpr("a and b and c");
+        const auto *expr = test_helpers::parseExpr("a and b and c");
         const auto *outer = std::get_if<ast::BinaryExpr>(expr);
         REQUIRE(outer != nullptr);
         REQUIRE(outer->op == "and");
@@ -48,7 +48,7 @@ TEST_CASE("BinaryExpr", "[expressions][binary]")
 
     SECTION("Operator precedence")
     {
-        const auto *expr = expr_utils::parseExpr("a + b * c");
+        const auto *expr = test_helpers::parseExpr("a + b * c");
         const auto *outer = std::get_if<ast::BinaryExpr>(expr);
         REQUIRE(outer != nullptr);
         REQUIRE(outer->op == "+");

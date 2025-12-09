@@ -1,5 +1,5 @@
 #include "ast/nodes/expressions.hpp"
-#include "expr_utils.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <variant>
@@ -8,7 +8,7 @@ TEST_CASE("ParenExpr", "[expressions][paren]")
 {
     SECTION("Simple parenthesized expression")
     {
-        const auto *expr = expr_utils::parseExpr("(x)");
+        const auto *expr = test_helpers::parseExpr("(x)");
         const auto *paren = std::get_if<ast::ParenExpr>(expr);
         REQUIRE(paren != nullptr);
 
@@ -19,7 +19,7 @@ TEST_CASE("ParenExpr", "[expressions][paren]")
 
     SECTION("Precedence control")
     {
-        const auto *expr = expr_utils::parseExpr("(a + b) * c");
+        const auto *expr = test_helpers::parseExpr("(a + b) * c");
         const auto *mult = std::get_if<ast::BinaryExpr>(expr);
         REQUIRE(mult != nullptr);
         REQUIRE(mult->op == "*");
@@ -46,7 +46,7 @@ TEST_CASE("ParenExpr", "[expressions][paren]")
 
     SECTION("Nested parentheses")
     {
-        const auto *expr = expr_utils::parseExpr("((x))");
+        const auto *expr = test_helpers::parseExpr("((x))");
         const auto *outer_paren = std::get_if<ast::ParenExpr>(expr);
         REQUIRE(outer_paren != nullptr);
 

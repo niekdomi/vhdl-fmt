@@ -1,13 +1,13 @@
 #include "ast/node.hpp"
 #include "ast/nodes/design_units.hpp"
-#include "ast/test_utils.hpp"
 #include "builder/ast_builder.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
 #include <variant>
 
-using test_utils::getComments;
+using test_helpers::getComments;
 
 // ==============================================================================
 // BASIC TRIVIA BINDING

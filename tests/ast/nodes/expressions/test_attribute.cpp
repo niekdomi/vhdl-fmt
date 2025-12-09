@@ -1,5 +1,5 @@
 #include "ast/nodes/expressions.hpp"
-#include "expr_utils.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <variant>
@@ -8,7 +8,7 @@ TEST_CASE("AttributeExpr", "[expressions][attribute]")
 {
     SECTION("Simple attribute")
     {
-        const auto *expr = expr_utils::parseExpr("data'length");
+        const auto *expr = test_helpers::parseExpr("data'length");
         const auto *attr = std::get_if<ast::AttributeExpr>(expr);
         REQUIRE(attr != nullptr);
         REQUIRE(attr->attribute == "length");
@@ -21,7 +21,7 @@ TEST_CASE("AttributeExpr", "[expressions][attribute]")
 
     SECTION("With parameter")
     {
-        const auto *expr = expr_utils::parseExpr("signal_name'stable(5 ns)");
+        const auto *expr = test_helpers::parseExpr("signal_name'stable(5 ns)");
         const auto *attr = std::get_if<ast::AttributeExpr>(expr);
         REQUIRE(attr != nullptr);
         REQUIRE(attr->attribute == "stable");
@@ -39,7 +39,7 @@ TEST_CASE("AttributeExpr", "[expressions][attribute]")
 
     SECTION("On complex prefix")
     {
-        const auto *expr = expr_utils::parseExpr("my_array(i)'length");
+        const auto *expr = test_helpers::parseExpr("my_array(i)'length");
         const auto *attr = std::get_if<ast::AttributeExpr>(expr);
         REQUIRE(attr != nullptr);
         REQUIRE(attr->attribute == "length");

@@ -1,7 +1,7 @@
 #include "ast/nodes/expressions.hpp"
 #include "ast/nodes/statements/concurrent.hpp"
 #include "ast/nodes/statements/sequential.hpp"
-#include "stmt_utils.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <variant>
@@ -10,7 +10,8 @@ TEST_CASE("Statement: Waveforms", "[builder][statements][waveforms]")
 {
     SECTION("Time Delays (AFTER)")
     {
-        const auto *stmt = stmt_utils::parseSequential<ast::SignalAssign>("s <= '1' after 5 ns;");
+        const auto *stmt
+          = test_helpers::parseSequentialStmt<ast::SignalAssign>("s <= '1' after 5 ns;");
         REQUIRE(stmt != nullptr);
 
         REQUIRE(stmt->waveform.elements.size() == 1);
@@ -29,7 +30,7 @@ TEST_CASE("Statement: Waveforms", "[builder][statements][waveforms]")
 
     SECTION("Multiple Drivers (Comma Separated)")
     {
-        const auto *stmt = stmt_utils::parseSequential<ast::SignalAssign>(
+        const auto *stmt = test_helpers::parseSequentialStmt<ast::SignalAssign>(
           "clk <= '1' after 5 ns, '0' after 10 ns;");
         REQUIRE(stmt != nullptr);
 
@@ -53,7 +54,7 @@ TEST_CASE("Statement: Waveforms", "[builder][statements][waveforms]")
     SECTION("UNAFFECTED Keyword")
     {
         // UNAFFECTED is typically used in conditional assignments (concurrent)
-        const auto *stmt = stmt_utils::parseConcurrent<ast::ConditionalConcurrentAssign>(
+        const auto *stmt = test_helpers::parseConcurrentStmt<ast::ConditionalConcurrentAssign>(
           "s <= '1' when en = '1' else unaffected;");
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->waveforms.size() == 2);
@@ -70,7 +71,7 @@ TEST_CASE("Statement: Waveforms", "[builder][statements][waveforms]")
 
     SECTION("Inline Comments Attach to Element (Not Child Expressions)")
     {
-        const auto *stmt = stmt_utils::parseSequential<ast::SignalAssign>(
+        const auto *stmt = test_helpers::parseSequentialStmt<ast::SignalAssign>(
           "s <= '1' after 5 ns, -- first element\n"
           "     '0' after 10 ns; -- second element");
         REQUIRE(stmt != nullptr);

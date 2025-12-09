@@ -1,5 +1,5 @@
 #include "ast/nodes/expressions.hpp"
-#include "expr_utils.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <variant>
@@ -8,7 +8,7 @@ TEST_CASE("SliceExpr", "[expressions][slice]")
 {
     SECTION("Simple slice with downto")
     {
-        const auto *expr = expr_utils::parseExpr("data(7 downto 0)");
+        const auto *expr = test_helpers::parseExpr("data(7 downto 0)");
         const auto *slice = std::get_if<ast::SliceExpr>(expr);
         REQUIRE(slice != nullptr);
 
@@ -31,7 +31,7 @@ TEST_CASE("SliceExpr", "[expressions][slice]")
 
     SECTION("Slice with to direction")
     {
-        const auto *expr = expr_utils::parseExpr("data(0 to 7)");
+        const auto *expr = test_helpers::parseExpr("data(0 to 7)");
         const auto *slice = std::get_if<ast::SliceExpr>(expr);
         REQUIRE(slice != nullptr);
 
