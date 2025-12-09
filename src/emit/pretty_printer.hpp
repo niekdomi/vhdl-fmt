@@ -21,6 +21,8 @@
 #include <concepts>
 #include <functional>
 #include <ranges>
+#include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 

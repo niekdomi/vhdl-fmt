@@ -81,7 +81,8 @@ auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign &node) const 
         result = Doc::text(*node.label + ":");
     }
 
-    const Doc header = Doc::text(keyword("with")) & visit(node.selector) & Doc::text(keyword("select"));
+    const Doc header
+      = Doc::text(keyword("with")) & visit(node.selector) & Doc::text(keyword("select"));
     const Doc target = visit(node.target) & Doc::text("<=");
 
     // Join selections with comma + SoftLine

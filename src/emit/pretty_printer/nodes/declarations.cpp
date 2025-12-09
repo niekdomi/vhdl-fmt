@@ -56,7 +56,8 @@ auto PrettyPrinter::operator()(const ast::SignalDecl &node) const -> Doc
                             | std::views::join_with(std::string_view{ ", " })
                             | std::ranges::to<std::string>();
 
-    Doc result = Doc::text(keyword("signal")) & Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":");
+    Doc result
+      = Doc::text(keyword("signal")) & Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":");
 
     // Type definition
     result &= visit(node.subtype);
@@ -79,8 +80,9 @@ auto PrettyPrinter::operator()(const ast::ConstantDecl &node) const -> Doc
                             | std::views::join_with(std::string_view{ ", " })
                             | std::ranges::to<std::string>();
 
-    Doc result
-      = Doc::text(keyword("constant")) & Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":");
+    Doc result = Doc::text(keyword("constant"))
+               & Doc::alignText(names, AlignmentLevel::NAME)
+               & Doc::text(":");
 
     result &= visit(node.subtype);
 
@@ -98,7 +100,8 @@ auto PrettyPrinter::operator()(const ast::VariableDecl &node) const -> Doc
                             | std::ranges::to<std::string>();
 
     // "variable x, y : integer"
-    Doc result = Doc::text(node.shared ? keyword("shared variable") : keyword("variable"))
+    Doc result = (node.shared ? (Doc::text(keyword("shared")) & Doc::text(keyword("variable")))
+                              : Doc::text(keyword("variable")))
                & Doc::alignText(names, AlignmentLevel::NAME)
                & Doc::text(":")
                & visit(node.subtype);

@@ -29,7 +29,7 @@ auto PrettyPrinter::operator()(const ast::IfStatement &node) const -> Doc
     }
 
     // 4. END IF
-    return result / Doc::text(keyword("end if;"));
+    return result / (Doc::text(keyword("end")) & Doc::text(keyword("if")) + Doc::text(";"));
 }
 
 auto PrettyPrinter::operator()(const ast::CaseStatement &node) const -> Doc
@@ -45,7 +45,7 @@ auto PrettyPrinter::operator()(const ast::CaseStatement &node) const -> Doc
         return when_head << when_body;
     });
 
-    const Doc end = Doc::text(keyword("end case;"));
+    const Doc end = Doc::text(keyword("end")) & Doc::text(keyword("case")) + Doc::text(";");
 
     return Doc::bracket(head, body, end);
 }
@@ -59,16 +59,17 @@ auto PrettyPrinter::operator()(const ast::ForLoop &node) const -> Doc
                    & Doc::text(keyword("loop"));
 
     const Doc body = join(node.body, Doc::line());
-    const Doc end = Doc::text(keyword("end loop;"));
+    const Doc end = Doc::text(keyword("end")) & Doc::text(keyword("loop")) + Doc::text(";");
 
     return Doc::bracket(head, body, end);
 }
 
 auto PrettyPrinter::operator()(const ast::WhileLoop &node) const -> Doc
 {
-    const Doc head = Doc::text(keyword("while")) & visit(node.condition) & Doc::text(keyword("loop"));
+    const Doc head
+      = Doc::text(keyword("while")) & visit(node.condition) & Doc::text(keyword("loop"));
     const Doc body = join(node.body, Doc::line());
-    const Doc end = Doc::text(keyword("end loop;"));
+    const Doc end = Doc::text(keyword("end")) & Doc::text(keyword("loop")) + Doc::text(";");
 
     return Doc::bracket(head, body, end);
 }
@@ -81,7 +82,7 @@ auto PrettyPrinter::operator()(const ast::Loop &node) const -> Doc
     }
 
     const Doc body = join(node.body, Doc::line());
-    const Doc end = Doc::text(keyword("end loop;"));
+    const Doc end = Doc::text(keyword("end")) & Doc::text(keyword("loop")) + Doc::text(";");
 
     return Doc::bracket(head, body, end);
 }

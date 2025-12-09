@@ -1,5 +1,6 @@
 #include "ast/nodes/design_units.hpp"
 
+#include "ast/nodes/declarations.hpp"
 #include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/doc.hpp"
 
@@ -23,7 +24,8 @@ auto PrettyPrinter::operator()(const ast::Entity &node) const -> Doc
     }
 
     // Emit entity declaration
-    const Doc entity_line = Doc::text(keyword("entity")) & Doc::text(node.name) & Doc::text(keyword("is"));
+    const Doc entity_line
+      = Doc::text(keyword("entity")) & Doc::text(node.name) & Doc::text(keyword("is"));
     if (!result.has_value()) {
         result = entity_line;
     } else {
