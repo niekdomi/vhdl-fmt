@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 #include <variant>
 
@@ -128,6 +129,23 @@ auto foldChildren(const Node &node, Acc init, Fn fn) -> Acc
     }
 }
 
+template<typename Node, typename Fn>
+void traverseChildren(const Node &node, const Fn &fn)
+{
+    using T = std::decay_t<Node>;
+
+    if constexpr (std::is_same_v<T, Concat>) {
+        fn(node.left);
+        fn(node.right);
+    } else if constexpr (std::is_same_v<T, Union>) {
+        // Same as fold, only analyze the 'broken' branch
+        fn(node.broken);
+    } else if constexpr (IS_ANY_OF_V<T, Nest, Hang, Align>) {
+        fn(node.doc);
+    }
+    // Leaf nodes (Text, Empty, etc.) have no children to traverse
+}
+
 /// Recursive document transformer
 template<typename Fn>
 auto transformImpl(const DocPtr &doc, const Fn &fn) -> DocPtr
@@ -158,6 +176,21 @@ auto foldImpl(const DocPtr &doc, T init, const Fn &fn) -> T
           return foldChildren(node, std::move(acc), [&](const DocPtr &child, T inner_acc) {
               return foldImpl(child, std::move(inner_acc), fn);
           });
+      },
+      doc->value);
+}
+
+template<typename Fn>
+void traverseImpl(const DocPtr &doc, const Fn &fn)
+{
+    if (!doc) {
+        return;
+    }
+
+    std::visit(
+      [&](const auto &node) {
+          fn(node);
+          traverseChildren(node, [&](const DocPtr &child) { traverseImpl(child, fn); });
       },
       doc->value);
 }
