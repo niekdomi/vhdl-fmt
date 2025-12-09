@@ -153,7 +153,7 @@ auto resolveAlignment(const DocPtr &doc) -> DocPtr
     traverseImpl(doc, [&](const auto &node) {
         using T = std::decay_t<decltype(node)>;
         if constexpr (std::is_same_v<T, AlignText>) {
-            int len = static_cast<int>(node.content.length());
+            const int len = static_cast<int>(node.content.length());
             if (len > max_widths[node.level]) {
                 max_widths[node.level] = len;
             }
