@@ -13,9 +13,11 @@
 #include "ast/nodes/statements/waveform.hpp"
 #include "ast/nodes/types.hpp"
 #include "ast/visitor.hpp"
+#include "common/config.hpp"
 #include "emit/pretty_printer/doc.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <concepts>
 #include <functional>
 #include <ranges>
@@ -40,7 +42,19 @@ concept IsExpression = std::is_same_v<T, ast::TokenExpr>
 
 class PrettyPrinter final : public ast::VisitorBase<Doc>
 {
+  public:
+    explicit PrettyPrinter(const common::Config &config) : config_(config) {}
+
+    ~PrettyPrinter() = default;
+
+    PrettyPrinter(const PrettyPrinter &) = delete;
+    auto operator=(const PrettyPrinter &) -> PrettyPrinter & = delete;
+    PrettyPrinter(PrettyPrinter &&) = delete;
+    auto operator=(PrettyPrinter &&) -> PrettyPrinter & = delete;
+
   private:
+    const common::Config &config_;
+
     // Node visitors
     auto operator()(const ast::Architecture &node) const -> Doc;
     auto operator()(const ast::DesignFile &node) const -> Doc;
@@ -122,6 +136,28 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     friend class ast::VisitorBase<Doc>;
 
     // ---------------------- Helpers ----------------------
+
+    /// @brief Converts a keyword to the specified case style.
+    /// @param keyword The keyword to convert.
+    /// @return The converted keyword as a Doc.
+    [[nodiscard]]
+    auto keyword(std::string_view keyword) const -> Doc
+    {
+        std::string str{ keyword };
+
+        if (config_.casing.keywords == common::CaseStyle::UPPER) {
+            for (auto &c : str) {
+                c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+            }
+            return Doc::text(str);
+        }
+
+        for (auto &c : str) {
+            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        }
+
+        return Doc::text(str);
+    }
 
     /// @brief Generic joiner: Applies a transform function to each item.
     template<std::ranges::input_range Range, typename Transform>
