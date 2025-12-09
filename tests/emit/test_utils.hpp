@@ -28,7 +28,7 @@ constexpr auto defaultConfig() -> common::Config
 // Helper to render an AST node with default config
 auto render(const ASTNode auto &node) -> std::string
 {
-    const emit::PrettyPrinter printer{};
+    const emit::PrettyPrinter printer{ defaultConfig() };
     const auto doc = printer.visit(node);
     return doc.render(defaultConfig());
 }
@@ -36,7 +36,7 @@ auto render(const ASTNode auto &node) -> std::string
 // Helper to render an AST node with custom config
 auto render(const ASTNode auto &node, const common::Config &config) -> std::string
 {
-    const emit::PrettyPrinter printer{};
+    const emit::PrettyPrinter printer{ config };
     const auto doc = printer.visit(node);
     return doc.render(config);
 }

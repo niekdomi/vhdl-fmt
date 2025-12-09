@@ -141,7 +141,7 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     /// @param keyword The keyword to convert.
     /// @return The converted keyword as a Doc.
     [[nodiscard]]
-    auto keyword(std::string_view keyword) const -> Doc
+    auto keyword(std::string_view keyword) const -> std::string
     {
         std::string str{ keyword };
 
@@ -149,14 +149,13 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
             for (auto &c : str) {
                 c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
             }
-            return Doc::text(str);
+        } else {
+            for (auto &c : str) {
+                c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            }
         }
 
-        for (auto &c : str) {
-            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-        }
-
-        return Doc::text(str);
+        return str;
     }
 
     /// @brief Generic joiner: Applies a transform function to each item.

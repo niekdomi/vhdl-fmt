@@ -32,7 +32,7 @@ auto main(int argc, char *argv[]) -> int
         const auto root = builder::build(ctx_orig);
 
         // 3. Format
-        const emit::PrettyPrinter printer{};
+        const emit::PrettyPrinter printer{ config };
         const auto doc = printer.visit(root);
         const std::string formatted_code = doc.render(config);
 

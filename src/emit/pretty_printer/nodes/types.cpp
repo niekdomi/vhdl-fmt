@@ -47,8 +47,8 @@ auto PrettyPrinter::operator()(const ast::RecordElement &node) const -> Doc
 
 auto PrettyPrinter::operator()(const ast::RecordTypeDef &node) const -> Doc
 {
-    const Doc head = Doc::text("record");
-    Doc end = Doc::text("end record");
+    const Doc head = Doc::text(keyword("record"));
+    Doc end = Doc::text(keyword("end record"));
 
     if (node.end_label) {
         end &= Doc::text(*node.end_label);
@@ -63,13 +63,13 @@ auto PrettyPrinter::operator()(const ast::RecordTypeDef &node) const -> Doc
 
 auto PrettyPrinter::operator()(const ast::ArrayTypeDef &node) const -> Doc
 {
-    Doc result = Doc::text("array");
+    Doc result = Doc::text(keyword("array"));
 
     if (!node.indices.empty()) {
         auto render_index = [&](const auto &idx) {
             return std::visit(
               common::Overload{
-                [](const std::string &s) -> Doc { return Doc::text(s + " range <>"); },
+                [&](const std::string &s) -> Doc { return Doc::text(s + keyword(" range <>")); },
                 [&](const auto &expr) -> Doc { return visit(expr); } },
               idx);
         };
@@ -78,19 +78,19 @@ auto PrettyPrinter::operator()(const ast::ArrayTypeDef &node) const -> Doc
           += Doc::text("(") + joinMap(node.indices, Doc::text(", "), render_index) + Doc::text(")");
     }
 
-    result &= Doc::text("of") & visit(node.subtype);
+    result &= Doc::text(keyword("of")) & visit(node.subtype);
 
     return result;
 }
 
 auto PrettyPrinter::operator()(const ast::AccessTypeDef &node) const -> Doc
 {
-    return Doc::text("access") & visit(node.subtype);
+    return Doc::text(keyword("access")) & visit(node.subtype);
 }
 
 auto PrettyPrinter::operator()(const ast::FileTypeDef &node) const -> Doc
 {
-    return Doc::text("file of") & visit(node.subtype);
+    return Doc::text(keyword("file of")) & visit(node.subtype);
 }
 
 } // namespace emit

@@ -23,7 +23,7 @@ auto PrettyPrinter::operator()(const ast::Entity &node) const -> Doc
     }
 
     // Emit entity declaration
-    const Doc entity_line = Doc::text("entity") & Doc::text(node.name) & Doc::text("is");
+    const Doc entity_line = Doc::text(keyword("entity")) & Doc::text(node.name) & Doc::text(keyword("is"));
     if (!result.has_value()) {
         result = entity_line;
     } else {
@@ -44,14 +44,14 @@ auto PrettyPrinter::operator()(const ast::Entity &node) const -> Doc
 
     // Begin section (concurrent statements)
     if (!std::ranges::empty(node.stmts)) {
-        *result /= Doc::text("begin");
+        *result /= Doc::text(keyword("begin"));
         *result = std::ranges::fold_left(
           node.stmts, *result, [this](auto acc, const auto &stmt) { return acc <<= visit(stmt); });
     }
 
-    Doc end_line = Doc::text("end");
+    Doc end_line = Doc::text(keyword("end"));
     if (node.has_end_entity_keyword) {
-        end_line &= Doc::text("entity");
+        end_line &= Doc::text(keyword("entity"));
     }
     if (node.end_label.has_value()) {
         end_line &= Doc::text(*node.end_label);
@@ -75,11 +75,11 @@ auto PrettyPrinter::operator()(const ast::Architecture &node) const -> Doc
     }
 
     // Emit architecture declaration
-    const Doc arch_line = Doc::text("architecture")
+    const Doc arch_line = Doc::text(keyword("architecture"))
                         & Doc::text(node.name)
-                        & Doc::text("of")
+                        & Doc::text(keyword("of"))
                         & Doc::text(node.entity_name)
-                        & Doc::text("is");
+                        & Doc::text(keyword("is"));
 
     if (!result.has_value()) {
         result = arch_line;
@@ -92,16 +92,16 @@ auto PrettyPrinter::operator()(const ast::Architecture &node) const -> Doc
       node.decls, *result, [this](auto acc, const auto &item) { return acc <<= visit(item); });
 
     // begin
-    *result /= Doc::text("begin");
+    *result /= Doc::text(keyword("begin"));
 
     // Concurrent statements
     *result = std::ranges::fold_left(
       node.stmts, *result, [this](auto acc, const auto &stmt) { return acc <<= visit(stmt); });
 
     // end [architecture] [<name>];
-    Doc end_line = Doc::text("end");
+    Doc end_line = Doc::text(keyword("end"));
     if (node.has_end_architecture_keyword) {
-        end_line &= Doc::text("architecture");
+        end_line &= Doc::text(keyword("architecture"));
     }
     if (node.end_label.has_value()) {
         end_line &= Doc::text(*node.end_label);
@@ -113,7 +113,7 @@ auto PrettyPrinter::operator()(const ast::Architecture &node) const -> Doc
 
 auto PrettyPrinter::operator()(const ast::LibraryClause &node) const -> Doc
 {
-    Doc result = Doc::text("library");
+    Doc result = Doc::text(keyword("library"));
 
     for (const auto &[idx, name] : std::views::enumerate(node.logical_names)) {
         if (idx > 0) {
@@ -128,7 +128,7 @@ auto PrettyPrinter::operator()(const ast::LibraryClause &node) const -> Doc
 
 auto PrettyPrinter::operator()(const ast::UseClause &node) const -> Doc
 {
-    Doc result = Doc::text("use");
+    Doc result = Doc::text(keyword("use"));
 
     for (const auto &[idx, name] : std::views::enumerate(node.selected_names)) {
         if (idx > 0) {
@@ -143,10 +143,10 @@ auto PrettyPrinter::operator()(const ast::UseClause &node) const -> Doc
 
 auto PrettyPrinter::operator()(const ast::ComponentDecl &node) const -> Doc
 {
-    Doc result = Doc::text("component") & Doc::text(node.name);
+    Doc result = Doc::text(keyword("component")) & Doc::text(node.name);
 
     if (node.has_is_keyword) {
-        result &= Doc::text("is");
+        result &= Doc::text(keyword("is"));
     }
 
     if (!std::ranges::empty(node.generic_clause.generics)) {
@@ -157,7 +157,7 @@ auto PrettyPrinter::operator()(const ast::ComponentDecl &node) const -> Doc
         result <<= visit(node.port_clause);
     }
 
-    Doc end_line = Doc::text("end") & Doc::text("component");
+    Doc end_line = Doc::text(keyword("end")) & Doc::text(keyword("component"));
     if (node.end_label.has_value()) {
         end_line &= Doc::text(*node.end_label);
     }

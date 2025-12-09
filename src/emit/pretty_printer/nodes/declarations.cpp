@@ -40,7 +40,7 @@ auto PrettyPrinter::operator()(const ast::Port &node, const bool is_last) const 
 
     Doc result = Doc::alignText(names, AlignmentLevel::NAME)
                & Doc::text(":")
-               & Doc::alignText(node.mode, AlignmentLevel::MODE)
+               & Doc::alignText(keyword(node.mode), AlignmentLevel::MODE)
                & visit(node.subtype);
 
     if (node.default_expr) {
@@ -56,13 +56,13 @@ auto PrettyPrinter::operator()(const ast::SignalDecl &node) const -> Doc
                             | std::views::join_with(std::string_view{ ", " })
                             | std::ranges::to<std::string>();
 
-    Doc result = Doc::text("signal") & Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":");
+    Doc result = Doc::text(keyword("signal")) & Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":");
 
     // Type definition
     result &= visit(node.subtype);
 
     if (node.has_bus_kw) {
-        result &= Doc::text("bus");
+        result &= Doc::text(keyword("bus"));
     }
 
     // Initialization
@@ -80,7 +80,7 @@ auto PrettyPrinter::operator()(const ast::ConstantDecl &node) const -> Doc
                             | std::ranges::to<std::string>();
 
     Doc result
-      = Doc::text("constant") & Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":");
+      = Doc::text(keyword("constant")) & Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":");
 
     result &= visit(node.subtype);
 
@@ -98,7 +98,7 @@ auto PrettyPrinter::operator()(const ast::VariableDecl &node) const -> Doc
                             | std::ranges::to<std::string>();
 
     // "variable x, y : integer"
-    Doc result = Doc::text(node.shared ? "shared variable" : "variable")
+    Doc result = Doc::text(node.shared ? keyword("shared variable") : keyword("variable"))
                & Doc::alignText(names, AlignmentLevel::NAME)
                & Doc::text(":")
                & visit(node.subtype);
@@ -112,7 +112,7 @@ auto PrettyPrinter::operator()(const ast::VariableDecl &node) const -> Doc
 
 auto PrettyPrinter::operator()(const ast::TypeDecl &node) const -> Doc
 {
-    Doc result = Doc::text("type") & Doc::text(node.name);
+    Doc result = Doc::text(keyword("type")) & Doc::text(node.name);
 
     if (!node.type_def.has_value()) {
         // Incomplete type declaration: "type <name>;"
@@ -120,7 +120,7 @@ auto PrettyPrinter::operator()(const ast::TypeDecl &node) const -> Doc
     }
 
     // "is <definition>"
-    result &= Doc::text("is") & visit(node.type_def.value());
+    result &= Doc::text(keyword("is")) & visit(node.type_def.value());
 
     return result + Doc::text(";");
 }
