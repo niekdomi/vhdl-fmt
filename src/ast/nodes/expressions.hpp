@@ -166,7 +166,7 @@ struct SubtypeIndication : NodeBase
 struct QualifiedExpr : NodeBase
 {
     SubtypeIndication type_mark; ///< Type qualifier/mark (e.g., "std_logic_vector", "integer").
-    Box<GroupExpr> operand; ///< Expression being qualified (aggregate expression).
+    Box<GroupExpr> operand;      ///< Expression being qualified (aggregate expression).
 };
 
 } // namespace ast

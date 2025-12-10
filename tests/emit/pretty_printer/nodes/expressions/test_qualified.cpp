@@ -13,7 +13,8 @@ TEST_CASE("QualifiedExpr Rendering", "[pretty_printer][expressions][qualified]")
         group.children.emplace_back(ast::TokenExpr{ .text{ "42" } });
 
         const ast::QualifiedExpr qual{ .type_mark{ .type_mark = "integer" },
-                                       .operand{ std::make_unique<ast::GroupExpr>(std::move(group)) } };
+                                       .operand{
+                                         std::make_unique<ast::GroupExpr>(std::move(group)) } };
 
         REQUIRE(emit::test::render(qual) == "integer'(42)");
     }
@@ -30,7 +31,8 @@ TEST_CASE("QualifiedExpr Rendering", "[pretty_printer][expressions][qualified]")
         group.children.emplace_back(std::move(assoc));
 
         const ast::QualifiedExpr qual{ .type_mark{ .type_mark = "std_logic_vector" },
-                                       .operand{ std::make_unique<ast::GroupExpr>(std::move(group)) } };
+                                       .operand{
+                                         std::make_unique<ast::GroupExpr>(std::move(group)) } };
 
         REQUIRE(emit::test::render(qual) == "std_logic_vector'(others => '0')");
     }
