@@ -148,7 +148,7 @@ auto Translator::makePrimary(vhdlParser::PrimaryContext &ctx) -> ast::Expr
     return makeToken(ctx);
 }
 
-auto Translator::makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx) -> ast::Expr
+auto Translator::makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx) -> ast::QualifiedExpr
 {
     // Build the operand (Aggregate or Parenthesized Expression)
     ast::GroupExpr operand{};
@@ -157,10 +157,11 @@ auto Translator::makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx)
         operand = makeAggregate(*agg);
     }
 
-    // If missing, return the unwrapped operand.
+    // If missing, return nothing.
     auto *subtype = ctx.subtype_indication();
     if (subtype == nullptr) {
-        return operand;
+        // TODO(vedivad): Use std::expected and refactor the whole translation process.
+        throw std::runtime_error("Qualified expression must have a subtype indication");
     }
 
     return build<ast::QualifiedExpr>(ctx)
@@ -169,7 +170,7 @@ auto Translator::makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx)
       .build();
 }
 
-auto Translator::makeAllocator(vhdlParser::AllocatorContext &ctx) -> ast::Expr
+auto Translator::makeAllocator(vhdlParser::AllocatorContext &ctx) -> ast::UnaryExpr
 {
     ast::Expr operand{};
 
