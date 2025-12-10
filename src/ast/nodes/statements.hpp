@@ -1,6 +1,7 @@
 #ifndef AST_NODES_STATEMENTS_HPP
 #define AST_NODES_STATEMENTS_HPP
 
+#include "ast/node.hpp"
 #include "ast/nodes/statements/concurrent.hpp"
 #include "ast/nodes/statements/sequential.hpp"
 

@@ -2,6 +2,8 @@
 #include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/doc.hpp"
 
+#include <ranges>
+
 namespace emit {
 
 auto PrettyPrinter::operator()(const ast::IfStatement &node) const -> Doc

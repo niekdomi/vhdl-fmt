@@ -86,12 +86,12 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
         // (move-only)
         auto &sel1 = assign.selections.emplace_back();
         sel1.waveform = makeWave(token("'0'"));
-        sel1.choices.push_back(token("\"00\""));
+        sel1.choices.emplace_back(token("\"00\""));
 
         // Selection 2: '1' when others
         auto &sel2 = assign.selections.emplace_back();
         sel2.waveform = makeWave(token("'1'"));
-        sel2.choices.push_back(token("others"));
+        sel2.choices.emplace_back(token("others"));
 
         SECTION("Fits on line (Flat)")
         {
@@ -144,11 +144,11 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
         // Use emplace_back to avoid copy issues with move-only Expr types
         auto &s1 = assign.selections.emplace_back();
         s1.waveform = makeWave(token("x\"00\""));
-        s1.choices.push_back(token("0"));
+        s1.choices.emplace_back(token("0"));
 
         auto &s2 = assign.selections.emplace_back();
         s2.waveform = makeWave(token("x\"FF\""));
-        s2.choices.push_back(token("others"));
+        s2.choices.emplace_back(token("others"));
 
         // 2. Wrapper
         ast::ConcurrentStatement wrapper;

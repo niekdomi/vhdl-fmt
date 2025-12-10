@@ -2,6 +2,8 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
+#include <stdexcept>
+
 namespace builder {
 
 auto Translator::makeConcurrentStatement(vhdlParser::Architecture_statementContext &ctx)

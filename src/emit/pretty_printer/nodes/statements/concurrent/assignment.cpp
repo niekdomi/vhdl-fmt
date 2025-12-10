@@ -20,7 +20,7 @@ auto PrettyPrinter::operator()(
 //                  val3;
 auto PrettyPrinter::operator()(const ast::ConditionalConcurrentAssign &node) const -> Doc
 {
-    Doc result = Doc::empty();
+    const Doc result = Doc::empty();
 
     const Doc target = visit(node.target) & Doc::text("<=");
 
@@ -47,7 +47,7 @@ auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign::Selection &n
 //                    val2 when choice2;
 auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign &node) const -> Doc
 {
-    Doc result = Doc::empty();
+    const Doc result = Doc::empty();
 
     const Doc header = Doc::keyword(("with")) & visit(node.selector) & Doc::keyword(("select"));
     const Doc target = visit(node.target) & Doc::text("<=");

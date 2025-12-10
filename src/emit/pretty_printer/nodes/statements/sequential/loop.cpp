@@ -29,7 +29,7 @@ auto PrettyPrinter::operator()(const ast::WhileLoop &node) const -> Doc
 
 auto PrettyPrinter::operator()(const ast::Loop &node) const -> Doc
 {
-    Doc head = Doc::keyword(("loop"));
+    const Doc head = Doc::keyword(("loop"));
 
     const Doc body = join(node.body, Doc::line());
     const Doc end = Doc::keyword(("end")) & Doc::keyword(("loop")) + Doc::text(";");
