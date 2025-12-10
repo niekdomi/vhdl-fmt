@@ -2,6 +2,8 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
+#include <utility>
+
 namespace builder {
 
 auto Translator::makeAllocator(vhdlParser::AllocatorContext &ctx) -> ast::UnaryExpr

@@ -4,6 +4,8 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
+#include <optional>
+#include <string>
 #include <vector>
 
 namespace builder {
@@ -42,7 +44,7 @@ auto Translator::makeArchitectureDeclarativePart(
         } else if (auto *var_ctx = item->variable_declaration()) {
             items.emplace_back(makeVariableDecl(*var_ctx));
         }
-        // TODO: Add more declaration types as needed
+        // TODO(someone): Add more declaration types as needed
     }
 
     return items;
@@ -68,7 +70,7 @@ auto Translator::makeArchitectureStatementPart(vhdlParser::Architecture_statemen
 
             stmts.emplace_back(makeConcurrentAssign(*sig_assign, label_str));
         }
-        // TODO: Add more concurrent statement types
+        // TODO(someone): Add more concurrent statement types
     }
 
     return stmts;

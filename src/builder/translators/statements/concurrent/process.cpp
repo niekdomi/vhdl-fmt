@@ -1,5 +1,6 @@
 #include "ast/nodes/declarations.hpp"
-#include "ast/nodes/statements.hpp"
+#include "ast/nodes/statements/concurrent.hpp"
+
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 

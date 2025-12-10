@@ -5,6 +5,9 @@
 #include <algorithm>
 #include <ranges>
 
+#include <string>
+#include <utility>
+
 namespace builder {
 
 auto Translator::makeName(vhdlParser::NameContext &ctx) -> ast::Expr

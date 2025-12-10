@@ -6,6 +6,8 @@
 
 #include <vector>
 
+#include <utility>
+
 namespace builder {
 
 void Translator::buildDesignFile(ast::DesignFile &dest, vhdlParser::Design_fileContext *ctx)

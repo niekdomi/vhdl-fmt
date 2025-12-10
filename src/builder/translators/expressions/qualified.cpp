@@ -4,6 +4,8 @@
 
 #include <stdexcept>
 
+#include <utility>
+
 namespace builder {
 
 auto Translator::makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx)

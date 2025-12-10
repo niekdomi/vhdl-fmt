@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include <utility>
+
 namespace builder {
 
 auto Translator::makeContextClause(vhdlParser::Context_clauseContext &ctx)

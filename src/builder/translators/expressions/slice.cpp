@@ -2,6 +2,8 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
+#include <utility>
+
 namespace builder {
 
 auto Translator::makeSliceExpr(ast::Expr base, vhdlParser::Slice_name_partContext &ctx) -> ast::Expr

@@ -4,6 +4,8 @@
 
 #include <ranges>
 
+#include <utility>
+
 namespace builder {
 
 auto Translator::makeExpr(vhdlParser::ExpressionContext &ctx) -> ast::Expr
