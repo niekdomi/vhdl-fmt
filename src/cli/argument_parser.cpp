@@ -53,7 +53,7 @@ auto ArgumentParser::parseArguments(std::span<const char *const> args) -> void
 
     program.add_description("A VHDL formatter for beautifying and standardizing VHDL code.");
     program.add_epilog("For more information, visit the project documentation.\n"
-                       "https://github.com/domi413/vhdl-fmt");
+                       "https://github.com/niekdomi/vhdl-fmt");
 
     program.add_argument("input")
       .help("VHDL file or directory to format")
