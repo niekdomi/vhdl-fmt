@@ -3,6 +3,7 @@
 #include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/doc.hpp"
 
+#include <string>
 #include <variant>
 
 namespace emit {
