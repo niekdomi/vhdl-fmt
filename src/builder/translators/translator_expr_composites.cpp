@@ -11,7 +11,7 @@ namespace builder {
 
 // ---------------------- Aggregates ----------------------
 
-auto Translator::makeAggregate(vhdlParser::AggregateContext &ctx) -> ast::Expr
+auto Translator::makeAggregate(vhdlParser::AggregateContext &ctx) -> ast::GroupExpr
 {
     return build<ast::GroupExpr>(ctx)
       .collect(&ast::GroupExpr::children,

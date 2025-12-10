@@ -167,7 +167,7 @@ class Translator final
 
     // Expressions
     [[nodiscard]]
-    auto makeAggregate(vhdlParser::AggregateContext &ctx) -> ast::Expr;
+    auto makeAggregate(vhdlParser::AggregateContext &ctx) -> ast::GroupExpr;
     [[nodiscard]]
     auto makeAllocator(vhdlParser::AllocatorContext &ctx) -> ast::Expr;
     [[nodiscard]]

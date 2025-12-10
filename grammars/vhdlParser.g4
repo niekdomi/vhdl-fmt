@@ -979,7 +979,7 @@ process_statement_part
     ;
 
 qualified_expression
-    : subtype_indication APOSTROPHE (aggregate | LPAREN expression RPAREN)
+    : subtype_indication APOSTROPHE aggregate
     ;
 
 quantity_declaration

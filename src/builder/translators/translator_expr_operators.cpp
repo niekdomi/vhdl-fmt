@@ -151,16 +151,10 @@ auto Translator::makePrimary(vhdlParser::PrimaryContext &ctx) -> ast::Expr
 auto Translator::makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx) -> ast::Expr
 {
     // Build the operand (Aggregate or Parenthesized Expression)
-    ast::Expr operand{};
+    ast::GroupExpr operand{};
 
     if (auto *agg = ctx.aggregate()) {
         operand = makeAggregate(*agg);
-    } else if (auto *expr = ctx.expression()) {
-        operand
-          = build<ast::ParenExpr>(*expr).setBox(&ast::ParenExpr::inner, makeExpr(*expr)).build();
-    } else {
-        // Fallback for invalid parsing
-        operand = makeToken(ctx);
     }
 
     // If missing, return the unwrapped operand.
