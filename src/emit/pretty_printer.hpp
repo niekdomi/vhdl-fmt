@@ -13,6 +13,7 @@
 #include "ast/nodes/statements/waveform.hpp"
 #include "ast/nodes/types.hpp"
 #include "ast/visitor.hpp"
+#include "common/config.hpp"
 #include "emit/pretty_printer/doc.hpp"
 
 #include <algorithm>
@@ -40,7 +41,19 @@ concept IsExpression = std::is_same_v<T, ast::TokenExpr>
 
 class PrettyPrinter final : public ast::VisitorBase<Doc>
 {
+  public:
+    explicit PrettyPrinter(const common::Config &config) : config_(config) {}
+
+    ~PrettyPrinter() = default;
+
+    PrettyPrinter(const PrettyPrinter &) = delete;
+    auto operator=(const PrettyPrinter &) -> PrettyPrinter & = delete;
+    PrettyPrinter(PrettyPrinter &&) = delete;
+    auto operator=(PrettyPrinter &&) -> PrettyPrinter & = delete;
+
   private:
+    const common::Config &config_;
+
     // Node visitors
     auto operator()(const ast::Architecture &node) const -> Doc;
     auto operator()(const ast::DesignFile &node) const -> Doc;

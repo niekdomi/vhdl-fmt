@@ -4,18 +4,13 @@
 #include "common/overload.hpp"
 #include "emit/pretty_printer/doc_impl.hpp"
 
+#include <cctype>
+#include <ranges>
 #include <string>
 #include <utility>
 #include <variant>
 
 namespace emit {
-
-Renderer::Renderer(const common::Config &config) :
-  width_(config.line_config.line_length),
-  indent_size_(config.line_config.indent_size),
-  align_(config.port_map.align_signals)
-{
-}
 
 auto Renderer::render(const DocPtr &doc) -> std::string
 {
@@ -39,6 +34,21 @@ void Renderer::renderDoc(int indent, Mode mode, const DocPtr &doc)
 
         // Text
         [&](const Text &node) -> void { write(node.content); },
+
+        // Keyword
+        [&](const Keyword &node) -> void {
+            if (config_.casing.keywords == common::CaseStyle::LOWER) {
+                write(node.content
+                      | std::views::transform(
+                        [](unsigned char c) -> char { return static_cast<char>(std::tolower(c)); })
+                      | std::ranges::to<std::string>());
+            } else {
+                write(node.content
+                      | std::views::transform(
+                        [](unsigned char c) -> char { return static_cast<char>(std::toupper(c)); })
+                      | std::ranges::to<std::string>());
+            }
+        },
 
         // SoftLine (depends on mode)
         [&](const SoftLine &) -> void {
@@ -66,14 +76,16 @@ void Renderer::renderDoc(int indent, Mode mode, const DocPtr &doc)
         },
 
         // Nest (increases indentation)
-        [&](const Nest &node) -> void { renderDoc(indent + indent_size_, mode, node.doc); },
+        [&](const Nest &node) -> void {
+            renderDoc(indent + config_.line_config.indent_size, mode, node.doc);
+        },
 
         [&](const Hang &node) -> void { renderDoc(column_, mode, node.doc); },
 
         // Align (conditional pre-processing)
         [&](const Align &node) -> void {
             DocPtr doc_to_render = node.doc;
-            if (align_) {
+            if (config_.port_map.align_signals) {
                 // Run the two-pass logic to resolve alignment
                 doc_to_render = resolveAlignment(node.doc);
             }
@@ -82,13 +94,10 @@ void Renderer::renderDoc(int indent, Mode mode, const DocPtr &doc)
             renderDoc(indent, mode, doc_to_render);
         },
 
-        // AlignText (base case for alignment, renders as text)
-        [&](const AlignText &node) -> void { write(node.content); },
-
         // Union (decision point)
         [&](const Union &node) -> void {
             // Decide: use flat or broken layout?
-            if (mode == Mode::FLAT || fits(width_ - column_, node.flat)) {
+            if (mode == Mode::FLAT || fits(config_.line_config.line_length - column_, node.flat)) {
                 // Fits on current line - use flat version
                 renderDoc(indent, Mode::FLAT, node.flat);
             } else {
@@ -123,6 +132,9 @@ auto Renderer::fitsImpl(int width, const DocPtr &doc) -> int
         // Text
         [&](const Text &node) -> int { return width - static_cast<int>(node.content.length()); },
 
+        // Keyword
+        [&](const Keyword &node) -> int { return width - static_cast<int>(node.content.length()); },
+
         // SoftLine (becomes space)
         [&](const SoftLine &) -> int { return width - 1; },
 
@@ -142,11 +154,6 @@ auto Renderer::fitsImpl(int width, const DocPtr &doc) -> int
         [&](const Union &node) -> int {
             // Check flat version only for fitting
             return fitsImpl(width, node.flat);
-        },
-
-        // AlignText (acts like Text)
-        [&](const AlignText &node) -> int {
-            return width - static_cast<int>(node.content.length());
         },
 
         // All others (HardLine, HardLines) do not fit

@@ -20,7 +20,22 @@ auto Doc::empty() -> Doc
 
 auto Doc::text(std::string_view str) -> Doc
 {
-    return Doc(makeText(str));
+    return Doc(makeText(str, -1));
+}
+
+auto Doc::text(std::string_view str, int level) -> Doc
+{
+    return Doc(makeText(str, level));
+}
+
+auto Doc::keyword(std::string_view str) -> Doc
+{
+    return Doc(makeKeyword(str, -1));
+}
+
+auto Doc::keyword(std::string_view str, int level) -> Doc
+{
+    return Doc(makeKeyword(str, level));
 }
 
 auto Doc::line() -> Doc
@@ -40,11 +55,6 @@ auto Doc::hardlines(unsigned count) -> Doc
     }
     // Count 0 can act as a marker to prevent flattening
     return Doc(makeHardLines(count));
-}
-
-auto Doc::alignText(std::string_view str, int level) -> Doc
-{
-    return Doc(makeAlignText(str, level));
 }
 
 // ========================================================================

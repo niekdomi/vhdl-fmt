@@ -10,7 +10,7 @@ auto PrettyPrinter::operator()(const ast::Waveform::Element &node, const bool is
 {
     Doc doc = visit(node.value);
     if (node.after) {
-        doc += Doc::text(" after ") + visit(*node.after);
+        doc &= Doc::keyword(("after")) & visit(*node.after);
     }
     return is_last ? doc : doc + Doc::text(",");
 }
@@ -18,7 +18,7 @@ auto PrettyPrinter::operator()(const ast::Waveform::Element &node, const bool is
 auto PrettyPrinter::operator()(const ast::Waveform &node) const -> Doc
 {
     if (node.is_unaffected) {
-        return Doc::text("unaffected");
+        return Doc::keyword(("unaffected"));
     }
 
     return joinMap(node.elements, Doc::line(), [&](const auto &elem) {
@@ -32,7 +32,7 @@ auto PrettyPrinter::operator()(
 {
     Doc d = visit(node.waveform);
     if (node.condition) {
-        d &= Doc::text("when") & visit(*node.condition);
+        d &= Doc::keyword(("when")) & visit(*node.condition);
     }
     return d;
 }
@@ -54,7 +54,8 @@ auto PrettyPrinter::operator()(const ast::ConditionalConcurrentAssign &node) con
 
     // Join with "else" + SoftLine
     // If it breaks, the next line starts at the hung indent level.
-    const Doc waveforms = join(node.waveforms, Doc::text(" else") + Doc::line());
+    const Doc waveforms
+      = join(node.waveforms, Doc::text(" ") + Doc::keyword(("else")) + Doc::line());
 
     const Doc assignment = Doc::group(target & Doc::hang(waveforms)) + Doc::text(";");
 
@@ -65,7 +66,7 @@ auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign::Selection &n
 {
     const Doc val = visit(node.waveform);
     const Doc choices = join(node.choices, Doc::text(" | "));
-    return val & Doc::text("when") & choices;
+    return val & Doc::keyword(("when")) & choices;
 }
 
 // Layout:
@@ -81,7 +82,7 @@ auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign &node) const 
         result = Doc::text(*node.label + ":");
     }
 
-    const Doc header = Doc::text("with") & visit(node.selector) & Doc::text("select");
+    const Doc header = Doc::keyword(("with")) & visit(node.selector) & Doc::keyword(("select"));
     const Doc target = visit(node.target) & Doc::text("<=");
 
     // Join selections with comma + SoftLine
@@ -113,7 +114,7 @@ auto PrettyPrinter::operator()(const ast::VariableAssign &node) const -> Doc
 
 auto PrettyPrinter::operator()(const ast::NullStatement & /*node*/) const -> Doc
 {
-    return Doc::text("null;");
+    return Doc::keyword(("null")) + Doc::text(";");
 }
 
 } // namespace emit

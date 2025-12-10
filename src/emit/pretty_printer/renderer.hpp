@@ -24,7 +24,14 @@ enum class Mode : std::uint8_t
 class Renderer final
 {
   public:
-    explicit Renderer(const common::Config &config);
+    explicit Renderer(const common::Config &config) : config_{ config } {}
+
+    ~Renderer() = default;
+
+    Renderer(const Renderer &) = delete;
+    auto operator=(const Renderer &) -> Renderer & = delete;
+    Renderer(Renderer &&) = delete;
+    auto operator=(Renderer &&) -> Renderer & = delete;
 
     // Core rendering function
     auto render(const DocPtr &doc) -> std::string;
@@ -44,11 +51,9 @@ class Renderer final
     void newline(int indent);
 
     // Member variables
-    int width_{};
-    int indent_size_{};
-    bool align_{ false };
     int column_{ 0 };
     std::string output_;
+    const common::Config &config_;
 };
 
 } // namespace emit
