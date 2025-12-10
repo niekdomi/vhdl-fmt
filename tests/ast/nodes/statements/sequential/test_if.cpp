@@ -16,7 +16,7 @@ TEST_CASE("IfStatement", "[statements][if]")
                                     "end if;");
         REQUIRE(stmt != nullptr);
 
-        // Check Branches (merged if/elsif)
+        // Check Branches
         REQUIRE(stmt->branches.size() == 1);
 
         // Check Condition
@@ -78,7 +78,6 @@ TEST_CASE("IfStatement", "[statements][if]")
         const auto *cond2 = std::get_if<ast::BinaryExpr>(&stmt->branches[2].condition);
         REQUIRE(cond2 != nullptr);
         CHECK(stmt->branches[2].body.size() == 1);
-        // Note: Report statement support pending, usually parses as Expr or generic Stmt
         CHECK_FALSE(stmt->branches[2].body.empty());
 
         // Check else
