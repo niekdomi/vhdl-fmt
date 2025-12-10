@@ -18,62 +18,63 @@ auto Translator::makeArchitecture(vhdlParser::Architecture_bodyContext &ctx) -> 
       .set(&ast::Architecture::has_end_architecture_keyword, ctx.ARCHITECTURE().size() > 1)
       .maybe(
         &ast::Architecture::end_label, ctx.identifier(2), [](auto &id) { return id.getText(); })
-      .maybe(&ast::Architecture::decls,
-             ctx.architecture_declarative_part(),
-             [&](auto &dp) { return makeArchitectureDeclarativePart(dp); })
-      .maybe(&ast::Architecture::stmts,
-             ctx.architecture_statement_part(),
-             [&](auto &sp) { return makeArchitectureStatementPart(sp); })
+      .collectFrom(
+        &ast::Architecture::decls,
+        ctx.architecture_declarative_part(),
+        [](auto &dp) { return dp.block_declarative_item(); },
+        [this](auto *item) { return makeArchitectureDeclarativeItem(*item); })
+      .collectFrom(
+        &ast::Architecture::stmts,
+        ctx.architecture_statement_part(),
+        [](auto &sp) { return sp.architecture_statement(); },
+        [this](auto *stmt) { return makeArchitectureStatement(*stmt); })
       .build();
 }
 
-auto Translator::makeArchitectureDeclarativePart(
-  vhdlParser::Architecture_declarative_partContext &ctx) -> std::vector<ast::Declaration>
+auto Translator::makeArchitectureDeclarativeItem(vhdlParser::Block_declarative_itemContext &ctx)
+  -> ast::Declaration
 {
-    std::vector<ast::Declaration> items{};
-
-    for (auto *item : ctx.block_declarative_item()) {
-        if (auto *const_ctx = item->constant_declaration()) {
-            items.emplace_back(makeConstantDecl(*const_ctx));
-        } else if (auto *sig_ctx = item->signal_declaration()) {
-            items.emplace_back(makeSignalDecl(*sig_ctx));
-        } else if (auto *type_ctx = item->type_declaration()) {
-            items.emplace_back(makeTypeDecl(*type_ctx));
-        } else if (auto *comp_ctx = item->component_declaration()) {
-            items.emplace_back(makeComponentDecl(*comp_ctx));
-        } else if (auto *var_ctx = item->variable_declaration()) {
-            items.emplace_back(makeVariableDecl(*var_ctx));
-        }
-        // TODO(someone): Add more declaration types as needed
+    if (auto *const_ctx = ctx.constant_declaration()) {
+        return makeConstantDecl(*const_ctx);
     }
+    if (auto *sig_ctx = ctx.signal_declaration()) {
+        return makeSignalDecl(*sig_ctx);
+    }
+    if (auto *type_ctx = ctx.type_declaration()) {
+        return makeTypeDecl(*type_ctx);
+    }
+    if (auto *comp_ctx = ctx.component_declaration()) {
+        return makeComponentDecl(*comp_ctx);
+    }
+    if (auto *var_ctx = ctx.variable_declaration()) {
+        return makeVariableDecl(*var_ctx);
+    }
+    // TODO(vedivad): Add subprogram_declaration, subprogram_body, file_declaration,
+    // alias_declaration, etc.
 
-    return items;
+    return {};
 }
 
-auto Translator::makeArchitectureStatementPart(vhdlParser::Architecture_statement_partContext &ctx)
-  -> std::vector<ast::ConcurrentStatement>
+auto Translator::makeArchitectureStatement(vhdlParser::Architecture_statementContext &ctx)
+  -> ast::ConcurrentStatement
 {
-    std::vector<ast::ConcurrentStatement> stmts{};
-
-    for (auto *stmt : ctx.architecture_statement()) {
-        if (auto *proc = stmt->process_statement()) {
-            stmts.emplace_back(makeProcess(*proc));
-        } else if (auto *sig_assign = stmt->concurrent_signal_assignment_statement()) {
-            // Extract label from architecture_statement level
-            auto *label = stmt->label_colon();
-            auto *label_id = (label != nullptr) ? label->identifier() : nullptr;
-            std::optional<std::string> label_str;
-
-            if (label_id != nullptr) {
-                label_str = label_id->getText();
-            }
-
-            stmts.emplace_back(makeConcurrentAssign(*sig_assign, label_str));
-        }
-        // TODO(someone): Add more concurrent statement types
+    if (auto *proc = ctx.process_statement()) {
+        return makeProcess(*proc);
     }
 
-    return stmts;
+    if (auto *sig_assign = ctx.concurrent_signal_assignment_statement()) {
+        auto *label = ctx.label_colon();
+        std::optional<std::string> label_str;
+        if ((label != nullptr) && (label->identifier() != nullptr)) {
+            label_str = label->identifier()->getText();
+        }
+
+        return makeConcurrentAssign(*sig_assign, label_str);
+    }
+
+    // TODO(vedivad): Add component_instantiation, generate_statement, etc.
+
+    return {};
 }
 
 } // namespace builder
