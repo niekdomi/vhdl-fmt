@@ -185,7 +185,7 @@ auto resolveAlignment(const DocPtr &doc) -> DocPtr
             }
 
             const int padding = max_widths.at(node.level) - static_cast<int>(node.content.length());
-            const auto content_node = std::make_shared<DocImpl>(T{ .content = node.content });
+            auto content_node = std::make_shared<DocImpl>(T{ .content = node.content });
 
             // Skip if no padding is needed
             if (padding == 0) {
