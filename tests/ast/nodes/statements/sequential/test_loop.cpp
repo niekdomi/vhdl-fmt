@@ -10,7 +10,7 @@
 
 TEST_CASE("Loop", "[statements][loop]")
 {
-    // Helper to parse just the inner loop body (for structure tests)
+    // Helper to parse just the inner loop body
     auto parse_loop_body = test_helpers::parseSequentialStmt<ast::Loop>;
 
     SECTION("Simple infinite loop")
@@ -39,7 +39,6 @@ TEST_CASE("Loop", "[statements][loop]")
 
     SECTION("Labeled infinite loop")
     {
-        // Wrap the labeled loop inside a process to parse the full hierarchy.
         constexpr std::string_view CODE = "process begin "
                                           "  main_loop: loop count := count + 1; end loop; "
                                           "end process;";
@@ -60,8 +59,6 @@ TEST_CASE("Loop", "[statements][loop]")
 
     SECTION("Labeled loop with end label")
     {
-        // VHDL allows 'end loop label_name;'
-        // The parser validates matching labels, but the AST stores it on the wrapper.
         constexpr std::string_view LOOP_CODE = "my_loop: loop\n"
                                                "    x := x + 1;\n"
                                                "    null;\n"

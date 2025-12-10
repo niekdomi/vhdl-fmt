@@ -15,14 +15,14 @@ namespace {
 
 auto token(std::string_view text) -> ast::TokenExpr
 {
-    ast::TokenExpr t;
+    ast::TokenExpr t{};
     t.text = text;
     return t;
 }
 
 auto binary(std::string_view lhs, std::string_view op, std::string_view rhs) -> ast::BinaryExpr
 {
-    ast::BinaryExpr bin;
+    ast::BinaryExpr bin{};
     bin.left = std::make_unique<ast::Expr>(token(lhs));
     bin.op = op;
     bin.right = std::make_unique<ast::Expr>(token(rhs));
@@ -32,8 +32,8 @@ auto binary(std::string_view lhs, std::string_view op, std::string_view rhs) -> 
 // Helper to wrap a simple value into a Waveform
 auto makeWave(ast::TokenExpr val) -> ast::Waveform
 {
-    ast::Waveform w;
-    ast::Waveform::Element el;
+    ast::Waveform w{};
+    ast::Waveform::Element el{};
     el.value = std::move(val);
     w.elements.emplace_back(std::move(el));
     return w;
@@ -45,11 +45,10 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
 {
     SECTION("Conditional Assignment (When/Else)")
     {
-        ast::ConditionalConcurrentAssign assign;
+        ast::ConditionalConcurrentAssign assign{};
         assign.target = token("data_out");
 
         // Waveform 1: '1' when en = '1'
-        // Aggregate init works here because ConditionalWaveform doesn't use vector init-list
         assign.waveforms.push_back(
           { .waveform = makeWave(token("'1'")), .condition = binary("en", "=", "'1'") });
 
@@ -77,13 +76,11 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
 
     SECTION("Selected Assignment (With/Select)")
     {
-        ast::SelectedConcurrentAssign assign;
+        ast::SelectedConcurrentAssign assign{};
         assign.selector = token("sel");
         assign.target = token("data_out");
 
         // Selection 1: '0' when "00"
-        // Must use emplace_back + push_back because vector<Expr> cannot use initializer_list
-        // (move-only)
         auto &sel1 = assign.selections.emplace_back();
         sel1.waveform = makeWave(token("'0'"));
         sel1.choices.emplace_back(token("\"00\""));
@@ -116,7 +113,7 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
     SECTION("Conditional Assignment with Label")
     {
         // 1. Inner Logic
-        ast::ConditionalConcurrentAssign assign;
+        ast::ConditionalConcurrentAssign assign{};
         assign.target = token("data_out");
 
         assign.waveforms.push_back(
@@ -125,7 +122,7 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
           { .waveform = makeWave(token("'0'")), .condition = std::nullopt });
 
         // 2. Wrapper
-        ast::ConcurrentStatement wrapper;
+        ast::ConcurrentStatement wrapper{};
         wrapper.label = "mux_select";
         wrapper.kind = std::move(assign);
 
@@ -137,11 +134,10 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
     SECTION("Selected Assignment with Label")
     {
         // 1. Inner Logic
-        ast::SelectedConcurrentAssign assign;
+        ast::SelectedConcurrentAssign assign{};
         assign.selector = token("counter");
         assign.target = token("data_out");
 
-        // Use emplace_back to avoid copy issues with move-only Expr types
         auto &s1 = assign.selections.emplace_back();
         s1.waveform = makeWave(token("x\"00\""));
         s1.choices.emplace_back(token("0"));
@@ -151,7 +147,7 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
         s2.choices.emplace_back(token("others"));
 
         // 2. Wrapper
-        ast::ConcurrentStatement wrapper;
+        ast::ConcurrentStatement wrapper{};
         wrapper.label = "decoder";
         wrapper.kind = std::move(assign);
 
