@@ -128,97 +128,6 @@ TEST_CASE("Entity Rendering", "[pretty_printer][design_units][entity]")
     }
 }
 
-TEST_CASE("Architecture Rendering", "[pretty_printer][design_units][architecture]")
-{
-    // Common setup
-    ast::Architecture arch{ .name = "rtl", .entity_name = "test_unit" };
-
-    SECTION("Basic Structure")
-    {
-        const std::string result = emit::test::render(arch);
-        constexpr std::string_view EXPECTED = "architecture rtl of test_unit is\n"
-                                              "begin\n"
-                                              "end;";
-        REQUIRE(result == EXPECTED);
-    }
-
-    SECTION("End Syntax Variations")
-    {
-        SECTION("Minimal: end;")
-        {
-            arch.has_end_architecture_keyword = false;
-            arch.end_label = std::nullopt;
-
-            REQUIRE(emit::test::render(arch) == "architecture rtl of test_unit is\nbegin\nend;");
-        }
-
-        SECTION("Keyword Only: end architecture;")
-        {
-            arch.has_end_architecture_keyword = true;
-            arch.end_label = std::nullopt;
-
-            REQUIRE(emit::test::render(arch)
-                    == "architecture rtl of test_unit is\nbegin\nend architecture;");
-        }
-
-        SECTION("Label Only: end <name>;")
-        {
-            arch.has_end_architecture_keyword = false;
-            arch.end_label = "rtl";
-
-            REQUIRE(emit::test::render(arch)
-                    == "architecture rtl of test_unit is\nbegin\nend rtl;");
-        }
-
-        SECTION("Full: end architecture <name>;")
-        {
-            arch.has_end_architecture_keyword = true;
-            arch.end_label = "rtl";
-
-            REQUIRE(emit::test::render(arch)
-                    == "architecture rtl of test_unit is\nbegin\nend architecture rtl;");
-        }
-    }
-}
-
-TEST_CASE("Library Clause Rendering", "[pretty_printer][design_units][context]")
-{
-    SECTION("Single library name")
-    {
-        const ast::LibraryClause lib{ .logical_names = { "ieee" } };
-        const std::string result = emit::test::render(lib);
-        REQUIRE(result == "library ieee;");
-    }
-
-    SECTION("Multiple library names")
-    {
-        const ast::LibraryClause lib{
-            .logical_names = { "ieee", "std", "work" }
-        };
-        const std::string result = emit::test::render(lib);
-        REQUIRE(result == "library ieee, std, work;");
-    }
-}
-
-TEST_CASE("Use Clause Rendering", "[pretty_printer][design_units][context]")
-{
-    SECTION("Single use clause")
-    {
-        const ast::UseClause use{ .selected_names = { "ieee.std_logic_1164.all" } };
-        const std::string result = emit::test::render(use);
-        REQUIRE(result == "use ieee.std_logic_1164.all;");
-    }
-
-    SECTION("Multiple use clauses in one statement")
-    {
-        const ast::UseClause use{
-            .selected_names = { "ieee.std_logic_1164.all", "ieee.numeric_std.all" }
-        };
-        const std::string result = emit::test::render(use);
-        REQUIRE(result == "use ieee.std_logic_1164.all, ieee.numeric_std.all;");
-    }
-}
-
 TEST_CASE("Entity with Context Clauses", "[pretty_printer][design_units][context]")
 {
     SECTION("Entity with library clause")
@@ -268,33 +177,6 @@ TEST_CASE("Entity with Context Clauses", "[pretty_printer][design_units][context
                                               "library work;\n"
                                               "entity test_unit is\n"
                                               "  port ( clk : in std_logic );\n"
-                                              "end;";
-        REQUIRE(result == EXPECTED);
-    }
-}
-
-TEST_CASE("Architecture with Context Clauses", "[pretty_printer][design_units][context]")
-{
-    SECTION("Architecture with library clause")
-    {
-        ast::Architecture arch{ .name = "rtl", .entity_name = "test_unit" };
-        arch.context.emplace_back(ast::LibraryClause{ .logical_names = { "work" } });
-
-        const std::string result = emit::test::render(arch);
-        constexpr std::string_view EXPECTED = "library work;\n"
-                                              "architecture rtl of test_unit is\n"
-                                              "begin\n"
-                                              "end;";
-        REQUIRE(result == EXPECTED);
-    }
-
-    SECTION("Architecture without context clauses")
-    {
-        const ast::Architecture arch{ .name = "rtl", .entity_name = "test_unit" };
-
-        const std::string result = emit::test::render(arch);
-        constexpr std::string_view EXPECTED = "architecture rtl of test_unit is\n"
-                                              "begin\n"
                                               "end;";
         REQUIRE(result == EXPECTED);
     }
