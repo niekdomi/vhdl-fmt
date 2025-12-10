@@ -9,7 +9,6 @@ auto PrettyPrinter::operator()(const ast::ConcurrentStatement &node) const -> Do
     Doc body = visit(node.kind);
 
     if (node.label) {
-        // "label: body"
         return (Doc::text(*node.label) + Doc::text(":")) & body;
     }
 
