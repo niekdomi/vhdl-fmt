@@ -46,11 +46,8 @@ class Translator final
     [[nodiscard]]
     auto makeArchitecture(vhdlParser::Architecture_bodyContext &ctx) -> ast::Architecture;
     [[nodiscard]]
-    auto makeArchitectureDeclarativePart(vhdlParser::Architecture_declarative_partContext &ctx)
-      -> std::vector<ast::Declaration>;
-    [[nodiscard]]
-    auto makeArchitectureStatementPart(vhdlParser::Architecture_statement_partContext &ctx)
-      -> std::vector<ast::ConcurrentStatement>;
+    auto makeArchitectureDeclarativeItem(vhdlParser::Block_declarative_itemContext &ctx)
+      -> ast::Declaration;
     [[nodiscard]]
     auto makeEntity(vhdlParser::Entity_declarationContext &ctx) -> ast::Entity;
 
@@ -110,13 +107,27 @@ class Translator final
 
     // Statements
     [[nodiscard]]
+    auto makeConcurrentStatement(vhdlParser::Architecture_statementContext &ctx)
+      -> ast::ConcurrentStatement;
+    [[nodiscard]]
+    auto makeSequentialStatement(vhdlParser::Sequential_statementContext &ctx)
+      -> ast::SequentialStatement;
+
+    // Statements (Kind Dispatchers)
+    [[nodiscard]]
+    auto makeSequentialStatementKind(vhdlParser::Sequential_statementContext &ctx)
+      -> ast::SequentialStmtKind;
+    [[nodiscard]]
+    auto makeConcurrentStatementKind(vhdlParser::Architecture_statementContext &ctx)
+      -> ast::ConcurrentStmtKind;
+
+    [[nodiscard]]
     auto makeCaseStatement(vhdlParser::Case_statementContext &ctx) -> ast::CaseStatement;
     [[nodiscard]]
-    auto makeConcurrentAssign(vhdlParser::Concurrent_signal_assignment_statementContext &ctx,
-                              const std::optional<std::string> &label) -> ast::ConcurrentStatement;
+    auto makeConcurrentAssignBody(vhdlParser::Concurrent_signal_assignment_statementContext &ctx)
+      -> ast::ConcurrentStmtKind;
     [[nodiscard]]
-    auto makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx,
-                               const std::optional<std::string> &label)
+    auto makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx)
       -> ast::ConditionalConcurrentAssign;
     [[nodiscard]]
     auto makeConditionalWaveform(vhdlParser::Conditional_waveformsContext &ctx)
@@ -136,18 +147,11 @@ class Translator final
     auto makeProcessStatementPart(vhdlParser::Process_statement_partContext &ctx)
       -> std::vector<ast::SequentialStatement>;
     [[nodiscard]]
-    auto makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx,
-                            const std::optional<std::string> &label)
+    auto makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx)
       -> ast::SelectedConcurrentAssign;
     [[nodiscard]]
     auto makeSelection(vhdlParser::WaveformContext &wave, vhdlParser::ChoicesContext &choices)
       -> ast::SelectedConcurrentAssign::Selection;
-    [[nodiscard]]
-    auto makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext &ctx)
-      -> std::vector<ast::SequentialStatement>;
-    [[nodiscard]]
-    auto makeSequentialStatement(vhdlParser::Sequential_statementContext &ctx)
-      -> ast::SequentialStatement;
     [[nodiscard]]
     auto makeSignalAssign(vhdlParser::Signal_assignment_statementContext &ctx) -> ast::SignalAssign;
     [[nodiscard]]
@@ -167,9 +171,9 @@ class Translator final
 
     // Expressions
     [[nodiscard]]
-    auto makeAggregate(vhdlParser::AggregateContext &ctx) -> ast::Expr;
+    auto makeAggregate(vhdlParser::AggregateContext &ctx) -> ast::GroupExpr;
     [[nodiscard]]
-    auto makeAllocator(vhdlParser::AllocatorContext &ctx) -> ast::Expr;
+    auto makeAllocator(vhdlParser::AllocatorContext &ctx) -> ast::UnaryExpr;
     [[nodiscard]]
     auto makeAttributeExpr(ast::Expr base, vhdlParser::Attribute_name_partContext &ctx)
       -> ast::Expr;
@@ -197,7 +201,7 @@ class Translator final
     [[nodiscard]]
     auto makePrimary(vhdlParser::PrimaryContext &ctx) -> ast::Expr;
     [[nodiscard]]
-    auto makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx) -> ast::Expr;
+    auto makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx) -> ast::QualifiedExpr;
     [[nodiscard]]
     auto makeRange(vhdlParser::Explicit_rangeContext &ctx) -> ast::Expr;
     [[nodiscard]]
@@ -234,7 +238,7 @@ class Translator final
     /// @brief Helper to create binary expressions
     template<typename Ctx>
     [[nodiscard]]
-    auto makeBinary(Ctx &ctx, std::string op, ast::Expr left, ast::Expr right) -> ast::Expr
+    auto makeBinary(Ctx &ctx, std::string op, ast::Expr left, ast::Expr right) -> ast::BinaryExpr
     {
         return build<ast::BinaryExpr>(ctx)
           .set(&ast::BinaryExpr::op, std::move(op))
@@ -246,7 +250,7 @@ class Translator final
     /// @brief Helper to create unary expressions
     template<typename Ctx>
     [[nodiscard]]
-    auto makeUnary(Ctx &ctx, std::string op, ast::Expr value) -> ast::Expr
+    auto makeUnary(Ctx &ctx, std::string op, ast::Expr value) -> ast::UnaryExpr
     {
         return build<ast::UnaryExpr>(ctx)
           .set(&ast::UnaryExpr::op, std::move(op))
@@ -257,7 +261,7 @@ class Translator final
     /// @brief Helper to create token expressions
     template<typename Ctx>
     [[nodiscard]]
-    auto makeToken(Ctx &ctx, std::string text) -> ast::Expr
+    auto makeToken(Ctx &ctx, std::string text) -> ast::TokenExpr
     {
         return build<ast::TokenExpr>(ctx).set(&ast::TokenExpr::text, std::move(text)).build();
     }
@@ -265,7 +269,7 @@ class Translator final
     /// @brief Helper to create token expressions using ctx.getText()
     template<typename Ctx>
     [[nodiscard]]
-    auto makeToken(Ctx &ctx) -> ast::Expr
+    auto makeToken(Ctx &ctx) -> ast::TokenExpr
     {
         return makeToken(ctx, ctx.getText());
     }

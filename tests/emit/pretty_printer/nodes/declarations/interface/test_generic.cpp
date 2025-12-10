@@ -8,19 +8,19 @@
 #include <vector>
 
 namespace {
+
 auto makeGeneric(std::string name, std::string type, std::string def_val) -> ast::GenericParam
 {
     return ast::GenericParam{ .names = { std::move(name) },
                               .subtype = ast::SubtypeIndication{ .type_mark = std::move(type) },
                               .default_expr = ast::TokenExpr{ .text = std::move(def_val) } };
 }
+
 } // namespace
 
 TEST_CASE("GenericParam Rendering", "[pretty_printer][declarations]")
 {
-    ast::GenericParam param{};
-    // Default common settings
-    param.subtype = ast::SubtypeIndication{ .type_mark = "integer" };
+    ast::GenericParam param{ .subtype{ .type_mark = "integer" } };
 
     SECTION("Basic Declarations")
     {
@@ -59,7 +59,7 @@ TEST_CASE("GenericParam Rendering", "[pretty_printer][declarations]")
 
 TEST_CASE("GenericClause Rendering", "[pretty_printer][clauses][generic]")
 {
-    ast::GenericClause clause;
+    ast::GenericClause clause{};
 
     SECTION("Empty Clause")
     {

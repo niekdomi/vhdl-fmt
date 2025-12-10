@@ -44,10 +44,12 @@ add_library(
     #
     # Statements
     pretty_printer/nodes/statements/waveform.cpp
+    pretty_printer/nodes/statements/concurrent/dispatch.cpp
     pretty_printer/nodes/statements/concurrent/assignment.cpp
     pretty_printer/nodes/statements/concurrent/process.cpp
     pretty_printer/nodes/statements/sequential/assignment.cpp
     pretty_printer/nodes/statements/sequential/case.cpp
+    pretty_printer/nodes/statements/sequential/dispatch.cpp
     pretty_printer/nodes/statements/sequential/if.cpp
     pretty_printer/nodes/statements/sequential/loop.cpp
     pretty_printer/nodes/statements/sequential/null.cpp

@@ -24,10 +24,12 @@ auto makeWave(ast::TokenExpr val) -> ast::Waveform
 
 TEST_CASE("Case Statement", "[pretty_printer][control_flow][sequential]")
 {
-    // Helper to create a dummy statement (x <= '0')
+    // Helper to create a dummy statement (x <= '0') wrapped in SequentialStatement
     auto make_stmt = []() -> ast::SequentialStatement {
-        return ast::SignalAssign{ .target = ast::TokenExpr{ .text = "x" },
-                                  .waveform = makeWave(ast::TokenExpr{ .text = "'0'" }) };
+        return ast::SequentialStatement{
+            .kind = ast::SignalAssign{ .target = ast::TokenExpr{ .text = "x" },
+                                      .waveform = makeWave(ast::TokenExpr{ .text = "'0'" }) }
+        };
     };
 
     ast::CaseStatement stmt;

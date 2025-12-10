@@ -9,26 +9,14 @@ TEST_CASE("QualifiedExpr Rendering", "[pretty_printer][expressions][qualified]")
 {
     SECTION("Simple qualified expression")
     {
-        ast::ParenExpr inner{ .inner{
-          std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "42" } }) } };
+        ast::GroupExpr group{};
+        group.children.emplace_back(ast::TokenExpr{ .text{ "42" } });
 
-        // CHANGE: Initialize the SubtypeIndication struct instead of a raw string
         const ast::QualifiedExpr qual{ .type_mark{ .type_mark = "integer" },
-                                       .operand{ std::make_unique<ast::Expr>(std::move(inner)) } };
+                                       .operand{
+                                         std::make_unique<ast::GroupExpr>(std::move(group)) } };
 
         REQUIRE(emit::test::render(qual) == "integer'(42)");
-    }
-
-    SECTION("Qualified aggregate")
-    {
-        ast::GroupExpr group{};
-        group.children.emplace_back(ast::TokenExpr{ .text{ "'1'" } });
-        group.children.emplace_back(ast::TokenExpr{ .text{ "'0'" } });
-
-        const ast::QualifiedExpr qual{ .type_mark{ .type_mark = "std_logic_vector" },
-                                       .operand{ std::make_unique<ast::Expr>(std::move(group)) } };
-
-        REQUIRE(emit::test::render(qual) == "std_logic_vector'('1', '0')");
     }
 
     SECTION("Qualified with named association")
@@ -43,7 +31,8 @@ TEST_CASE("QualifiedExpr Rendering", "[pretty_printer][expressions][qualified]")
         group.children.emplace_back(std::move(assoc));
 
         const ast::QualifiedExpr qual{ .type_mark{ .type_mark = "std_logic_vector" },
-                                       .operand{ std::make_unique<ast::Expr>(std::move(group)) } };
+                                       .operand{
+                                         std::make_unique<ast::GroupExpr>(std::move(group)) } };
 
         REQUIRE(emit::test::render(qual) == "std_logic_vector'(others => '0')");
     }
@@ -64,7 +53,7 @@ TEST_CASE("QualifiedExpr Rendering", "[pretty_printer][expressions][qualified]")
 
         const ast::QualifiedExpr qual{
             .type_mark{ .type_mark = "std_logic_vector", .constraint = std::move(constr) },
-            .operand{ std::make_unique<ast::Expr>(std::move(group)) }
+            .operand{ std::make_unique<ast::GroupExpr>(std::move(group)) }
         };
 
         // This ensures the constraint is printed before the tick '

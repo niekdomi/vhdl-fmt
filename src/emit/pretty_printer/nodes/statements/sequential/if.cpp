@@ -2,31 +2,34 @@
 #include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/doc.hpp"
 
+#include <ranges>
+
 namespace emit {
 
 auto PrettyPrinter::operator()(const ast::IfStatement &node) const -> Doc
 {
-    // 1. IF Header & Body
-    Doc result = (Doc::keyword(("if")) & visit(node.if_branch.condition) & Doc::keyword(("then")))
-              << join(node.if_branch.body, Doc::line());
+    Doc result = Doc::empty();
 
-    // 2. ELSIF (Optional)
-    if (!node.elsif_branches.empty()) {
-        const auto make_elsif = [&](const auto &branch) {
-            return (Doc::keyword(("elsif")) & visit(branch.condition) & Doc::keyword(("then")))
-                << join(branch.body, Doc::line());
-        };
+    // 1. IF / ELSIF
+    for (const auto &[index, branch] : std::views::enumerate(node.branches)) {
+        const Doc keyword = (index == 0) ? Doc::keyword("if") : Doc::keyword("elsif");
 
-        result /= joinMap(node.elsif_branches, Doc::line(), make_elsif);
+        // Separator: Newline if not the first branch
+        if (index > 0) {
+            result += Doc::line(); // soft line break
+        }
+
+        result += (keyword & visit(branch.condition) & Doc::keyword("then"))
+               << join(branch.body, Doc::line());
     }
 
-    // 3. ELSE (Optional)
+    // 2. ELSE Branch
     if (node.else_branch) {
-        result /= (Doc::keyword(("else")) << join(node.else_branch->body, Doc::line()));
+        result /= (Doc::keyword("else") << join(node.else_branch->body, Doc::line()));
     }
 
-    // 4. END IF
-    return result / (Doc::keyword(("end")) & Doc::keyword(("if")) + Doc::text(";"));
+    // 3. END IF
+    return result / (Doc::keyword("end") & Doc::keyword("if") + Doc::text(";"));
 }
 
 } // namespace emit

@@ -6,10 +6,9 @@
 
 TEST_CASE("Constant Declaration Rendering", "[pretty_printer][declarations][objects]")
 {
-    ast::ConstantDecl cst;
-    cst.names = { "WIDTH" };
-    cst.subtype = ast::SubtypeIndication{ .type_mark = "integer" };
-    cst.init_expr = ast::TokenExpr{ .text = "8" };
+    ast::ConstantDecl cst{ .names = { "WIDTH" },
+                           .subtype = ast::SubtypeIndication{ .type_mark = "integer" },
+                           .init_expr = ast::TokenExpr{ .text = "8" } };
 
     SECTION("Basic Constant")
     {

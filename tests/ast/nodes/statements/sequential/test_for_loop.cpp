@@ -77,13 +77,16 @@ TEST_CASE("ForLoop", "[statements][for_loop]")
 
         // Verify Inner Loop
         REQUIRE(outer_loop->body.size() == 1);
-        const auto *inner_loop = std::get_if<ast::ForLoop>(outer_loop->body.data());
-        REQUIRE(inner_loop != nullptr);
-        REQUIRE(inner_loop->iterator == "j");
+
+        // Access Wrapper -> Kind
+        CHECK(std::holds_alternative<ast::ForLoop>(outer_loop->body[0].kind));
+        const auto &inner_loop = std::get<ast::ForLoop>(outer_loop->body[0].kind);
+
+        REQUIRE(inner_loop.iterator == "j");
 
         // Verify Inner Body
-        REQUIRE(inner_loop->body.size() == 1);
-        CHECK(std::holds_alternative<ast::VariableAssign>(inner_loop->body[0]));
+        REQUIRE(inner_loop.body.size() == 1);
+        CHECK(std::holds_alternative<ast::VariableAssign>(inner_loop.body[0].kind));
     }
 
     SECTION("For loop with larger range")
@@ -108,7 +111,6 @@ TEST_CASE("ForLoop", "[statements][for_loop]")
         REQUIRE(for_loop->iterator == "i");
         REQUIRE_FALSE(for_loop->body.empty());
 
-        const auto *if_stmt = std::get_if<ast::IfStatement>(for_loop->body.data());
-        REQUIRE(if_stmt != nullptr);
+        CHECK(std::holds_alternative<ast::IfStatement>(for_loop->body[0].kind));
     }
 }

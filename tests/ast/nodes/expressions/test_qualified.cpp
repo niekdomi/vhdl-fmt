@@ -14,7 +14,7 @@ TEST_CASE("QualifiedExpr", "[expressions][qualified]")
         REQUIRE(qual->type_mark.type_mark == "integer");
         REQUIRE(qual->operand != nullptr);
 
-        const auto *group = std::get_if<ast::GroupExpr>(qual->operand.get());
+        const ast::GroupExpr *group = qual->operand.get();
         REQUIRE(group != nullptr);
 
         const auto *operand = std::get_if<ast::TokenExpr>(group->children.data());
@@ -30,7 +30,7 @@ TEST_CASE("QualifiedExpr", "[expressions][qualified]")
         REQUIRE(qual->type_mark.type_mark == "array_type");
         REQUIRE(qual->operand != nullptr);
 
-        const auto *group = std::get_if<ast::GroupExpr>(qual->operand.get());
+        const ast::GroupExpr *group = qual->operand.get();
         REQUIRE(group != nullptr);
         REQUIRE(group->children.size() == 3);
     }
@@ -43,7 +43,7 @@ TEST_CASE("QualifiedExpr", "[expressions][qualified]")
         REQUIRE(qual->type_mark.type_mark == "record_type");
         REQUIRE(qual->operand != nullptr);
 
-        const auto *group = std::get_if<ast::GroupExpr>(qual->operand.get());
+        const ast::GroupExpr *group = qual->operand.get();
         REQUIRE(group != nullptr);
 
         const auto *binary = std::get_if<ast::BinaryExpr>(group->children.data());

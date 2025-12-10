@@ -68,10 +68,10 @@ inline auto tallyTrivia(std::span<const ast::Trivia> tv) -> TriviaCounts
 // Parsing Helpers
 // =============================================================================
 
-/// Internal helper to parse a full design and extract the architecture
+/// @brief Internal helper to parse a full design and extract the architecture
 inline auto parseArchitectureWrapper(std::string_view code) -> const ast::Architecture *
 {
-    static ast::DesignFile design;
+    static ast::DesignFile design{};
     design = builder::buildFromString(code);
 
     if (design.units.size() < 2) {
@@ -80,8 +80,16 @@ inline auto parseArchitectureWrapper(std::string_view code) -> const ast::Archit
     return std::get_if<ast::Architecture>(&design.units[1]);
 }
 
+/// @brief Wraps a statement in an architecture and returns the Architecture node.
+inline auto parseArchitectureWithStmt(std::string_view stmt) -> const ast::Architecture *
+{
+    const auto code
+      = std::format("entity E is end; architecture A of E is begin {}\n end A;", stmt);
+
+    return parseArchitectureWrapper(code);
+}
+
 /// Parse a VHDL declaration string into a specific AST node.
-/// Wraps the string in an architecture body to ensure valid parsing context.
 template<typename T>
 inline auto parseDecl(std::string_view decl_str) -> const T *
 {
@@ -99,11 +107,10 @@ inline auto parseDecl(std::string_view decl_str) -> const T *
         return nullptr;
     }
 
-    const auto *decl_variant = &arch->decls.front();
-    return std::get_if<T>(decl_variant);
+    return std::get_if<T>(&arch->decls.front());
 }
 
-/// Parse VHDL expression from a signal initialization
+/// @brief Parse VHDL expression from a signal initialization
 inline auto parseExpr(std::string_view init_expr) -> const ast::Expr *
 {
     const auto vhdl = std::format(R"(
@@ -120,8 +127,7 @@ inline auto parseExpr(std::string_view init_expr) -> const ast::Expr *
         return nullptr;
     }
 
-    const auto *decl_item = arch->decls.data();
-    const auto *signal = std::get_if<ast::SignalDecl>(decl_item);
+    const auto *signal = std::get_if<ast::SignalDecl>(&arch->decls.front());
     if ((signal == nullptr) || !signal->init_expr.has_value()) {
         return nullptr;
     }
@@ -140,14 +146,20 @@ inline auto parseSequentialStmt(std::string_view stmt) -> const T *
         return nullptr;
     }
 
-    // Get Process (It's the first concurrent statement)
-    const auto *proc = std::get_if<ast::Process>(&arch->stmts.front());
+    // 1. Get the ConcurrentStatement wrapper
+    const auto &proc_wrapper = arch->stmts.front();
+
+    // 2. Extract the Process body (Logic)
+    const auto *proc = std::get_if<ast::Process>(&proc_wrapper.kind);
     if ((proc == nullptr) || proc->body.empty()) {
         return nullptr;
     }
 
-    const auto *seq_stmt_variant = &proc->body.front();
-    return std::get_if<T>(seq_stmt_variant);
+    // 3. Get the SequentialStatement wrapper from the body
+    const auto &seq_wrapper = proc->body.front();
+
+    // 4. Return the specific sequential logic (Variant)
+    return std::get_if<T>(&seq_wrapper.kind);
 }
 
 /// @brief Wraps a concurrent statement string in an architecture and parses it.
@@ -162,32 +174,21 @@ inline auto parseConcurrentStmt(std::string_view stmt) -> const T *
         return nullptr;
     }
 
-    const auto *conc_stmt_variant = &arch->stmts.front();
-    return std::get_if<T>(conc_stmt_variant);
+    // 1. Get the ConcurrentStatement wrapper
+    const auto &wrapper = arch->stmts.front();
+
+    // 2. Return the specific concurrent logic (Variant)
+    return std::get_if<T>(&wrapper.kind);
 }
 
-/// Parse a VHDL type declaration string into an AST node.
+/// @brief Parse a VHDL type declaration string into an AST node.
 inline auto parseType(std::string_view type_decl_str) -> const ast::TypeDecl *
 {
-    const auto vhdl = std::format(R"(
-        entity E is end E;
-        architecture A of E is
-            {}
-        begin
-        end A;
-    )",
-                                  type_decl_str);
-
-    const auto *arch = parseArchitectureWrapper(vhdl);
-    if ((arch == nullptr) || arch->decls.empty()) {
-        return nullptr;
-    }
-
-    const auto *decl_item = arch->decls.data();
-    return std::get_if<ast::TypeDecl>(decl_item);
+    // Reuses parseDecl logic as TypeDecl is just a declaration
+    return parseDecl<ast::TypeDecl>(type_decl_str);
 }
 
-/// Parse a single design unit from code string.
+/// @brief Parse a single design unit from code string.
 template<typename T>
 inline auto parseDesignUnit(std::string_view code) -> const T *
 {

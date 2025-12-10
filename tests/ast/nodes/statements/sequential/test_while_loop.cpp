@@ -23,7 +23,9 @@ TEST_CASE("WhileLoop", "[statements][while_loop]")
 
         // Verify Body
         REQUIRE_FALSE(loop->body.empty());
-        const auto *assign = std::get_if<ast::VariableAssign>(loop->body.data());
+
+        // Access Wrapper -> Kind
+        const auto *assign = std::get_if<ast::VariableAssign>(&loop->body[0].kind);
         REQUIRE(assign != nullptr);
         CHECK(std::get<ast::TokenExpr>(assign->target).text == "count");
     }
@@ -44,6 +46,8 @@ TEST_CASE("WhileLoop", "[statements][while_loop]")
         CHECK(std::get<ast::TokenExpr>(*cond->right).text == "max_value");
 
         REQUIRE(loop->body.size() == 2);
+        CHECK(std::holds_alternative<ast::VariableAssign>(loop->body[0].kind));
+        CHECK(std::holds_alternative<ast::VariableAssign>(loop->body[1].kind));
     }
 
     SECTION("Boolean condition")

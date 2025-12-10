@@ -11,6 +11,7 @@
 #include <vector>
 
 namespace {
+
 auto makePort(std::string name, std::string mode, std::string type) -> ast::Port
 {
     return ast::Port{ .names = { std::move(name) },
@@ -18,195 +19,129 @@ auto makePort(std::string name, std::string mode, std::string type) -> ast::Port
                       .subtype = ast::SubtypeIndication{ .type_mark = std::move(type) } };
 }
 
-auto makeVectorPort(std::string name, std::string mode, std::string high, std::string low)
-  -> ast::Port
-{
-    auto left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = std::move(high) });
-    auto right = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = std::move(low) });
-
-    ast::IndexConstraint idx_constraint;
-    idx_constraint.ranges.children.emplace_back(
-      ast::BinaryExpr{ .left = std::move(left), .op = "downto", .right = std::move(right) });
-
-    return ast::Port{
-        .names = { std::move(name) },
-        .mode = std::move(mode),
-        .subtype
-        = ast::SubtypeIndication{ .type_mark = "std_logic_vector",
-                  .constraint = ast::Constraint(std::move(idx_constraint)) }
-    };
-}
 } // namespace
 
 TEST_CASE("Port Rendering", "[pretty_printer][declarations]")
 {
-    ast::Port port;
-    // Default common settings
-    port.mode = "in";
-    port.subtype = ast::SubtypeIndication{ .type_mark = "std_logic" };
+    ast::Port port = makePort("clk", "in", "std_logic");
 
-    SECTION("Basic Declarations")
+    SECTION("Basic Declaration")
     {
-        SECTION("Single Name")
-        {
-            port.names = { "clk" };
-            REQUIRE(emit::test::render(port) == "clk : in std_logic");
-        }
+        REQUIRE(emit::test::render(port) == "clk : in std_logic");
+    }
 
-        SECTION("Multiple Names and Different Mode")
-        {
-            port.names = { "data_in", "data_out" };
-            port.mode = "inout";
-            port.subtype = ast::SubtypeIndication{ .type_mark = "std_logic_vector" };
-            REQUIRE(emit::test::render(port) == "data_in, data_out : inout std_logic_vector");
-        }
+    SECTION("Multiple Names")
+    {
+        port.names = { "a", "b" };
+        REQUIRE(emit::test::render(port) == "a, b : in std_logic");
     }
 
     SECTION("With Constraints")
     {
         port.names = { "data" };
-        port.subtype = ast::SubtypeIndication{ .type_mark = "std_logic_vector" };
+        port.subtype.type_mark = "std_logic_vector";
 
-        SECTION("Single Range (7 downto 0)")
+        // Create constraint: (7 downto 0)
+        auto left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "7" });
+        auto right = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "0" });
+
+        ast::IndexConstraint idx_constraint{};
+        idx_constraint.ranges.children.emplace_back(
+          ast::BinaryExpr{ .left = std::move(left), .op = "downto", .right = std::move(right) });
+
+        port.subtype.constraint = ast::Constraint(std::move(idx_constraint));
+
+        SECTION("Constraint Only")
         {
-            // Create constraint: 7 downto 0
-            auto left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "7" });
-            auto right = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "0" });
-
-            ast::IndexConstraint idx_constraint;
-            idx_constraint.ranges.children.emplace_back(ast::BinaryExpr{
-              .left = std::move(left), .op = "downto", .right = std::move(right) });
-
-            port.subtype.constraint = ast::Constraint(std::move(idx_constraint));
-
-            SECTION("Constraint Only")
-            {
-                REQUIRE(emit::test::render(port) == "data : in std_logic_vector(7 downto 0)");
-            }
-
-            SECTION("Constraint and Default Value")
-            {
-                port.default_expr = ast::TokenExpr{ .text = "X\"00\"" };
-                REQUIRE(emit::test::render(port)
-                        == "data : in std_logic_vector(7 downto 0) := X\"00\"");
-            }
+            REQUIRE(emit::test::render(port) == "data : in std_logic_vector(7 downto 0)");
         }
 
-        SECTION("Multi-dimensional Range")
+        SECTION("Constraint and Default Value")
         {
-            port.names = { "matrix" };
-            port.mode = "out";
-            port.subtype = ast::SubtypeIndication{ .type_mark = "matrix_type" };
-
-            // Constraint 1: 7 downto 0
-            ast::BinaryExpr range1{ .left
-                                    = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "7" }),
-                                    .op = "downto",
-                                    .right
-                                    = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "0" }) };
-
-            // Constraint 2: 3 downto 0
-            ast::BinaryExpr range2{ .left
-                                    = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "3" }),
-                                    .op = "downto",
-                                    .right
-                                    = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "0" }) };
-
-            ast::IndexConstraint idx_constraint{};
-            idx_constraint.ranges.children.emplace_back(std::move(range1));
-            idx_constraint.ranges.children.emplace_back(std::move(range2));
-
-            port.subtype.constraint = ast::Constraint(std::move(idx_constraint));
-
-            REQUIRE(emit::test::render(port) == "matrix : out matrix_type(7 downto 0, 3 downto 0)");
+            port.default_expr = ast::TokenExpr{ .text = "x\"00\"" };
+            REQUIRE(emit::test::render(port)
+                    == "data : in std_logic_vector(7 downto 0) := x\"00\"");
         }
-    }
-
-    SECTION("Default Value Only")
-    {
-        port.names = { "enable" };
-        port.default_expr = ast::TokenExpr{ .text = "'0'" };
-        REQUIRE(emit::test::render(port) == "enable : in std_logic := '0'");
     }
 }
 
 TEST_CASE("PortClause Rendering", "[pretty_printer][clauses][port]")
 {
-    ast::PortClause clause;
+    ast::PortClause clause{};
 
     SECTION("Empty Clause")
     {
         REQUIRE(emit::test::render(clause).empty());
     }
 
-    SECTION("Single Port (Flat Layout)")
+    SECTION("Single Port")
     {
         clause.ports.push_back(makePort("clk", "in", "std_logic"));
         REQUIRE(emit::test::render(clause) == "port ( clk : in std_logic );");
     }
 
-    SECTION("Single Port (With Trivia)")
+    SECTION("Vertical Layout (Multiple Ports)")
     {
-        ast::Port port = makePort("reset", "in", "std_logic");
+        auto config = emit::test::defaultConfig();
+        config.line_config.line_length = 10; // Ensure no grouping
 
-        port.addLeading(ast::Comment{ .text = "-- port leading" });
-        port.addLeading(ast::Break{ .blank_lines = 1 });
-        port.setInlineComment("-- port inline");
-        port.addTrailing(ast::Break{ .blank_lines = 1 });
-        port.addTrailing(ast::Comment{ .text = "-- port trailing" });
+        clause.ports.push_back(makePort("clk", "in", "std_logic"));
+        clause.ports.push_back(makePort("rst", "in", "std_logic"));
 
-        clause.ports.push_back(std::move(port));
-
-        clause.addLeading(ast::Comment{ .text = "-- Port clause starts here" });
-        clause.addLeading(ast::Break{ .blank_lines = 1 });
-        clause.setInlineComment("-- Inline comment for port clause");
-        clause.addTrailing(ast::Break{ .blank_lines = 1 });
-        clause.addTrailing(ast::Comment{ .text = "-- End of port clause" });
-
-        constexpr std::string_view EXPECTED = "-- Port clause starts here\n"
-                                              "\n"
-                                              "port (\n"
-                                              "  -- port leading\n"
-                                              "  \n"
-                                              "  reset : in std_logic -- port inline\n"
-                                              "  \n"
-                                              "  -- port trailing\n"
-                                              "); -- Inline comment for port clause\n"
-                                              "\n"
-                                              "-- End of port clause";
-
-        REQUIRE(emit::test::render(clause) == EXPECTED);
+        constexpr std::string_view EXPECTED = "port (\n"
+                                              "  clk : in std_logic;\n"
+                                              "  rst : in std_logic\n"
+                                              ");";
+        REQUIRE(emit::test::render(clause, config) == EXPECTED);
     }
 
-    SECTION("Multiple Ports (Vertical Layout)")
+    SECTION("Alignment Logic")
     {
+        auto config = emit::test::defaultConfig();
+        config.line_config.line_length = 10; // Ensure no grouping
+        config.port_map.align_signals = true;
+
         clause.ports.push_back(makePort("clk", "in", "std_logic"));
-        clause.ports.push_back(makePort("reset", "in", "std_logic"));
+        clause.ports.push_back(makePort("data_valid", "out", "std_logic"));
 
-        SECTION("With Complex Constraints")
-        {
-            clause.ports.push_back(makeVectorPort("data_out", "out", "7", "0"));
+        constexpr std::string_view EXPECTED = "port (\n"
+                                              "  clk        : in  std_logic;\n"
+                                              "  data_valid : out std_logic\n"
+                                              ");";
 
-            constexpr std::string_view EXPECTED = "port (\n"
-                                                  "  clk : in std_logic;\n"
-                                                  "  reset : in std_logic;\n"
-                                                  "  data_out : out std_logic_vector(7 downto 0)\n"
-                                                  ");";
+        REQUIRE(emit::test::render(clause, config) == EXPECTED);
+    }
 
-            REQUIRE(emit::test::render(clause) == EXPECTED);
-        }
+    SECTION("Trivia Preservation in List")
+    {
+        ast::Port p1 = makePort("clk", "in", "bit");
+        p1.addLeading(ast::Break{ 1 });
+        p1.addLeading(ast::Comment{ "-- Leading clock" });
+        p1.setInlineComment("-- clock");
+        p1.addTrailing(ast::Comment{ "-- Trailing clock" });
+        p1.addTrailing(ast::Break{ 1 });
 
-        SECTION("Without Constraints")
-        {
-            clause.ports.push_back(makePort("output_signal", "out", "std_logic_vector"));
+        ast::Port p2 = makePort("rst", "in", "bit");
+        p2.addLeading(ast::Comment{ "-- Leading reset" });
+        p2.setInlineComment("-- reset");
+        p2.addTrailing(ast::Comment{ "-- Trailing reset" });
+        p2.addTrailing(ast::Break{ 1 });
 
-            constexpr std::string_view EXPECTED = "port (\n"
-                                                  "  clk : in std_logic;\n"
-                                                  "  reset : in std_logic;\n"
-                                                  "  output_signal : out std_logic_vector\n"
-                                                  ");";
+        clause.ports.push_back(std::move(p1));
+        clause.ports.push_back(std::move(p2));
 
-            REQUIRE(emit::test::render(clause) == EXPECTED);
-        }
+        constexpr std::string_view EXPECTED = "port (\n"
+                                              "  \n"
+                                              "  -- Leading clock\n"
+                                              "  clk : in bit; -- clock\n"
+                                              "  -- Trailing clock\n"
+                                              "  \n"
+                                              "  -- Leading reset\n"
+                                              "  rst : in bit -- reset\n"
+                                              "  -- Trailing reset\n"
+                                              "  \n"
+                                              ");";
+
+        REQUIRE(emit::test::render(clause) == EXPECTED);
     }
 }

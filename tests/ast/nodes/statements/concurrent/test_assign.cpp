@@ -1,4 +1,6 @@
+#include "ast/nodes/design_units.hpp"
 #include "ast/nodes/expressions.hpp"
+#include "ast/nodes/statements.hpp"
 #include "ast/nodes/statements/concurrent.hpp"
 #include "test_helpers.hpp"
 
@@ -11,24 +13,27 @@ TEST_CASE("Concurrent Assignment: Conditional", "[statements][concurrent_assign]
     // [0] Simple Assignment (a <= '1')
     SECTION("Simple Assignment (Unconditional)")
     {
+        constexpr std::string_view CODE = "a <= '1';";
         const auto *assign
-          = test_helpers::parseConcurrentStmt<ast::ConditionalConcurrentAssign>("a <= '1';");
+          = test_helpers::parseConcurrentStmt<ast::ConditionalConcurrentAssign>(CODE);
         REQUIRE(assign != nullptr);
 
         CHECK(std::get_if<ast::TokenExpr>(&assign->target)->text == "a");
 
         REQUIRE(assign->waveforms.size() == 1);
         CHECK_FALSE(assign->waveforms[0].condition.has_value());
-        CHECK(assign->waveforms[0].waveform.elements.size() == 1);
-        CHECK(std::get_if<ast::TokenExpr>(&assign->waveforms[0].waveform.elements[0].value)->text
-              == "'1'");
+
+        const auto &wave = assign->waveforms[0].waveform;
+        CHECK(wave.elements.size() == 1);
+        CHECK(std::get_if<ast::TokenExpr>(&wave.elements[0].value)->text == "'1'");
     }
 
     // [1] Conditional Assignment (b <= '1' when sel = '1' else '0')
     SECTION("When-Else Logic")
     {
-        const auto *assign = test_helpers::parseConcurrentStmt<ast::ConditionalConcurrentAssign>(
-          "b <= '1' when sel = '1' else '0';");
+        constexpr std::string_view CODE = "b <= '1' when sel = '1' else '0';";
+        const auto *assign
+          = test_helpers::parseConcurrentStmt<ast::ConditionalConcurrentAssign>(CODE);
         REQUIRE(assign != nullptr);
 
         CHECK(std::get_if<ast::TokenExpr>(&assign->target)->text == "b");
@@ -46,25 +51,27 @@ TEST_CASE("Concurrent Assignment: Conditional", "[statements][concurrent_assign]
         CHECK(std::get_if<ast::TokenExpr>(&w2.waveform.elements[0].value)->text == "'0'");
     }
 
-    // Conditional assignment with label
+    // Label Check (Verified on the Wrapper)
     SECTION("Labeled Conditional Assignment")
     {
-        const auto *assign = test_helpers::parseConcurrentStmt<ast::ConditionalConcurrentAssign>(
-          "mux_select: data_out <= data_in when sel = '1' else '0';");
-        REQUIRE(assign != nullptr);
+        constexpr std::string_view CODE
+          = "mux_select: data_out <= data_in when sel = '1' else '0';";
 
-        REQUIRE(assign->label.has_value());
-        CHECK(assign->label.value() == "mux_select");
-        CHECK(std::get_if<ast::TokenExpr>(&assign->target)->text == "data_out");
-    }
+        const auto *arch = test_helpers::parseArchitectureWithStmt(CODE);
+        REQUIRE(arch != nullptr);
+        REQUIRE(arch->stmts.size() == 1);
 
-    // Assignment without explicit label
-    SECTION("Assignment without label")
-    {
-        const auto *assign
-          = test_helpers::parseConcurrentStmt<ast::ConditionalConcurrentAssign>("a <= b;");
-        REQUIRE(assign != nullptr);
-        CHECK_FALSE(assign->label.has_value());
+        const auto &wrapper = arch->stmts[0];
+
+        // 1. Verify Label on Wrapper
+        REQUIRE(wrapper.label.has_value());
+        CHECK(wrapper.label.value() == "mux_select");
+
+        // 2. Verify Kind
+        CHECK(std::holds_alternative<ast::ConditionalConcurrentAssign>(wrapper.kind));
+
+        const auto &assign = std::get<ast::ConditionalConcurrentAssign>(wrapper.kind);
+        CHECK(std::get_if<ast::TokenExpr>(&assign.target)->text == "data_out");
     }
 }
 
@@ -73,8 +80,9 @@ TEST_CASE("Concurrent Assignment: Selected", "[statements][selected_assign]")
     // Simple Selected Assignment: result <= "00" when '0', "11" when others
     SECTION("Basic Selection (Bits)")
     {
-        const auto *assign = test_helpers::parseConcurrentStmt<ast::SelectedConcurrentAssign>(
-          "with sel select result <= '1' when '0', '0' when others;");
+        constexpr std::string_view CODE
+          = "with sel select result <= '1' when '0', '0' when others;";
+        const auto *assign = test_helpers::parseConcurrentStmt<ast::SelectedConcurrentAssign>(CODE);
         REQUIRE(assign != nullptr);
 
         CHECK(std::get_if<ast::TokenExpr>(&assign->selector)->text == "sel");
@@ -95,8 +103,12 @@ TEST_CASE("Concurrent Assignment: Selected", "[statements][selected_assign]")
     // Selected Assignment with Ranges and Multiple Choices
     SECTION("Selections with Ranges and Multiple Choices")
     {
-        const auto *assign = test_helpers::parseConcurrentStmt<ast::SelectedConcurrentAssign>(
-          R"(with selector select output <= "0000" when 0 to 3, "1111" when 4 | 5, "ZZZZ" when others;)");
+        constexpr std::string_view CODE = "with selector select output <="
+                                          " \"0000\" when 0 to 3,"
+                                          " \"1111\" when 4 | 5,"
+                                          " \"ZZZZ\" when others;";
+
+        const auto *assign = test_helpers::parseConcurrentStmt<ast::SelectedConcurrentAssign>(CODE);
         REQUIRE(assign != nullptr);
         REQUIRE(assign->selections.size() == 3);
 
@@ -112,16 +124,23 @@ TEST_CASE("Concurrent Assignment: Selected", "[statements][selected_assign]")
         CHECK(std::get_if<ast::TokenExpr>(&s2.choices[1])->text == "5");
     }
 
-    // Selected assignment with label
+    // Label Check (Verified on the Wrapper)
     SECTION("Labeled Selected Assignment")
     {
-        const auto *assign = test_helpers::parseConcurrentStmt<ast::SelectedConcurrentAssign>(
-          "decoder: with counter select data_out <= '0' when '0', '1' when others;");
-        REQUIRE(assign != nullptr);
+        constexpr std::string_view CODE
+          = "decoder: with counter select data_out <= '0' when '0', '1' when others;";
 
-        REQUIRE(assign->label.has_value());
-        CHECK(assign->label.value() == "decoder");
-        CHECK(std::get_if<ast::TokenExpr>(&assign->selector)->text == "counter");
-        CHECK(std::get_if<ast::TokenExpr>(&assign->target)->text == "data_out");
+        const auto *arch = test_helpers::parseArchitectureWithStmt(CODE);
+        REQUIRE(arch != nullptr);
+        REQUIRE(arch->stmts.size() == 1);
+
+        const auto &wrapper = arch->stmts[0];
+
+        // 1. Verify Label on Wrapper
+        REQUIRE(wrapper.label.has_value());
+        CHECK(wrapper.label.value() == "decoder");
+
+        // 2. Verify Kind
+        CHECK(std::holds_alternative<ast::SelectedConcurrentAssign>(wrapper.kind));
     }
 }

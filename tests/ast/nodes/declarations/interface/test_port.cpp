@@ -19,7 +19,7 @@ auto parsePorts(std::string_view port_content) -> const ast::Entity *
 {
     const auto code = std::format("entity E is port ({}); end E;", port_content);
 
-    static ast::DesignFile design;
+    static ast::DesignFile design{};
     design = builder::buildFromString(code);
 
     if (design.units.empty()) {
