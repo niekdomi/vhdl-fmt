@@ -14,7 +14,7 @@ auto Translator::makeAttributeExpr(ast::Expr base, vhdlParser::Attribute_name_pa
       .setBox(&ast::AttributeExpr::prefix, std::move(base))
       .set(&ast::AttributeExpr::attribute, ctx.attribute_designator()->getText())
       .maybe(&ast::AttributeExpr::arg,
-             ctx.expression(), // Pass the pointer directly
+             ctx.expression(),
              [&](auto &expr) { return std::make_unique<ast::Expr>(makeExpr(expr)); })
       .build();
 }

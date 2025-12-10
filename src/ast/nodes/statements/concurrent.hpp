@@ -49,4 +49,4 @@ struct Process : NodeBase
 
 } // namespace ast
 
-#endif
+#endif /* AST_NODES_STATEMENTS_CONCURRENT_HPP */

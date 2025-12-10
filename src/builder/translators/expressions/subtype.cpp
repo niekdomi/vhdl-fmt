@@ -3,6 +3,7 @@
 #include "vhdlParser.h"
 
 #include <optional>
+#include <utility>
 #include <variant>
 
 namespace builder {

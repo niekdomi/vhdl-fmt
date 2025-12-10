@@ -10,7 +10,6 @@ namespace builder {
 auto Translator::makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx)
   -> ast::QualifiedExpr
 {
-    // Build the operand (Aggregate or Parenthesized Expression)
     ast::GroupExpr operand{};
 
     if (auto *agg = ctx.aggregate()) {
