@@ -40,11 +40,11 @@ add_executable(
     nodes/statements/test_waveforms.cpp
     nodes/statements/concurrent/test_assign.cpp
     nodes/statements/concurrent/test_process.cpp
+    nodes/statements/sequential/test_assign.cpp
     nodes/statements/sequential/test_case.cpp
-    nodes/statements/sequential/test_control_flow.cpp
     nodes/statements/sequential/test_for_loop.cpp
+    nodes/statements/sequential/test_if.cpp
     nodes/statements/sequential/test_loop.cpp
-    nodes/statements/sequential/test_sequential_assign.cpp
     nodes/statements/sequential/test_while_loop.cpp
 )
 

@@ -16,16 +16,18 @@ TEST_CASE("IfStatement", "[statements][if]")
                                     "end if;");
         REQUIRE(stmt != nullptr);
 
+        // Check Branches (merged if/elsif)
+        REQUIRE(stmt->branches.size() == 1);
+
         // Check Condition
-        const auto *cond = std::get_if<ast::BinaryExpr>(&stmt->if_branch.condition);
+        const auto *cond = std::get_if<ast::BinaryExpr>(&stmt->branches[0].condition);
         REQUIRE(cond != nullptr);
         CHECK(cond->op == "=");
 
-        // Check Body
-        CHECK(stmt->if_branch.body.size() == 1);
+        // Check Body size
+        CHECK(stmt->branches[0].body.size() == 1);
 
-        // No elsif/else
-        CHECK(stmt->elsif_branches.empty());
+        // No else
         CHECK_FALSE(stmt->else_branch.has_value());
     }
 
@@ -38,8 +40,8 @@ TEST_CASE("IfStatement", "[statements][if]")
                                     "end if;");
         REQUIRE(stmt != nullptr);
 
-        CHECK(stmt->if_branch.body.size() == 1);
-        CHECK(stmt->elsif_branches.empty());
+        CHECK(stmt->branches.size() == 1);
+        CHECK(stmt->branches[0].body.size() == 1);
 
         REQUIRE(stmt->else_branch.has_value());
         CHECK(stmt->else_branch->body.size() == 1);
@@ -58,29 +60,31 @@ TEST_CASE("IfStatement", "[statements][if]")
                                     "end if;");
         REQUIRE(stmt != nullptr);
 
-        // Verify IF branch
-        CHECK(stmt->if_branch.body.size() == 1);
-        CHECK(std::holds_alternative<ast::SignalAssign>(stmt->if_branch.body[0]));
+        // 1 IF + 2 ELSIFs = 3 branches
+        REQUIRE(stmt->branches.size() == 3);
 
-        REQUIRE(stmt->elsif_branches.size() == 2);
+        // Verify IF branch (Index 0)
+        CHECK(stmt->branches[0].body.size() == 1);
+        // Body contains wrappers, check .kind
+        CHECK(std::holds_alternative<ast::SignalAssign>(stmt->branches[0].body[0].kind));
 
-        // Check first elsif
-        const auto *cond1 = std::get_if<ast::BinaryExpr>(&stmt->elsif_branches[0].condition);
+        // Check first elsif (Index 1)
+        const auto *cond1 = std::get_if<ast::BinaryExpr>(&stmt->branches[1].condition);
         REQUIRE(cond1 != nullptr);
-        CHECK(stmt->elsif_branches[0].body.size() == 1);
-        CHECK(std::holds_alternative<ast::SignalAssign>(stmt->elsif_branches[0].body[0]));
+        CHECK(stmt->branches[1].body.size() == 1);
+        CHECK(std::holds_alternative<ast::SignalAssign>(stmt->branches[1].body[0].kind));
 
-        // Check second elsif
-        const auto *cond2 = std::get_if<ast::BinaryExpr>(&stmt->elsif_branches[1].condition);
+        // Check second elsif (Index 2)
+        const auto *cond2 = std::get_if<ast::BinaryExpr>(&stmt->branches[2].condition);
         REQUIRE(cond2 != nullptr);
-        CHECK(stmt->elsif_branches[1].body.size() == 1);
-        // TODO(vedivad): Once ReportStatement is supported, check for it
-        CHECK_FALSE(stmt->elsif_branches[1].body.empty());
+        CHECK(stmt->branches[2].body.size() == 1);
+        // Note: Report statement support pending, usually parses as Expr or generic Stmt
+        CHECK_FALSE(stmt->branches[2].body.empty());
 
         // Check else
         REQUIRE(stmt->else_branch.has_value());
         CHECK(stmt->else_branch->body.size() == 1);
-        CHECK(std::holds_alternative<ast::NullStatement>(stmt->else_branch->body[0]));
+        CHECK(std::holds_alternative<ast::NullStatement>(stmt->else_branch->body[0].kind));
     }
 }
 
