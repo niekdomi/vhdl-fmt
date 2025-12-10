@@ -1,21 +1,12 @@
 #include "ast/nodes/types.hpp"
 #include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/doc.hpp"
+#include "emit/pretty_printer/nodes/alignment.hpp"
 
 #include <ranges>
 #include <string>
 
 namespace emit {
-
-namespace {
-
-/// @brief Local constants for record element alignment.
-struct AlignmentLevel
-{
-    static constexpr int NAME = 0; ///< Column 0: Field names
-};
-
-} // namespace
 
 auto PrettyPrinter::operator()(const ast::RecordElement &node) const -> Doc
 {

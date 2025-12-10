@@ -1,18 +1,12 @@
 #include "ast/nodes/declarations/interface.hpp"
 #include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/doc.hpp"
+#include "emit/pretty_printer/nodes/alignment.hpp"
 
 #include <ranges>
 #include <string>
 
 namespace emit {
-
-/// @brief Named constants for common alignment columns used in declarations.
-struct AlignmentLevel
-{
-    static constexpr int NAME = 0; ///< Column 0: Used for names (port, generic, signal, etc.)
-    static constexpr int MODE = 1; ///< Column 1: Used for mode (port modes like "in", "out", etc.)
-};
 
 auto PrettyPrinter::operator()(const ast::PortClause &node) const -> Doc
 {
