@@ -71,31 +71,39 @@ TEST_CASE("Statement: Waveforms", "[builder][statements][waveforms]")
 
     SECTION("Inline Comments Attach to Element (Not Child Expressions)")
     {
-        const auto *stmt = test_helpers::parseSequentialStmt<ast::SignalAssign>(
-          "s <= '1' after 5 ns, -- first element\n"
-          "     '0' after 10 ns; -- second element");
-        REQUIRE(stmt != nullptr);
-        REQUIRE(stmt->waveform.elements.size() == 2);
+        // We assume the code is inside a process
+        constexpr std::string_view CODE = "process begin "
+                                          "  s <= '1' after 5 ns, -- first element\n"
+                                          "       '0' after 10 ns; -- second element\n"
+                                          "end process;";
 
-        // Element 0 should have the inline comment "-- first element"
-        const auto &el0 = stmt->waveform.elements[0];
+        const auto *proc = test_helpers::parseConcurrentStmt<ast::Process>(CODE);
+        REQUIRE(proc != nullptr);
+        REQUIRE(proc->body.size() == 1);
+
+        // Get the Wrapper (SequentialStatement)
+        const auto &stmt_wrapper = proc->body[0];
+
+        // Get the Inner Node (SignalAssign)
+        REQUIRE(std::holds_alternative<ast::SignalAssign>(stmt_wrapper.kind));
+        const auto &assign = std::get<ast::SignalAssign>(stmt_wrapper.kind);
+
+        REQUIRE(assign.waveform.elements.size() == 2);
+
+        // Element 0: Has inline comment "-- first element"
+        const auto &el0 = assign.waveform.elements[0];
         REQUIRE(el0.hasTrivia());
         REQUIRE(el0.getInlineComment().has_value());
         CHECK(el0.getInlineComment().value() == "-- first element");
 
-        // The child expressions should NOT have captured the comment
-        const auto *val0 = std::get_if<ast::TokenExpr>(&el0.value);
-        REQUIRE(val0 != nullptr);
-        CHECK_FALSE(val0->getInlineComment().has_value());
-
-        // Element 1 should NOT have the comment, it belongs to the SignalAssign
-        // (the comment comes after the semicolon, which is owned by the statement)
-        const auto &el1 = stmt->waveform.elements[1];
+        // Element 1: No trivia (comment is after the semicolon, so it belongs to the statement)
+        const auto &el1 = assign.waveform.elements[1];
         CHECK_FALSE(el1.hasTrivia());
 
-        // The SignalAssign should have captured "-- second element"
-        REQUIRE(stmt->hasTrivia());
-        REQUIRE(stmt->getInlineComment().has_value());
-        CHECK(stmt->getInlineComment().value() == "-- second element");
+        // Statement Wrapper: Has inline comment "-- second element"
+        // The wrapper owns the semicolon and the trailing comment.
+        REQUIRE(stmt_wrapper.hasTrivia());
+        REQUIRE(stmt_wrapper.getInlineComment().has_value());
+        CHECK(stmt_wrapper.getInlineComment().value() == "-- second element");
     }
 }

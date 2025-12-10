@@ -80,6 +80,18 @@ inline auto parseArchitectureWrapper(std::string_view code) -> const ast::Archit
     return std::get_if<ast::Architecture>(&design.units[1]);
 }
 
+/// @brief Wraps a statement in an architecture and returns the Architecture node.
+/// Useful for testing wrappers/labels where we need the container, not just the inner kind.
+inline auto parseArchitectureWithStmt(std::string_view stmt) -> const ast::Architecture *
+{
+    const auto code = std::format(
+      "entity E is end; architecture A of E is begin {}\n end A;", stmt);
+
+    // FIX: Use parseArchitectureWrapper to correctly grab the 2nd unit (Architecture)
+    // parseDesignUnit would grab the 1st unit (Entity), causing nullptr.
+    return parseArchitectureWrapper(code);
+}
+
 /// Parse a VHDL declaration string into a specific AST node.
 template<typename T>
 inline auto parseDecl(std::string_view decl_str) -> const T *
@@ -189,16 +201,6 @@ inline auto parseDesignUnit(std::string_view code) -> const T *
         return nullptr;
     }
     return std::get_if<T>(&design.units.front());
-}
-
-/// @brief Wraps a statement in an architecture and returns the Architecture node.
-/// Useful for testing wrappers/labels where we need the container, not just the inner kind.
-inline auto parseArchitectureWithStmt(std::string_view stmt) -> const ast::Architecture *
-{
-    const auto code
-      = std::format("entity E is end; architecture A of E is begin {}\n end A;", stmt);
-
-    return parseDesignUnit<ast::Architecture>(code);
 }
 
 } // namespace test_helpers

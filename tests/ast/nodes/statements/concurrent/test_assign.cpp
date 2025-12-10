@@ -5,7 +5,6 @@
 #include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
-#include <format>
 #include <string_view>
 #include <variant>
 
@@ -131,10 +130,7 @@ TEST_CASE("Concurrent Assignment: Selected", "[statements][selected_assign]")
         constexpr std::string_view CODE
           = "decoder: with counter select data_out <= '0' when '0', '1' when others;";
 
-        const auto vhdl
-          = std::format("entity E is end; architecture A of E is begin {} end A;", CODE);
-
-        const auto *arch = test_helpers::parseDesignUnit<ast::Architecture>(vhdl);
+        const auto *arch = test_helpers::parseArchitectureWithStmt(CODE);
         REQUIRE(arch != nullptr);
         REQUIRE(arch->stmts.size() == 1);
 

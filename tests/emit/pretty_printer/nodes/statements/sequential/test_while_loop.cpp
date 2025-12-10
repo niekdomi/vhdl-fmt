@@ -6,9 +6,10 @@
 
 TEST_CASE("While Loop Rendering", "[pretty_printer][statements][loop]")
 {
-    ast::WhileLoop loop;
-    loop.condition = ast::TokenExpr{ .text = "enabled" };
-    loop.body.emplace_back(ast::NullStatement{});
+    ast::WhileLoop loop{ .condition{ ast::TokenExpr{ .text = "enabled" } } };
+
+    ast::SequentialStatement body_stmt{ .kind = ast::NullStatement{} };
+    loop.body.push_back(std::move(body_stmt));
 
     SECTION("Basic While Loop")
     {

@@ -12,6 +12,25 @@ auto Translator::makeSequentialStatement(vhdlParser::Sequential_statementContext
       .maybe(&ast::SequentialStatement::label,
              ctx.label_colon(),
              [](auto &lc) { return lc.identifier()->getText(); })
+      .apply([&](auto &wrapper) {
+          // Check if the label is already set
+          if (wrapper.label.has_value()) {
+              return;
+          }
+
+          // Try to find a label on the other statement types
+          if (auto *loop = ctx.loop_statement()) {
+              if (auto *lbl = loop->label_colon()) {
+                  wrapper.label = lbl->identifier()->getText();
+              }
+          }
+
+          if (auto *case_stmt = ctx.case_statement()) {
+              if (auto *lbl = case_stmt->label_colon()) {
+                  wrapper.label = lbl->identifier()->getText();
+              }
+          }
+      })
       .set(&ast::SequentialStatement::kind, makeSequentialStatementKind(ctx))
       .build();
 }
