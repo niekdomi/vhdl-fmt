@@ -1,4 +1,4 @@
-#include "ast/nodes/statements.hpp"
+#include "ast/nodes/statements/sequential.hpp"
 #include "emit/test_utils.hpp"
 
 #include <catch2/catch_test_macros.hpp>

@@ -1,4 +1,5 @@
 #include "ast/nodes/declarations/objects.hpp"
+#include "ast/nodes/expressions.hpp"
 #include "emit/test_utils.hpp"
 
 #include <catch2/catch_test_macros.hpp>
