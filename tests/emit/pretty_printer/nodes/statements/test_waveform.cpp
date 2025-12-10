@@ -1,6 +1,7 @@
 #include "ast/node.hpp"
 #include "ast/nodes/expressions.hpp"
-#include "ast/nodes/statements.hpp"
+#include "ast/nodes/statements/sequential.hpp"
+#include "ast/nodes/statements/waveform.hpp"
 #include "common/config.hpp"
 #include "emit/test_utils.hpp"
 
