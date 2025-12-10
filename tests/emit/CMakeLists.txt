@@ -2,18 +2,21 @@ add_executable(
     emit_tests
     pretty_printer/test_doc.cpp
     pretty_printer/test_trivia.cpp
-    
+    #
     # Declarations
     pretty_printer/nodes/declarations/test_component.cpp
     pretty_printer/nodes/declarations/interface/test_generic.cpp
     pretty_printer/nodes/declarations/interface/test_port.cpp
-    
+    pretty_printer/nodes/declarations/objects/test_constant.cpp
+    pretty_printer/nodes/declarations/objects/test_signal.cpp
+    pretty_printer/nodes/declarations/objects/test_variable.cpp
+    #
     # Design Units
     pretty_printer/nodes/test_design_file.cpp
     pretty_printer/nodes/design_units/test_entity.cpp
     pretty_printer/nodes/design_units/test_architecture.cpp
     pretty_printer/nodes/design_units/test_context.cpp
-    
+    #
     # Statements
     pretty_printer/nodes/statements/test_waveform.cpp
     pretty_printer/nodes/statements/concurrent/test_assignment.cpp
@@ -22,8 +25,10 @@ add_executable(
     pretty_printer/nodes/statements/sequential/test_if.cpp
     pretty_printer/nodes/statements/sequential/test_case.cpp
     pretty_printer/nodes/statements/sequential/test_loop.cpp
+    pretty_printer/nodes/statements/sequential/test_while_loop.cpp
+    pretty_printer/nodes/statements/sequential/test_for_loop.cpp
     pretty_printer/nodes/statements/sequential/test_null.cpp
-
+    #
     # Expressions
     pretty_printer/nodes/expressions/test_attribute.cpp
     pretty_printer/nodes/expressions/test_binary.cpp
@@ -35,7 +40,7 @@ add_executable(
     pretty_printer/nodes/expressions/test_slice.cpp
     pretty_printer/nodes/expressions/test_token.cpp
     pretty_printer/nodes/expressions/test_unary.cpp
-    
+    #
     # Types
     pretty_printer/nodes/types/test_access.cpp
     pretty_printer/nodes/types/test_array.cpp
