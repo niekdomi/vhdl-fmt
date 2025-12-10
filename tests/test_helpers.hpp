@@ -68,7 +68,7 @@ inline auto tallyTrivia(std::span<const ast::Trivia> tv) -> TriviaCounts
 // Parsing Helpers
 // =============================================================================
 
-/// Internal helper to parse a full design and extract the architecture
+/// @brief Internal helper to parse a full design and extract the architecture
 inline auto parseArchitectureWrapper(std::string_view code) -> const ast::Architecture *
 {
     static ast::DesignFile design{};
@@ -81,14 +81,11 @@ inline auto parseArchitectureWrapper(std::string_view code) -> const ast::Archit
 }
 
 /// @brief Wraps a statement in an architecture and returns the Architecture node.
-/// Useful for testing wrappers/labels where we need the container, not just the inner kind.
 inline auto parseArchitectureWithStmt(std::string_view stmt) -> const ast::Architecture *
 {
     const auto code
       = std::format("entity E is end; architecture A of E is begin {}\n end A;", stmt);
 
-    // FIX: Use parseArchitectureWrapper to correctly grab the 2nd unit (Architecture)
-    // parseDesignUnit would grab the 1st unit (Entity), causing nullptr.
     return parseArchitectureWrapper(code);
 }
 
@@ -113,7 +110,7 @@ inline auto parseDecl(std::string_view decl_str) -> const T *
     return std::get_if<T>(&arch->decls.front());
 }
 
-/// Parse VHDL expression from a signal initialization
+/// @brief Parse VHDL expression from a signal initialization
 inline auto parseExpr(std::string_view init_expr) -> const ast::Expr *
 {
     const auto vhdl = std::format(R"(
@@ -184,14 +181,14 @@ inline auto parseConcurrentStmt(std::string_view stmt) -> const T *
     return std::get_if<T>(&wrapper.kind);
 }
 
-/// Parse a VHDL type declaration string into an AST node.
+/// @brief Parse a VHDL type declaration string into an AST node.
 inline auto parseType(std::string_view type_decl_str) -> const ast::TypeDecl *
 {
     // Reuses parseDecl logic as TypeDecl is just a declaration
     return parseDecl<ast::TypeDecl>(type_decl_str);
 }
 
-/// Parse a single design unit from code string.
+/// @brief Parse a single design unit from code string.
 template<typename T>
 inline auto parseDesignUnit(std::string_view code) -> const T *
 {
