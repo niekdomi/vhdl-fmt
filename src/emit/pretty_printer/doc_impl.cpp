@@ -21,7 +21,7 @@ auto makeEmpty() -> DocPtr
 
 auto makeText(std::string_view text) -> DocPtr
 {
-    return std::make_shared<DocImpl>(Text{ .content = std::string{ text }, .level = -1 });
+    return std::make_shared<DocImpl>(Text{ .content = std::string{ text } });
 }
 
 auto makeText(std::string_view text, int level) -> DocPtr
@@ -31,7 +31,7 @@ auto makeText(std::string_view text, int level) -> DocPtr
 
 auto makeKeyword(std::string_view text) -> DocPtr
 {
-    return std::make_shared<DocImpl>(Keyword{ .content = std::string{ text }, .level = -1 });
+    return std::make_shared<DocImpl>(Keyword{ .content = std::string{ text } });
 }
 
 auto makeKeyword(std::string_view text, int level) -> DocPtr
@@ -179,12 +179,20 @@ auto resolveAlignment(const DocPtr &doc) -> DocPtr
     return transformImpl(doc, [&](const auto &node) -> DocPtr {
         using T = std::decay_t<decltype(node)>;
         if constexpr (IS_ANY_OF_V<T, Text, Keyword>) {
+            // Skip non-aligned nodes
             if (node.level < 0) {
                 return std::make_shared<DocImpl>(node);
             }
-            const int max_width = max_widths.at(node.level);
-            const int padding = max_width - static_cast<int>(node.content.length());
-            return makeText(node.content + std::string(padding, ' '));
+
+            const int padding = max_widths.at(node.level) - static_cast<int>(node.content.length());
+            const auto content_node = std::make_shared<DocImpl>(T{ .content = node.content });
+
+            // Skip if no padding is needed
+            if (padding == 0) {
+                return content_node;
+            }
+
+            return makeConcat(content_node, makeText(std::string(padding, ' ')));
         } else {
             return std::make_shared<DocImpl>(node);
         }
