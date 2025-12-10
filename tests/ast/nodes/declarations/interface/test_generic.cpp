@@ -19,7 +19,7 @@ auto parseGenerics(std::string_view generic_content) -> const ast::Entity *
 {
     const auto code = std::format("entity E is generic ({}); end E;", generic_content);
 
-    static ast::DesignFile design;
+    static ast::DesignFile design{};
     design = builder::buildFromString(code);
 
     if (design.units.empty()) {

@@ -71,7 +71,7 @@ inline auto tallyTrivia(std::span<const ast::Trivia> tv) -> TriviaCounts
 /// Internal helper to parse a full design and extract the architecture
 inline auto parseArchitectureWrapper(std::string_view code) -> const ast::Architecture *
 {
-    static ast::DesignFile design;
+    static ast::DesignFile design{};
     design = builder::buildFromString(code);
 
     if (design.units.size() < 2) {

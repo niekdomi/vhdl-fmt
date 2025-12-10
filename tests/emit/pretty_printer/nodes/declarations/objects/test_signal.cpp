@@ -6,9 +6,8 @@
 
 TEST_CASE("Signal Declaration Rendering", "[pretty_printer][declarations][objects]")
 {
-    ast::SignalDecl sig;
-    sig.names = { "clk" };
-    sig.subtype = ast::SubtypeIndication{ .type_mark = "std_logic" };
+    ast::SignalDecl sig{ .names = { "clk" },
+                         .subtype = ast::SubtypeIndication{ .type_mark = "std_logic" } };
 
     SECTION("Basic Signal")
     {

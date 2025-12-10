@@ -6,9 +6,8 @@
 
 TEST_CASE("Variable Declaration Rendering", "[pretty_printer][declarations][objects]")
 {
-    ast::VariableDecl var;
-    var.names = { "counter" };
-    var.subtype = ast::SubtypeIndication{ .type_mark = "integer" };
+    ast::VariableDecl var{ .names = { "counter" },
+                           .subtype = ast::SubtypeIndication{ .type_mark = "integer" } };
 
     SECTION("Standard Variable")
     {
