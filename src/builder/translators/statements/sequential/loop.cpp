@@ -7,9 +7,11 @@ namespace builder {
 auto Translator::makeLoop(vhdlParser::Loop_statementContext &ctx) -> ast::Loop
 {
     return build<ast::Loop>(ctx)
-      .maybe(&ast::Loop::body,
-             ctx.sequence_of_statements(),
-             [this](auto &seq) { return makeSequenceOfStatements(seq); })
+      .collectFrom(
+        &ast::Loop::body,
+        ctx.sequence_of_statements(),
+        [](auto &sp) { return sp.sequential_statement(); },
+        [this](auto *stmt) { return makeSequentialStatement(*stmt); })
       .build();
 }
 
@@ -25,9 +27,11 @@ auto Translator::makeForLoop(vhdlParser::Loop_statementContext &ctx) -> ast::For
       .maybe(&ast::ForLoop::range,
              (param != nullptr) ? param->discrete_range() : nullptr,
              [this](auto &dr) { return makeDiscreteRange(dr); })
-      .maybe(&ast::ForLoop::body,
-             ctx.sequence_of_statements(),
-             [this](auto &seq) { return makeSequenceOfStatements(seq); })
+      .collectFrom(
+        &ast::ForLoop::body,
+        ctx.sequence_of_statements(),
+        [](auto &sp) { return sp.sequential_statement(); },
+        [this](auto *stmt) { return makeSequentialStatement(*stmt); })
       .build();
 }
 
@@ -40,9 +44,11 @@ auto Translator::makeWhileLoop(vhdlParser::Loop_statementContext &ctx) -> ast::W
       .maybe(&ast::WhileLoop::condition,
              (cond != nullptr) ? cond->expression() : nullptr,
              [this](auto &expr) { return makeExpr(expr); })
-      .maybe(&ast::WhileLoop::body,
-             ctx.sequence_of_statements(),
-             [this](auto &seq) { return makeSequenceOfStatements(seq); })
+      .collectFrom(
+        &ast::WhileLoop::body,
+        ctx.sequence_of_statements(),
+        [](auto &sp) { return sp.sequential_statement(); },
+        [this](auto *stmt) { return makeSequentialStatement(*stmt); })
       .build();
 }
 

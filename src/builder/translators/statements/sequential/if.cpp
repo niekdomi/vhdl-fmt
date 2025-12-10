@@ -3,42 +3,42 @@
 #include "vhdlParser.h"
 
 #include <ranges>
-
 #include <utility>
 
 namespace builder {
 
 auto Translator::makeIfStatement(vhdlParser::If_statementContext &ctx) -> ast::IfStatement
 {
+    auto branch_view = std::views::zip(ctx.condition(), ctx.sequence_of_statements());
+
     return build<ast::IfStatement>(ctx)
-      .with(&ctx,
-            [&](auto &node, auto &if_ctx) {
-                auto conditions = if_ctx.condition();
-                auto sequences = if_ctx.sequence_of_statements();
+      // IF/ELSIF
+      .collect(&ast::IfStatement::branches,
+               std::move(branch_view),
+               [this](const auto &pair) {
+                   auto [cond, seq] = pair;
 
-                if (conditions.empty() || sequences.empty()) {
-                    return;
-                }
+                   ast::IfStatement::ConditionalBranch branch{};
+                   branch.condition = makeExpr(*cond->expression());
+                   for (auto *stmt : seq->sequential_statement()) {
+                       branch.body.emplace_back(makeSequentialStatement(*stmt));
+                   }
+                   return branch;
+               })
 
-                // Main if branch
-                node.if_branch.condition = makeExpr(*conditions[0]->expression());
-                node.if_branch.body = makeSequenceOfStatements(*sequences[0]);
+      // ELSE (only exists if sequences > conditions)
+      .apply([&, this](auto &node) {
+          auto sequences = ctx.sequence_of_statements();
+          auto conditions = ctx.condition();
 
-                // elsif branches
-                for (const auto i : std::views::iota(1UZ, conditions.size())) {
-                    ast::IfStatement::Branch elsif_branch;
-                    elsif_branch.condition = makeExpr(*conditions[i]->expression());
-                    elsif_branch.body = makeSequenceOfStatements(*sequences[i]);
-                    node.elsif_branches.emplace_back(std::move(elsif_branch));
-                }
-
-                // else branch - if there are more sequences than conditions
-                if (sequences.size() > conditions.size()) {
-                    ast::IfStatement::Branch else_branch;
-                    else_branch.body = makeSequenceOfStatements(*sequences.back());
-                    node.else_branch = std::move(else_branch);
-                }
-            })
+          if (sequences.size() > conditions.size()) {
+              ast::IfStatement::ElseBranch else_br{};
+              for (auto *stmt : sequences.back()->sequential_statement()) {
+                  else_br.body.emplace_back(makeSequentialStatement(*stmt));
+              }
+              node.else_branch = std::move(else_br);
+          }
+      })
       .build();
 }
 

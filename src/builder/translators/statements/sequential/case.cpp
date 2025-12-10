@@ -25,9 +25,11 @@ auto Translator::makeWhenClause(vhdlParser::Case_statement_alternativeContext &c
         ctx.choices(),
         [](auto &ch) { return ch.choice(); },
         [this](auto *c) { return makeChoice(*c); })
-      .maybe(&ast::CaseStatement::WhenClause::body,
-             ctx.sequence_of_statements(),
-             [this](auto &seq) { return makeSequenceOfStatements(seq); })
+      .collectFrom(
+        &ast::CaseStatement::WhenClause::body,
+        ctx.sequence_of_statements(),
+        [](auto &sp) { return sp.sequential_statement(); },
+        [this](auto *stmt) { return makeSequentialStatement(*stmt); })
       .build();
 }
 

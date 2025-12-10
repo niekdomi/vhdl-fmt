@@ -51,14 +51,4 @@ auto Translator::makeSequentialStatementKind(vhdlParser::Sequential_statementCon
     return ast::NullStatement{};
 }
 
-auto Translator::makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext &ctx)
-  -> std::vector<ast::SequentialStatement>
-{
-    std::vector<ast::SequentialStatement> statements;
-    for (auto *stmt : ctx.sequential_statement()) {
-        statements.emplace_back(makeSequentialStatement(*stmt));
-    }
-    return statements;
-}
-
 } // namespace builder

@@ -22,11 +22,6 @@ auto PrettyPrinter::operator()(const ast::ConditionalConcurrentAssign &node) con
 {
     Doc result = Doc::empty();
 
-    // Label: label:
-    if (node.label) {
-        result = Doc::text(*node.label + ":");
-    }
-
     const Doc target = visit(node.target) & Doc::text("<=");
 
     // Join with "else" + SoftLine
@@ -53,11 +48,6 @@ auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign::Selection &n
 auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign &node) const -> Doc
 {
     Doc result = Doc::empty();
-
-    // Label: label:
-    if (node.label) {
-        result = Doc::text(*node.label + ":");
-    }
 
     const Doc header = Doc::keyword(("with")) & visit(node.selector) & Doc::keyword(("select"));
     const Doc target = visit(node.target) & Doc::text("<=");

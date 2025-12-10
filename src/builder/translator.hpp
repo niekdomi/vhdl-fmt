@@ -112,9 +112,6 @@ class Translator final
     [[nodiscard]]
     auto makeSequentialStatement(vhdlParser::Sequential_statementContext &ctx)
       -> ast::SequentialStatement;
-    [[nodiscard]]
-    auto makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext &ctx)
-      -> std::vector<ast::SequentialStatement>;
 
     // Statements (Kind Dispatchers)
     [[nodiscard]]

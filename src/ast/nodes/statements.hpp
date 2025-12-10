@@ -16,7 +16,7 @@ using ConcurrentStmtKind
 
 struct ConcurrentStatement : NodeBase
 {
-    std::optional<std::string> label; ///< Optional label (e.g. "U1: entity...")
+    std::optional<std::string> label; ///< Optional label (e.g. "label: entity...")
     ConcurrentStmtKind kind;          ///< The actual statement logic
 };
 
@@ -32,7 +32,7 @@ using SequentialStmtKind = std::variant<VariableAssign,
 
 struct SequentialStatement : NodeBase
 {
-    std::optional<std::string> label; ///< Optional label (e.g. "my_loop: while...")
+    std::optional<std::string> label; ///< Optional label (e.g. "label: while...")
     SequentialStmtKind kind;          ///< The actual statement logic
 };
 

@@ -100,6 +100,8 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     auto operator()(const ast::RangeConstraint &node) const -> Doc;
 
     // Concurrent Statements
+    auto operator()(const ast::ConcurrentStatement &node) const -> Doc;
+    auto operator()(const ast::SequentialStatement &node) const -> Doc;
     auto operator()(const ast::Process &node) const -> Doc;
     auto operator()(const ast::Waveform &node) const -> Doc;
     auto operator()(const ast::Waveform::Element &node, bool is_last) const -> Doc;
