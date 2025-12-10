@@ -8,14 +8,14 @@ auto Translator::makeConcurrentStatement(vhdlParser::Architecture_statementConte
   -> ast::ConcurrentStatement
 {
     return build<ast::ConcurrentStatement>(ctx)
-      .maybe(&ast::ConcurrentStatement::label, 
-             ctx.label_colon(), 
+      .maybe(&ast::ConcurrentStatement::label,
+             ctx.label_colon(),
              [](auto &lc) { return lc.identifier()->getText(); })
       // If no label yet, check if the KIND provides one (e.g. Process)
-      .apply([&](auto& stmt) {
+      .apply([&](auto &stmt) {
           if (!stmt.label.has_value()) {
-              if (auto* proc = ctx.process_statement()) {
-                  if (auto* pl = proc->label_colon()) {
+              if (auto *proc = ctx.process_statement()) {
+                  if (auto *pl = proc->label_colon()) {
                       stmt.label = pl->identifier()->getText();
                   }
               }
@@ -31,7 +31,7 @@ auto Translator::makeConcurrentStatementKind(vhdlParser::Architecture_statementC
     if (auto *proc = ctx.process_statement()) {
         return makeProcess(*proc);
     }
-    
+
     if (auto *assign = ctx.concurrent_signal_assignment_statement()) {
         return makeConcurrentAssignBody(*assign);
     }

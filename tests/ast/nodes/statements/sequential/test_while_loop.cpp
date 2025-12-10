@@ -23,7 +23,7 @@ TEST_CASE("WhileLoop", "[statements][while_loop]")
 
         // Verify Body
         REQUIRE_FALSE(loop->body.empty());
-        
+
         // Access Wrapper -> Kind
         const auto *assign = std::get_if<ast::VariableAssign>(&loop->body[0].kind);
         REQUIRE(assign != nullptr);

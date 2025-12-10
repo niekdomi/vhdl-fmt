@@ -10,7 +10,6 @@
 
 namespace {
 
-// Helper to wrap a simple value into a Waveform
 auto makeWave(ast::TokenExpr val) -> ast::Waveform
 {
     ast::Waveform w;
@@ -24,26 +23,26 @@ auto makeWave(ast::TokenExpr val) -> ast::Waveform
 
 TEST_CASE("If Statement", "[pretty_printer][control_flow][sequential]")
 {
-    // Helper to create a dummy statement (x <= '0')
     auto make_stmt = []() -> ast::SequentialStatement {
-        return ast::SignalAssign{ .target = ast::TokenExpr{ .text = "x" },
-                                  .waveform = makeWave(ast::TokenExpr{ .text = "'0'" }) };
+        return ast::SequentialStatement{
+            .kind = ast::SignalAssign{ .target = ast::TokenExpr{ .text = "x" },
+                                      .waveform = makeWave(ast::TokenExpr{ .text = "'0'" }) }
+        };
     };
 
     ast::IfStatement stmt;
 
-    // 1. IF
-    stmt.if_branch.condition = ast::TokenExpr{ .text = "rst" };
-    stmt.if_branch.body.emplace_back(make_stmt());
+    ast::IfStatement::ConditionalBranch if_branch{};
+    if_branch.condition = ast::TokenExpr{ .text = "rst" };
+    if_branch.body.emplace_back(make_stmt());
+    stmt.branches.emplace_back(std::move(if_branch));
 
-    // 2. ELSIF
-    ast::IfStatement::Branch elsif;
-    elsif.condition = ast::TokenExpr{ .text = "en" };
-    elsif.body.emplace_back(make_stmt());
-    stmt.elsif_branches.emplace_back(std::move(elsif));
+    ast::IfStatement::ConditionalBranch elsif_branch{};
+    elsif_branch.condition = ast::TokenExpr{ .text = "en" };
+    elsif_branch.body.emplace_back(make_stmt());
+    stmt.branches.emplace_back(std::move(elsif_branch));
 
-    // 3. ELSE
-    ast::IfStatement::Branch else_br;
+    ast::IfStatement::ElseBranch else_br{};
     else_br.body.emplace_back(make_stmt());
     stmt.else_branch = std::move(else_br);
 

@@ -3,7 +3,6 @@
 #include "vhdlParser.h"
 
 #include <stdexcept>
-
 #include <utility>
 
 namespace builder {

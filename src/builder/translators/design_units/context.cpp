@@ -3,9 +3,8 @@
 #include "vhdlParser.h"
 
 #include <string>
-#include <vector>
-
 #include <utility>
+#include <vector>
 
 namespace builder {
 

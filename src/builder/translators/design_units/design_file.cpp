@@ -4,9 +4,8 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
-#include <vector>
-
 #include <utility>
+#include <vector>
 
 namespace builder {
 

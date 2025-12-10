@@ -11,11 +11,11 @@ TEST_CASE("Entity", "[design_units][entity]")
     {
         const auto *entity = parse_entity("entity Minimal is end Minimal;");
         REQUIRE(entity != nullptr);
-        
+
         CHECK(entity->name == "Minimal");
         CHECK_FALSE(entity->has_end_entity_keyword);
         CHECK(entity->end_label.value_or("") == "Minimal");
-        
+
         CHECK(entity->generic_clause.generics.empty());
         CHECK(entity->port_clause.ports.empty());
     }
@@ -24,7 +24,7 @@ TEST_CASE("Entity", "[design_units][entity]")
     {
         const auto *entity = parse_entity("entity KW_Test is end entity;");
         REQUIRE(entity != nullptr);
-        
+
         CHECK(entity->name == "KW_Test");
         CHECK(entity->has_end_entity_keyword);
         CHECK_FALSE(entity->end_label.has_value());

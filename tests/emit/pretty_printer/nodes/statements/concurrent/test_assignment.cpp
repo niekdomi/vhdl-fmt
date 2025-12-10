@@ -1,4 +1,5 @@
 #include "ast/nodes/expressions.hpp"
+#include "ast/nodes/statements.hpp"
 #include "ast/nodes/statements/concurrent.hpp"
 #include "ast/nodes/statements/waveform.hpp"
 #include "emit/test_utils.hpp"
@@ -44,37 +45,29 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
 {
     SECTION("Conditional Assignment (When/Else)")
     {
-        // data_out <= '1' when en = '1' else '0';
         ast::ConditionalConcurrentAssign assign;
         assign.target = token("data_out");
 
         // Waveform 1: '1' when en = '1'
-        ast::ConditionalConcurrentAssign::ConditionalWaveform w1;
-        w1.waveform = makeWave(token("'1'"));
-        w1.condition = binary("en", "=", "'1'");
-        assign.waveforms.emplace_back(std::move(w1));
+        // Aggregate init works here because ConditionalWaveform doesn't use vector init-list
+        assign.waveforms.push_back(
+          { .waveform = makeWave(token("'1'")), .condition = binary("en", "=", "'1'") });
 
         // Waveform 2: '0' (else)
-        ast::ConditionalConcurrentAssign::ConditionalWaveform w2;
-        w2.waveform = makeWave(token("'0'"));
-        w2.condition = std::nullopt;
-        assign.waveforms.emplace_back(std::move(w2));
+        assign.waveforms.push_back(
+          { .waveform = makeWave(token("'0'")), .condition = std::nullopt });
 
         SECTION("Fits on line (Flat)")
         {
-            // Default config width is 80, this string is ~45 chars.
             constexpr std::string_view EXPECTED = "data_out <= '1' when en = '1' else '0';";
             REQUIRE(emit::test::render(assign) == EXPECTED);
         }
 
         SECTION("Forces Break (Hanging)")
         {
-            // Constrain width to force the hanging behavior
             auto config = emit::test::defaultConfig();
             config.line_config.line_length = 20;
 
-            // "data_out <= " is 12 chars.
-            // The hang establishes indentation at column 12 for subsequent lines.
             constexpr std::string_view EXPECTED = "data_out <= '1' when en = '1' else\n"
                                                   "            '0';";
 
@@ -84,22 +77,21 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
 
     SECTION("Selected Assignment (With/Select)")
     {
-        // with sel select data_out <= ...
         ast::SelectedConcurrentAssign assign;
         assign.selector = token("sel");
         assign.target = token("data_out");
 
         // Selection 1: '0' when "00"
-        ast::SelectedConcurrentAssign::Selection sel1;
+        // Must use emplace_back + push_back because vector<Expr> cannot use initializer_list
+        // (move-only)
+        auto &sel1 = assign.selections.emplace_back();
         sel1.waveform = makeWave(token("'0'"));
-        sel1.choices.emplace_back(token("\"00\""));
-        assign.selections.emplace_back(std::move(sel1));
+        sel1.choices.push_back(token("\"00\""));
 
         // Selection 2: '1' when others
-        ast::SelectedConcurrentAssign::Selection sel2;
+        auto &sel2 = assign.selections.emplace_back();
         sel2.waveform = makeWave(token("'1'"));
-        sel2.choices.emplace_back(token("others"));
-        assign.selections.emplace_back(std::move(sel2));
+        sel2.choices.push_back(token("others"));
 
         SECTION("Fits on line (Flat)")
         {
@@ -113,8 +105,6 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
             auto config = emit::test::defaultConfig();
             config.line_config.line_length = 30;
 
-            // The header "with sel select" and target likely force a break.
-            // "data_out <= " sets the hang anchor.
             constexpr std::string_view EXPECTED = "with sel select\n"
                                                   "data_out <= '0' when \"00\",\n"
                                                   "            '1' when others;";
@@ -125,50 +115,48 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
 
     SECTION("Conditional Assignment with Label")
     {
-        // mux_select: data_out <= data_in when sel = '1' else '0';
+        // 1. Inner Logic
         ast::ConditionalConcurrentAssign assign;
-        assign.label = "mux_select";
         assign.target = token("data_out");
 
-        // Waveform 1: data_in when sel = '1'
-        ast::ConditionalConcurrentAssign::ConditionalWaveform w1;
-        w1.waveform = makeWave(token("data_in"));
-        w1.condition = binary("sel", "=", "'1'");
-        assign.waveforms.emplace_back(std::move(w1));
+        assign.waveforms.push_back(
+          { .waveform = makeWave(token("data_in")), .condition = binary("sel", "=", "'1'") });
+        assign.waveforms.push_back(
+          { .waveform = makeWave(token("'0'")), .condition = std::nullopt });
 
-        // Waveform 2: '0' (else)
-        ast::ConditionalConcurrentAssign::ConditionalWaveform w2;
-        w2.waveform = makeWave(token("'0'"));
-        w2.condition = std::nullopt;
-        assign.waveforms.emplace_back(std::move(w2));
+        // 2. Wrapper
+        ast::ConcurrentStatement wrapper;
+        wrapper.label = "mux_select";
+        wrapper.kind = std::move(assign);
 
         constexpr std::string_view EXPECTED
           = "mux_select: data_out <= data_in when sel = '1' else '0';";
-        REQUIRE(emit::test::render(assign) == EXPECTED);
+        REQUIRE(emit::test::render(wrapper) == EXPECTED);
     }
 
     SECTION("Selected Assignment with Label")
     {
-        // decoder: with counter select data_out <= ...
+        // 1. Inner Logic
         ast::SelectedConcurrentAssign assign;
-        assign.label = "decoder";
         assign.selector = token("counter");
         assign.target = token("data_out");
 
-        // Selection 1: x"00" when 0
-        ast::SelectedConcurrentAssign::Selection sel1;
-        sel1.waveform = makeWave(token("x\"00\""));
-        sel1.choices.emplace_back(token("0"));
-        assign.selections.emplace_back(std::move(sel1));
+        // Use emplace_back to avoid copy issues with move-only Expr types
+        auto &s1 = assign.selections.emplace_back();
+        s1.waveform = makeWave(token("x\"00\""));
+        s1.choices.push_back(token("0"));
 
-        // Selection 2: x"FF" when others
-        ast::SelectedConcurrentAssign::Selection sel2;
-        sel2.waveform = makeWave(token("x\"FF\""));
-        sel2.choices.emplace_back(token("others"));
-        assign.selections.emplace_back(std::move(sel2));
+        auto &s2 = assign.selections.emplace_back();
+        s2.waveform = makeWave(token("x\"FF\""));
+        s2.choices.push_back(token("others"));
+
+        // 2. Wrapper
+        ast::ConcurrentStatement wrapper;
+        wrapper.label = "decoder";
+        wrapper.kind = std::move(assign);
 
         constexpr std::string_view EXPECTED
           = R"(decoder: with counter select data_out <= x"00" when 0, x"FF" when others;)";
-        REQUIRE(emit::test::render(assign) == EXPECTED);
+        REQUIRE(emit::test::render(wrapper) == EXPECTED);
     }
 }

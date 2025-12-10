@@ -3,7 +3,6 @@
 #include "vhdlParser.h"
 
 #include <ranges>
-
 #include <utility>
 
 namespace builder {

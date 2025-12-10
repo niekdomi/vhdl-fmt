@@ -39,7 +39,7 @@ struct IfStatement : NodeBase
         std::vector<SequentialStatement> body;
     };
 
-    std::vector<ConditionalBranch> branches; 
+    std::vector<ConditionalBranch> branches;
     std::optional<ElseBranch> else_branch;
 };
 

@@ -19,7 +19,7 @@ TEST_CASE("Architecture", "[design_units][architecture]")
             end architecture RTL;
         )");
         REQUIRE(arch != nullptr);
-        
+
         CHECK(arch->name == "RTL");
         CHECK(arch->entity_name == "MyEntity");
         CHECK(arch->has_end_architecture_keyword);

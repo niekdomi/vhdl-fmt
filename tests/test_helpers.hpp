@@ -195,8 +195,8 @@ inline auto parseDesignUnit(std::string_view code) -> const T *
 /// Useful for testing wrappers/labels where we need the container, not just the inner kind.
 inline auto parseArchitectureWithStmt(std::string_view stmt) -> const ast::Architecture *
 {
-    const auto code = std::format(
-      "entity E is end; architecture A of E is begin {}\n end A;", stmt);
+    const auto code
+      = std::format("entity E is end; architecture A of E is begin {}\n end A;", stmt);
 
     return parseDesignUnit<ast::Architecture>(code);
 }
