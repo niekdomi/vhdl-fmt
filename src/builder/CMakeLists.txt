@@ -3,6 +3,7 @@ add_library(
     STATIC
     ast_builder.cpp
     trivia/trivia_binder.cpp
+    #
     # Declarations
     translators/declarations/interface/generic.cpp
     translators/declarations/interface/port.cpp
@@ -11,17 +12,20 @@ add_library(
     translators/declarations/objects/variable.cpp
     translators/declarations/component.cpp
     translators/declarations/type.cpp
+    #
     # Design Units
     translators/design_units/design_file.cpp
     translators/design_units/entity.cpp
     translators/design_units/architecture.cpp
     translators/design_units/context.cpp
+    #
     # Types
     translators/types/enumeration.cpp
     translators/types/record.cpp
     translators/types/array.cpp
     translators/types/access.cpp
     translators/types/file.cpp
+    #
     # Statements
     translators/statements/waveform.cpp
     translators/statements/concurrent/assignment.cpp
@@ -31,6 +35,7 @@ add_library(
     translators/statements/sequential/case.cpp
     translators/statements/sequential/loop.cpp
     translators/statements/sequential/dispatch.cpp
+    #
     # Expressions
     translators/expressions/binary.cpp
     translators/expressions/unary.cpp
