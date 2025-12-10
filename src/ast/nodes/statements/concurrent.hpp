@@ -13,11 +13,10 @@
 namespace ast {
 
 // Forward declarations
-struct SequentialStatement;
+struct SequentialStatement; 
 
 struct ConditionalConcurrentAssign : NodeBase
 {
-    std::optional<std::string> label;
     Expr target;
 
     struct ConditionalWaveform : NodeBase
@@ -30,7 +29,6 @@ struct ConditionalConcurrentAssign : NodeBase
 
 struct SelectedConcurrentAssign : NodeBase
 {
-    std::optional<std::string> label;
     Expr target;
     Expr selector;
 
@@ -44,7 +42,6 @@ struct SelectedConcurrentAssign : NodeBase
 
 struct Process : NodeBase
 {
-    std::optional<std::string> label;
     std::vector<std::string> sensitivity_list;
     std::vector<Declaration> decls;
     std::vector<SequentialStatement> body;
@@ -52,4 +49,4 @@ struct Process : NodeBase
 
 } // namespace ast
 
-#endif /* AST_NODES_STATEMENTS_CONCURRENT_HPP */
+#endif

@@ -34,6 +34,7 @@ add_library(
     translators/statements/sequential/if.cpp
     translators/statements/sequential/case.cpp
     translators/statements/sequential/loop.cpp
+    translators/statements/concurrent/dispatch.cpp
     translators/statements/sequential/dispatch.cpp
     #
     # Expressions

@@ -4,31 +4,36 @@
 #include "ast/nodes/statements/concurrent.hpp"
 #include "ast/nodes/statements/sequential.hpp"
 
+#include <optional>
+#include <string>
 #include <variant>
 
 namespace ast {
 
-// Forward declarations
-struct ConcurrentStatement;
-struct SequentialStatement;
+// Concurrent Statements
+using ConcurrentStmtKind
+  = std::variant<ConditionalConcurrentAssign, SelectedConcurrentAssign, Process>;
 
-struct ConcurrentStatement
-  : std::variant<ConditionalConcurrentAssign, SelectedConcurrentAssign, Process>
+struct ConcurrentStatement : NodeBase
 {
-    using variant::variant; // Inherit constructors
+    std::optional<std::string> label; ///< Optional label (e.g. "U1: entity...")
+    ConcurrentStmtKind kind;          ///< The actual statement logic
 };
 
-struct SequentialStatement
-  : std::variant<VariableAssign,
-                 SignalAssign,
-                 IfStatement,
-                 CaseStatement,
-                 ForLoop,
-                 WhileLoop,
-                 Loop,
-                 NullStatement>
+// Sequential Statements
+using SequentialStmtKind = std::variant<VariableAssign,
+                                        SignalAssign,
+                                        IfStatement,
+                                        CaseStatement,
+                                        ForLoop,
+                                        WhileLoop,
+                                        Loop,
+                                        NullStatement>;
+
+struct SequentialStatement : NodeBase
 {
-    using variant::variant; // Inherit constructors
+    std::optional<std::string> label; ///< Optional label (e.g. "my_loop: while...")
+    SequentialStmtKind kind;          ///< The actual statement logic
 };
 
 } // namespace ast

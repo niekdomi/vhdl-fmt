@@ -1,11 +1,8 @@
 #include "ast/nodes/declarations.hpp"
 #include "ast/nodes/design_units.hpp"
-#include "ast/nodes/statements.hpp"
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
-#include <optional>
-#include <string>
 #include <vector>
 
 namespace builder {
@@ -27,7 +24,7 @@ auto Translator::makeArchitecture(vhdlParser::Architecture_bodyContext &ctx) -> 
         &ast::Architecture::stmts,
         ctx.architecture_statement_part(),
         [](auto &sp) { return sp.architecture_statement(); },
-        [this](auto *stmt) { return makeArchitectureStatement(*stmt); })
+        [this](auto *stmt) { return makeConcurrentStatement(*stmt); })
       .build();
 }
 
@@ -51,28 +48,6 @@ auto Translator::makeArchitectureDeclarativeItem(vhdlParser::Block_declarative_i
     }
     // TODO(vedivad): Add subprogram_declaration, subprogram_body, file_declaration,
     // alias_declaration, etc.
-
-    return {};
-}
-
-auto Translator::makeArchitectureStatement(vhdlParser::Architecture_statementContext &ctx)
-  -> ast::ConcurrentStatement
-{
-    if (auto *proc = ctx.process_statement()) {
-        return makeProcess(*proc);
-    }
-
-    if (auto *sig_assign = ctx.concurrent_signal_assignment_statement()) {
-        auto *label = ctx.label_colon();
-        std::optional<std::string> label_str;
-        if ((label != nullptr) && (label->identifier() != nullptr)) {
-            label_str = label->identifier()->getText();
-        }
-
-        return makeConcurrentAssign(*sig_assign, label_str);
-    }
-
-    // TODO(vedivad): Add component_instantiation, generate_statement, etc.
 
     return {};
 }

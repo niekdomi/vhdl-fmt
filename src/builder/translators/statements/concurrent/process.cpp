@@ -1,6 +1,5 @@
 #include "ast/nodes/declarations.hpp"
 #include "ast/nodes/statements/concurrent.hpp"
-
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
@@ -8,11 +7,7 @@ namespace builder {
 
 auto Translator::makeProcess(vhdlParser::Process_statementContext &ctx) -> ast::Process
 {
-    auto *label = ctx.label_colon();
-    auto *label_id = (label != nullptr) ? label->identifier() : nullptr;
-
     return build<ast::Process>(ctx)
-      .maybe(&ast::Process::label, label_id, [](auto &id) { return id.getText(); })
       .collectFrom(
         &ast::Process::sensitivity_list,
         ctx.sensitivity_list(),

@@ -2,33 +2,27 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
-#include <optional>
 #include <ranges>
-#include <string>
 
 namespace builder {
 
-auto Translator::makeConcurrentAssign(
-  vhdlParser::Concurrent_signal_assignment_statementContext &ctx,
-  const std::optional<std::string> &label) -> ast::ConcurrentStatement
+auto Translator::makeConcurrentAssignBody(
+  vhdlParser::Concurrent_signal_assignment_statementContext &ctx) -> ast::ConcurrentStmtKind
 {
     if (auto *cond = ctx.conditional_signal_assignment()) {
-        return makeConditionalAssign(*cond, label);
+        return makeConditionalAssign(*cond);
     }
-
     if (auto *sel = ctx.selected_signal_assignment()) {
-        return makeSelectedAssign(*sel, label);
+        return makeSelectedAssign(*sel);
     }
-
-    return {};
+    // Should be unreachable
+    return ast::ConditionalConcurrentAssign{};
 }
 
-auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx,
-                                       const std::optional<std::string> &label)
+auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx)
   -> ast::ConditionalConcurrentAssign
 {
     return build<ast::ConditionalConcurrentAssign>(ctx)
-      .set(&ast::ConditionalConcurrentAssign::label, label)
       .maybe(&ast::ConditionalConcurrentAssign::target,
              ctx.target(),
              [&](auto &t) { return makeTarget(t); })
@@ -57,12 +51,10 @@ auto Translator::makeConditionalWaveform(vhdlParser::Conditional_waveformsContex
       .build();
 }
 
-auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx,
-                                    const std::optional<std::string> &label)
+auto Translator::makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx)
   -> ast::SelectedConcurrentAssign
 {
     return build<ast::SelectedConcurrentAssign>(ctx)
-      .set(&ast::SelectedConcurrentAssign::label, label)
       .maybe(&ast::SelectedConcurrentAssign::selector,
              ctx.expression(),
              [this](auto &expr) { return makeExpr(expr); })

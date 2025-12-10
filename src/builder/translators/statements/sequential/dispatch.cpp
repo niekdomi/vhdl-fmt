@@ -2,62 +2,62 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
-#include <vector>
-
 namespace builder {
 
 auto Translator::makeSequentialStatement(vhdlParser::Sequential_statementContext &ctx)
   -> ast::SequentialStatement
 {
-    // Dispatch based on concrete statement type
-    if (auto *signal_assign = ctx.signal_assignment_statement()) {
-        return makeSignalAssign(*signal_assign);
-    }
+    // The Wrapper Builder: Handles Label & Trivia binding for the whole statement
+    return build<ast::SequentialStatement>(ctx)
+      .maybe(&ast::SequentialStatement::label,
+             ctx.label_colon(),
+             [](auto &lc) { return lc.identifier()->getText(); })
+      .set(&ast::SequentialStatement::kind, makeSequentialStatementKind(ctx))
+      .build();
+}
 
-    if (auto *var_assign = ctx.variable_assignment_statement()) {
-        return makeVariableAssign(*var_assign);
+auto Translator::makeSequentialStatementKind(vhdlParser::Sequential_statementContext &ctx)
+  -> ast::SequentialStmtKind
+{
+    if (auto *sig = ctx.signal_assignment_statement()) {
+        return makeSignalAssign(*sig);
     }
-
+    if (auto *var = ctx.variable_assignment_statement()) {
+        return makeVariableAssign(*var);
+    }
     if (auto *if_stmt = ctx.if_statement()) {
         return makeIfStatement(*if_stmt);
     }
-
     if (auto *case_stmt = ctx.case_statement()) {
         return makeCaseStatement(*case_stmt);
     }
-
-    if (auto *loop_stmt = ctx.loop_statement()) {
-        if (auto *iter = loop_stmt->iteration_scheme()) {
+    if (auto *loop = ctx.loop_statement()) {
+        // Loop logic delegates to specific loop makers
+        if (auto *iter = loop->iteration_scheme()) {
             if (iter->parameter_specification() != nullptr) {
-                return makeForLoop(*loop_stmt);
+                return makeForLoop(*loop);
             }
-
             if (iter->condition() != nullptr) {
-                return makeWhileLoop(*loop_stmt);
+                return makeWhileLoop(*loop);
             }
         }
-        return makeLoop(*loop_stmt);
+        return makeLoop(*loop);
     }
-
     if (ctx.NULL_() != nullptr) {
-        return build<ast::NullStatement>(ctx).build();
+        return ast::NullStatement{};
     }
 
-    // TODO(someone): Add support for wait_statement, assertion_statement,
-    // report_statement, next_statement, exit_statement, return_statement, etc.
-
-    return {};
+    // TODO(vedivad): Return std::expected error or throw for unknown statement
+    return ast::NullStatement{};
 }
 
 auto Translator::makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext &ctx)
   -> std::vector<ast::SequentialStatement>
 {
-    std::vector<ast::SequentialStatement> statements{};
-
+    std::vector<ast::SequentialStatement> statements;
     for (auto *stmt : ctx.sequential_statement()) {
-        statements.emplace_back(std::move(makeSequentialStatement(*stmt)));
+        statements.emplace_back(makeSequentialStatement(*stmt));
     }
-
     return statements;
 }
 

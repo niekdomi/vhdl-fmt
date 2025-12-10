@@ -49,9 +49,6 @@ class Translator final
     auto makeArchitectureDeclarativeItem(vhdlParser::Block_declarative_itemContext &ctx)
       -> ast::Declaration;
     [[nodiscard]]
-    auto makeArchitectureStatement(vhdlParser::Architecture_statementContext &ctx)
-      -> ast::ConcurrentStatement;
-    [[nodiscard]]
     auto makeEntity(vhdlParser::Entity_declarationContext &ctx) -> ast::Entity;
 
     // Clauses
@@ -110,13 +107,30 @@ class Translator final
 
     // Statements
     [[nodiscard]]
+    auto makeConcurrentStatement(vhdlParser::Architecture_statementContext &ctx)
+      -> ast::ConcurrentStatement;
+    [[nodiscard]]
+    auto makeSequentialStatement(vhdlParser::Sequential_statementContext &ctx)
+      -> ast::SequentialStatement;
+    [[nodiscard]]
+    auto makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext &ctx)
+      -> std::vector<ast::SequentialStatement>;
+
+    // Statements (Kind Dispatchers)
+    [[nodiscard]]
+    auto makeSequentialStatementKind(vhdlParser::Sequential_statementContext &ctx)
+      -> ast::SequentialStmtKind;
+    [[nodiscard]]
+    auto makeConcurrentStatementKind(vhdlParser::Architecture_statementContext &ctx)
+      -> ast::ConcurrentStmtKind;
+
+    [[nodiscard]]
     auto makeCaseStatement(vhdlParser::Case_statementContext &ctx) -> ast::CaseStatement;
     [[nodiscard]]
-    auto makeConcurrentAssign(vhdlParser::Concurrent_signal_assignment_statementContext &ctx,
-                              const std::optional<std::string> &label) -> ast::ConcurrentStatement;
+    auto makeConcurrentAssignBody(vhdlParser::Concurrent_signal_assignment_statementContext &ctx)
+      -> ast::ConcurrentStmtKind;
     [[nodiscard]]
-    auto makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx,
-                               const std::optional<std::string> &label)
+    auto makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx)
       -> ast::ConditionalConcurrentAssign;
     [[nodiscard]]
     auto makeConditionalWaveform(vhdlParser::Conditional_waveformsContext &ctx)
@@ -136,18 +150,11 @@ class Translator final
     auto makeProcessStatementPart(vhdlParser::Process_statement_partContext &ctx)
       -> std::vector<ast::SequentialStatement>;
     [[nodiscard]]
-    auto makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx,
-                            const std::optional<std::string> &label)
+    auto makeSelectedAssign(vhdlParser::Selected_signal_assignmentContext &ctx)
       -> ast::SelectedConcurrentAssign;
     [[nodiscard]]
     auto makeSelection(vhdlParser::WaveformContext &wave, vhdlParser::ChoicesContext &choices)
       -> ast::SelectedConcurrentAssign::Selection;
-    [[nodiscard]]
-    auto makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext &ctx)
-      -> std::vector<ast::SequentialStatement>;
-    [[nodiscard]]
-    auto makeSequentialStatement(vhdlParser::Sequential_statementContext &ctx)
-      -> ast::SequentialStatement;
     [[nodiscard]]
     auto makeSignalAssign(vhdlParser::Signal_assignment_statementContext &ctx) -> ast::SignalAssign;
     [[nodiscard]]

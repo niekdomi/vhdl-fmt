@@ -53,7 +53,6 @@ struct CaseStatement : NodeBase
 
 struct Loop : NodeBase
 {
-    std::optional<std::string> label;
     std::vector<SequentialStatement> body;
 };
 
@@ -73,6 +72,8 @@ struct ForLoop : NodeBase
 /// @brief Represents a NULL statement.
 struct NullStatement : NodeBase
 {};
+
+// TODO(vedivad): Report, Next, Exit, Return, Wait statements.
 
 } // namespace ast
 
