@@ -1,11 +1,9 @@
-#include "ast/nodes/declarations.hpp"
 #include "ast/nodes/design_units.hpp"
 #include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/doc.hpp"
 
 #include <algorithm>
 #include <optional>
-#include <ranges>
 
 namespace emit {
 
