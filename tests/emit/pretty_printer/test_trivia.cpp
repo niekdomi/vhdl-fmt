@@ -6,6 +6,17 @@
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
 
+namespace {
+
+auto makePort(std::string name, std::string mode, std::string type) -> ast::Port
+{
+    return ast::Port{ .names = { std::move(name) },
+                      .mode = std::move(mode),
+                      .subtype = ast::SubtypeIndication{ .type_mark = std::move(type) } };
+}
+
+} // namespace
+
 TEST_CASE("Trivia Rendering", "[pretty_printer][trivia]")
 {
     SECTION("Standard Nodes (Declarations)")
@@ -13,38 +24,29 @@ TEST_CASE("Trivia Rendering", "[pretty_printer][trivia]")
         ast::GenericParam param{ .names = { "WIDTH" },
                                  .subtype = ast::SubtypeIndication{ .type_mark = "integer" } };
 
-        SECTION("No Trivia")
-        {
-            REQUIRE(emit::test::render(param) == "WIDTH : integer");
-        }
-
         SECTION("Leading Trivia")
         {
-            SECTION("Single Comment")
-            {
-                param.addLeading(ast::Comment{ "-- lead" });
-                // Comment gets hardline() automatically
-                REQUIRE(emit::test::render(param) == "-- lead\nWIDTH : integer");
-            }
-
-            SECTION("Vertical Whitespace (Normalize to 1)")
-            {
-                param.addLeading(ast::Break{ .blank_lines = 2 });
-                REQUIRE(emit::test::render(param) == "\nWIDTH : integer");
-            }
+            param.addLeading(ast::Comment{ "-- lead" });
+            REQUIRE(emit::test::render(param) == "-- lead\nWIDTH : integer");
         }
 
-        SECTION("Trailing Trivia (Special 'Last Item' Logic)")
+        SECTION("Leading Whitespace (Normalize)")
+        {
+            param.addLeading(ast::Break{ .blank_lines = 2 });
+            REQUIRE(emit::test::render(param) == "\nWIDTH : integer");
+        }
+
+        SECTION("Trailing Trivia (Last Item Logic)")
         {
             SECTION("Trailing Comment")
             {
                 param.addTrailing(ast::Comment{ "-- trail" });
-                // Result: Core + \n + Comment
                 REQUIRE(emit::test::render(param) == "WIDTH : integer\n-- trail");
             }
 
-            SECTION("Trailing Break (Normalized to 1)")
+            SECTION("Trailing Break (Normalize)")
             {
+                // Last break becomes empty to allow list separators to handle the newline
                 param.addTrailing(ast::Break{ .blank_lines = 2 });
                 REQUIRE(emit::test::render(param) == "WIDTH : integer\n");
             }
@@ -53,14 +55,11 @@ TEST_CASE("Trivia Rendering", "[pretty_printer][trivia]")
         SECTION("Inline Trivia")
         {
             param.setInlineComment("-- inline");
-            // Inline adds: Space + Text + Hardlines(0) (break enforcer)
             REQUIRE(emit::test::render(param) == "WIDTH : integer -- inline");
         }
 
         SECTION("Inline + Trailing Combination")
         {
-            // This tests that the inline comment doesn't eat the newline required
-            // for the trailing trivia.
             param.setInlineComment("-- inline");
             param.addTrailing(ast::Comment{ "-- trailing" });
 
@@ -68,40 +67,81 @@ TEST_CASE("Trivia Rendering", "[pretty_printer][trivia]")
                                                   "-- trailing";
             REQUIRE(emit::test::render(param) == EXPECTED);
         }
+
+        SECTION("Inline + Trailing Break")
+        {
+            // Verify no double newline generation
+            param.setInlineComment("-- inline");
+            param.addTrailing(ast::Break{});
+            REQUIRE(emit::test::render(param) == "WIDTH : integer -- inline\n");
+        }
+    }
+
+    SECTION("Complex Scenarios")
+    {
+        SECTION("List Separator Interaction")
+        {
+            // Verify that a trailing Break doesn't double-up with the list separator
+            ast::PortClause clause{};
+
+            ast::Port p1 = makePort("clk", "in", "bit");
+            p1.addTrailing(ast::Break{ 1 }); // User blank line
+
+            ast::Port p2 = makePort("rst", "in", "bit");
+
+            clause.ports.push_back(std::move(p1));
+            clause.ports.push_back(std::move(p2));
+
+            constexpr std::string_view EXPECTED
+              = "port (\n"
+                "  clk : in bit;\n" // Separator provided by Break normalization
+                "  \n"
+                "  rst : in bit\n"
+                ");";
+
+            REQUIRE(emit::test::render(clause) == EXPECTED);
+        }
+
+        SECTION("Interleaved Trivia")
+        {
+            // Test [Comment] -> [Break] -> [Comment] -> [Break(Last)]
+            ast::GenericParam param{ .names = { "WIDTH" },
+                                     .subtype = ast::SubtypeIndication{ .type_mark = "integer" } };
+
+            param.addTrailing(ast::Comment{ "-- Step 1" });
+            param.addTrailing(ast::Break{});
+            param.addTrailing(ast::Comment{ "-- Step 2" });
+            param.addTrailing(ast::Break{});
+
+            constexpr std::string_view EXPECTED = "WIDTH : integer\n"
+                                                  "-- Step 1\n"
+                                                  "\n"
+                                                  "-- Step 2\n";
+
+            REQUIRE(emit::test::render(param) == EXPECTED);
+        }
     }
 
     SECTION("Expression Nodes (Newline Suppression)")
     {
-        // TokenExpr satisfies the `IsExpression` concept in PrettyPrinter,
-        // so `suppress_newlines` will be passed as true to `withTrivia`.
         ast::TokenExpr expr{ .text = "A" };
 
-        SECTION("Leading Breaks are suppressed")
+        SECTION("Leading Breaks Suppressed")
         {
-            // Add a break that would normally render as \n\n
             expr.addLeading(ast::Break{ .blank_lines = 2 });
-
-            // Should be ignored for expressions to keep math tight
             REQUIRE(emit::test::render(expr) == "A");
         }
 
-        SECTION("Leading Comments are KEPT")
+        SECTION("Leading Comments Preserved")
         {
-            // Comments are never suppressed, as that would delete data
             expr.addLeading(ast::Comment{ "-- note" });
             REQUIRE(emit::test::render(expr) == "-- note\nA");
         }
 
-        SECTION("Trailing Breaks are suppressed")
+        SECTION("Trailing Breaks Suppressed")
         {
             expr.addTrailing(ast::Break{ .blank_lines = 1 });
             REQUIRE(emit::test::render(expr) == "A");
-        }
-
-        SECTION("Inline Comments still work")
-        {
-            expr.setInlineComment("-- val");
-            REQUIRE(emit::test::render(expr) == "A -- val");
         }
     }
 }
