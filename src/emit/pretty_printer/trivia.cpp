@@ -21,26 +21,24 @@ auto shouldKeep(const bool suppress_newlines)
 }
 
 /// @brief Format a standard trivia item (e.g., Leading or Middle of Trailing).
-/// Comments get a trailing hardline; Breaks get their full height.
+/// Comments get a trailing hardline; Breaks are normalized to 1 blank line.
 auto formatTrivia(const ast::Trivia &t) -> Doc
 {
     return std::visit(
       common::Overload{
         [](const ast::Comment &c) -> Doc { return Doc::text(c.text) + Doc::hardline(); },
-        [](const ast::Break &p) -> Doc { return Doc::hardlines(p.blank_lines); } },
+        [](const ast::Break & /*p*/) -> Doc { return Doc::hardline(); } },
       t);
 }
 
 /// @brief Format specifically for the LAST item in a trailing block.
 /// Comments don't get a trailing hardline
-/// Breaks are reduced by 1 (since the block starts with \n).
+/// Breaks are normalized to 1 blank line.
 auto formatLastTrailing(const ast::Trivia &t) -> Doc
 {
     return std::visit(
       common::Overload{ [](const ast::Comment &c) -> Doc { return Doc::text(c.text); },
-                        [](const ast::Break &p) -> Doc {
-                            return Doc::hardlines(p.blank_lines > 0 ? p.blank_lines - 1 : 0);
-                        } },
+                        [](const ast::Break & /*p*/) -> Doc { return Doc::hardline(); } },
       t);
 }
 
@@ -95,7 +93,15 @@ auto PrettyPrinter::withTrivia(const ast::NodeBase &node, Doc core, const bool s
     }
 
     // 4. Trailing Trivia
-    result += buildTrivia(node.getTrailing(), suppress, Doc::hardline(), formatLastTrailing);
+    Doc trailing_prefix = Doc::hardline();
+    auto trailing = node.getTrailing();
+
+    // If first item is a Break, drop the forced prefix
+    if (!trailing.empty() && std::holds_alternative<ast::Break>(trailing.front())) {
+        trailing_prefix = Doc::empty();
+    }
+
+    result += buildTrivia(trailing, suppress, trailing_prefix, formatLastTrailing);
 
     return result;
 }
