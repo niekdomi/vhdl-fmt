@@ -27,18 +27,15 @@ TEST_CASE("Trivia Rendering", "[pretty_printer][trivia]")
                 REQUIRE(emit::test::render(param) == "-- lead\nWIDTH : integer");
             }
 
-            SECTION("Vertical Whitespace (Breaks preserved)")
+            SECTION("Vertical Whitespace (Normalize to 1)")
             {
                 param.addLeading(ast::Break{ .blank_lines = 2 });
-                REQUIRE(emit::test::render(param) == "\n\nWIDTH : integer");
+                REQUIRE(emit::test::render(param) == "\nWIDTH : integer");
             }
         }
 
         SECTION("Trailing Trivia (Special 'Last Item' Logic)")
         {
-            // The renderer adds a Hardline prefix before the trailing block starts.
-            // formatLastTrailing reduces Break count by 1 to account for that prefix.
-
             SECTION("Trailing Comment")
             {
                 param.addTrailing(ast::Comment{ "-- trail" });
@@ -46,18 +43,10 @@ TEST_CASE("Trivia Rendering", "[pretty_printer][trivia]")
                 REQUIRE(emit::test::render(param) == "WIDTH : integer\n-- trail");
             }
 
-            SECTION("Trailing Break (1 line)")
+            SECTION("Trailing Break (Normalized to 1)")
             {
-                // Break{1} -> Prefix(\n) + (1-1 newlines) -> \n
-                param.addTrailing(ast::Break{ .blank_lines = 1 });
-                REQUIRE(emit::test::render(param) == "WIDTH : integer\n");
-            }
-
-            SECTION("Trailing Break (2 lines)")
-            {
-                // Break{2} -> Prefix(\n) + (2-1 newlines) -> \n\n
                 param.addTrailing(ast::Break{ .blank_lines = 2 });
-                REQUIRE(emit::test::render(param) == "WIDTH : integer\n\n");
+                REQUIRE(emit::test::render(param) == "WIDTH : integer\n");
             }
         }
 
