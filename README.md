@@ -41,10 +41,12 @@ indentation:
   size: 4
 
 casing:
-  keywords: "lower_case" # "lower_case" | "UPPER_CASE"
-  identifiers: "lower_case" # "lower_case" | "UPPER_CASE"
-  constants: "UPPER_CASE" # "lower_case" | "UPPER_CASE"
+  keywords: "preserve" #     | "lower_case" | "UPPER_CASE"
+  identifiers: "preserve" #  | "lower_case" | "UPPER_CASE"
+  constants: "preserve" #    | "lower_case" | "UPPER_CASE"
 ```
+
+To not conflict with existing guidelines, the formatter preserves the original casing by default.
 
 ### Opinionated Defaults
 
