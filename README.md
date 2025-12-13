@@ -143,4 +143,4 @@ A brief comparison highlights the differences:
 
 - **vhdl-fmt**
   - Strongly opinionated, enforces a consistent style
-  - Significantly faster (up to 30x–50x), making it well suited for editor format-on-save workflows
+  - Significantly faster (up to 30x–50x), making it well suited for editor _format-on-save_ workflows
