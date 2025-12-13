@@ -139,7 +139,7 @@ A brief comparison highlights the differences:
 
 - **vhdl-style-guide**
   - Highly configurable
-  - Includes style guide and linting features (not provided by `vhdl-fmt`)
+  - Includes certain style guide and linting features that are not provided by `vhdl-fmt`
 
 - **vhdl-fmt**
   - Strongly opinionated, enforces a consistent style
