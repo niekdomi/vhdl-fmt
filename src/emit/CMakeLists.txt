@@ -14,6 +14,7 @@ add_library(
     pretty_printer/nodes/design_units/entity.cpp
     pretty_printer/nodes/design_units/architecture.cpp
     pretty_printer/nodes/design_units/context.cpp
+    pretty_printer/nodes/design_units/design_unit.cpp
     #
     # Declarations
     pretty_printer/nodes/declarations/component.cpp

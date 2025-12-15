@@ -1,10 +1,7 @@
 #include "emit/pretty_printer/doc.hpp"
 
-#include "common/config.hpp"
 #include "emit/pretty_printer/doc_impl.hpp"
-#include "emit/pretty_printer/renderer.hpp"
 
-#include <string>
 #include <string_view>
 #include <variant>
 
@@ -151,16 +148,6 @@ auto Doc::group(const Doc &doc) -> Doc
 auto Doc::hang(const Doc &doc) -> Doc
 {
     return Doc(makeHang(doc.impl_));
-}
-
-// ========================================================================
-// Rendering
-// ========================================================================
-
-auto Doc::render(const common::Config &config) const -> std::string
-{
-    Renderer renderer(config);
-    return renderer.render(impl_);
 }
 
 // =======================================================================

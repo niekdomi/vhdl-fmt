@@ -128,14 +128,16 @@ TEST_CASE("Entity Rendering", "[pretty_printer][design_units][entity]")
     }
 }
 
-TEST_CASE("Entity with Context Clauses", "[pretty_printer][design_units][context]")
+TEST_CASE("Design Unit with Context Clauses", "[pretty_printer][design_units][context]")
 {
+    ast::DesignUnit du{};
+    du.unit = ast::Entity{ .name = "test_unit" };
+
     SECTION("Entity with library clause")
     {
-        ast::Entity entity{ .name = "test_unit" };
-        entity.context.emplace_back(ast::LibraryClause{ .logical_names = { "ieee" } });
+        du.context.emplace_back(ast::LibraryClause{ .logical_names = { "ieee" } });
 
-        const std::string result = emit::test::render(entity);
+        const std::string result = emit::test::render(du);
         constexpr std::string_view EXPECTED = "library ieee;\n"
                                               "entity test_unit is\n"
                                               "end;";
@@ -144,13 +146,11 @@ TEST_CASE("Entity with Context Clauses", "[pretty_printer][design_units][context
 
     SECTION("Entity with library and use clauses")
     {
-        ast::Entity entity{ .name = "test_unit" };
-        entity.context.emplace_back(ast::LibraryClause{ .logical_names = { "ieee" } });
-        entity.context.emplace_back(
-          ast::UseClause{ .selected_names = { "ieee.std_logic_1164.all" } });
-        entity.context.emplace_back(ast::UseClause{ .selected_names = { "ieee.numeric_std.all" } });
+        du.context.emplace_back(ast::LibraryClause{ .logical_names = { "ieee" } });
+        du.context.emplace_back(ast::UseClause{ .selected_names = { "ieee.std_logic_1164.all" } });
+        du.context.emplace_back(ast::UseClause{ .selected_names = { "ieee.numeric_std.all" } });
 
-        const std::string result = emit::test::render(entity);
+        const std::string result = emit::test::render(du);
         constexpr std::string_view EXPECTED = "library ieee;\n"
                                               "use ieee.std_logic_1164.all;\n"
                                               "use ieee.numeric_std.all;\n"
@@ -161,17 +161,18 @@ TEST_CASE("Entity with Context Clauses", "[pretty_printer][design_units][context
 
     SECTION("Entity with multiple libraries")
     {
-        ast::Entity entity{ .name = "test_unit" };
-        entity.context.emplace_back(ast::LibraryClause{ .logical_names = { "ieee" } });
-        entity.context.emplace_back(
-          ast::UseClause{ .selected_names = { "ieee.std_logic_1164.all" } });
-        entity.context.emplace_back(ast::LibraryClause{ .logical_names = { "work" } });
+        du.context.emplace_back(ast::LibraryClause{ .logical_names = { "ieee" } });
+        du.context.emplace_back(ast::UseClause{ .selected_names = { "ieee.std_logic_1164.all" } });
+        du.context.emplace_back(ast::LibraryClause{ .logical_names = { "work" } });
+
+        // Modify the entity inside the variant
+        auto &entity = std::get<ast::Entity>(du.unit);
         entity.port_clause.ports.emplace_back(
           ast::Port{ .names = { "clk" },
                      .mode = "in",
                      .subtype = ast::SubtypeIndication{ .type_mark = "std_logic" } });
 
-        const std::string result = emit::test::render(entity);
+        const std::string result = emit::test::render(du);
         constexpr std::string_view EXPECTED = "library ieee;\n"
                                               "use ieee.std_logic_1164.all;\n"
                                               "library work;\n"

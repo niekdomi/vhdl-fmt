@@ -8,9 +8,9 @@
 
 TEST_CASE("Context Clauses", "[design_units][context]")
 {
-    auto parse_context = [](std::string_view context_code) -> const ast::Entity * {
+    auto parse_context = [](std::string_view context_code) -> const ast::DesignUnit * {
         const std::string full_code = std::string(context_code) + "\nentity E is end;";
-        return test_helpers::parseDesignUnit<ast::Entity>(full_code);
+        return test_helpers::parseDesignUnitNode(full_code);
     };
 
     SECTION("Library Clauses")

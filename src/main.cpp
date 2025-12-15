@@ -3,7 +3,8 @@
 #include "cli/argument_parser.hpp"
 #include "cli/config_reader.hpp"
 #include "common/logger.hpp"
-#include "emit/pretty_printer.hpp"
+#include "emit/format.hpp"
+#include "emit/pretty_printer/renderer.hpp"
 
 #include <cstdlib>
 #include <exception>
@@ -32,9 +33,7 @@ auto main(int argc, char *argv[]) -> int
         const auto root = builder::build(ctx_orig);
 
         // 3. Format
-        const emit::PrettyPrinter printer{};
-        const auto doc = printer.visit(root);
-        const std::string formatted_code = doc.render(config);
+        const std::string formatted_code = emit::format(root, config);
 
         // 4. Verify Safety
         const auto ctx_fmt = builder::createContext(std::string_view{ formatted_code });

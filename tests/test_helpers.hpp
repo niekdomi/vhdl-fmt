@@ -77,7 +77,7 @@ inline auto parseArchitectureWrapper(std::string_view code) -> const ast::Archit
     if (design.units.size() < 2) {
         return nullptr;
     }
-    return std::get_if<ast::Architecture>(&design.units[1]);
+    return std::get_if<ast::Architecture>(&design.units[1].unit);
 }
 
 /// @brief Wraps a statement in an architecture and returns the Architecture node.
@@ -110,7 +110,7 @@ inline auto parseDecl(std::string_view decl_str) -> const T *
     return std::get_if<T>(&arch->decls.front());
 }
 
-/// @brief Parse VHDL expression from a signal initialization
+/// @brief Parse a VHDL expression from a signal initialization
 inline auto parseExpr(std::string_view init_expr) -> const ast::Expr *
 {
     const auto vhdl = std::format(R"(
@@ -197,7 +197,18 @@ inline auto parseDesignUnit(std::string_view code) -> const T *
     if (design.units.empty()) {
         return nullptr;
     }
-    return std::get_if<T>(&design.units.front());
+    return std::get_if<T>(&design.units.front().unit);
+}
+
+/// @brief Parse a single design unit and return the DesignUnit wrapper.
+inline auto parseDesignUnitNode(std::string_view code) -> const ast::DesignUnit *
+{
+    static ast::DesignFile design;
+    design = builder::buildFromString(code);
+    if (design.units.empty()) {
+        return nullptr;
+    }
+    return &design.units.front();
 }
 
 } // namespace test_helpers

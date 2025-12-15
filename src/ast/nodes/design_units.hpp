@@ -35,7 +35,6 @@ struct UseClause : NodeBase
 /// @brief Represents a VHDL entity declaration.
 struct Entity : NodeBase
 {
-    std::vector<ContextItem> context;
     std::string name;
     GenericClause generic_clause;
     PortClause port_clause;
@@ -48,7 +47,6 @@ struct Entity : NodeBase
 /// @brief Represents a VHDL architecture body.
 struct Architecture : NodeBase
 {
-    std::vector<ContextItem> context;
     std::string name;
     std::string entity_name;
     std::vector<Declaration> decls;
@@ -57,8 +55,15 @@ struct Architecture : NodeBase
     bool has_end_architecture_keyword{ false };
 };
 
-/// @brief Variant type for all design units.
-using DesignUnit = std::variant<Entity, Architecture>;
+/// @brief Variant representing the specific unit type
+using LibraryUnit = std::variant<Entity, Architecture>;
+
+/// @brief Struct matching the grammar rule: design_unit : context_clause library_unit
+struct DesignUnit : NodeBase
+{
+    std::vector<ContextItem> context;
+    LibraryUnit unit;
+};
 
 } // namespace ast
 

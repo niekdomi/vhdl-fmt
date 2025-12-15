@@ -2,7 +2,6 @@
 #define EMIT_DOC_HPP
 
 #include <memory>
-#include <string>
 #include <string_view>
 #include <utility>
 
@@ -132,18 +131,20 @@ class Doc final
     static auto hang(const Doc &doc) -> Doc;
 
     // ========================================================================
-    // Rendering
+    // Utility
     // ========================================================================
-
-    /// @brief Renders the document to a string based on the given config.
-    /// @param config The configuration containing layout rules (line width, etc.)
-    [[nodiscard]]
-    auto render(const common::Config &config) const -> std::string;
 
     /// @brief Checks if the document is an Empty node.
     /// @return True if the document is 'Doc::empty()', false otherwise.
     [[nodiscard]]
     auto isEmpty() const -> bool;
+
+    /// @brief Access the underlying DocImpl pointer.
+    [[nodiscard]]
+    auto getImpl() const -> DocPtr
+    {
+        return impl_;
+    }
 
   private:
     /// @brief Private constructor for internal factory functions.

@@ -32,7 +32,7 @@ class Translator final
     explicit Translator(antlr4::CommonTokenStream &tokens) : trivia_(tokens) {}
 
     /// @brief Build the entire design file by walking the CST
-    void buildDesignFile(ast::DesignFile &dest, vhdlParser::Design_fileContext *ctx);
+    auto buildDesignFile(vhdlParser::Design_fileContext *ctx) -> ast::DesignFile;
 
     ~Translator() = default;
 
@@ -43,6 +43,10 @@ class Translator final
 
   private:
     // Design units
+    [[nodiscard]]
+    auto makeDesignUnit(vhdlParser::Design_unitContext *ctx) -> ast::DesignUnit;
+    [[nodiscard]]
+    auto makeLibraryUnit(vhdlParser::Library_unitContext *ctx) -> ast::LibraryUnit;
     [[nodiscard]]
     auto makeArchitecture(vhdlParser::Architecture_bodyContext &ctx) -> ast::Architecture;
     [[nodiscard]]
@@ -59,7 +63,7 @@ class Translator final
 
     // Context clauses
     [[nodiscard]]
-    auto makeContextClause(vhdlParser::Context_clauseContext &ctx) -> std::vector<ast::ContextItem>;
+    auto makeContextItem(vhdlParser::Context_itemContext *ctx) -> ast::ContextItem;
     [[nodiscard]]
     auto makeLibraryClause(vhdlParser::Library_clauseContext &ctx) -> ast::LibraryClause;
     [[nodiscard]]
@@ -233,6 +237,14 @@ class Translator final
     auto build(Ctx &ctx) -> NodeBuilder<T>
     {
         return NodeBuilder<T>(ctx, trivia_);
+    }
+
+    /// @brief Factory to create a NodeBuilder with trivia already bound
+    template<typename T>
+    [[nodiscard]]
+    auto buildNoTrivia() -> NodeBuilder<T>
+    {
+        return NodeBuilder<T>();
     }
 
     /// @brief Helper to create binary expressions

@@ -1,6 +1,7 @@
 #include "common/config.hpp"
 #include "emit/pretty_printer/doc.hpp"
 #include "emit/pretty_printer/doc_impl.hpp"
+#include "emit/pretty_printer/renderer.hpp"
 #include "emit/pretty_printer/walker.hpp"
 #include "emit/test_utils.hpp"
 
@@ -17,6 +18,17 @@ using emit::test::defaultConfig;
 namespace {
 // Helper lambda for counting all nodes in a Doc tree (used in Optimization section)
 constexpr auto NODE_COUNTER = [](int count, const auto & /*node*/) { return count + 1; };
+
+auto render(const Doc &doc, const common::Config &config) -> std::string
+{
+    return emit::Renderer{ config }.render(doc);
+}
+
+auto render(const Doc &doc) -> std::string
+{
+    return emit::Renderer{ defaultConfig() }.render(doc);
+}
+
 } // namespace
 
 TEST_CASE("Doc System", "[doc]")
@@ -30,27 +42,26 @@ TEST_CASE("Doc System", "[doc]")
         {
             const Doc doc = Doc::empty();
             REQUIRE(doc.isEmpty());
-            REQUIRE(doc.render(defaultConfig()).empty());
+            REQUIRE(render(doc, defaultConfig()).empty());
         }
 
         SECTION("Text document renders string verbatim")
         {
             const Doc doc = Doc::text("hello world");
             REQUIRE_FALSE(doc.isEmpty());
-            REQUIRE(doc.render(defaultConfig()) == "hello world");
+            REQUIRE(render(doc, defaultConfig()) == "hello world");
         }
 
         SECTION("Hardline renders as newline")
         {
             const Doc doc = Doc::hardline();
-            REQUIRE(doc.render(defaultConfig()) == "\n");
+            REQUIRE(render(doc, defaultConfig()) == "\n");
         }
 
         SECTION("Hardlines(n) renders n newlines")
         {
-            REQUIRE(Doc::hardlines(1).render(defaultConfig()) == "\n");
-            REQUIRE(Doc::hardlines(2).render(defaultConfig()) == "\n\n");
-            REQUIRE(Doc::hardlines(3).render(defaultConfig()) == "\n\n\n");
+            REQUIRE(render(Doc::hardlines(1), defaultConfig()) == "\n");
+            REQUIRE(render(Doc::hardlines(2), defaultConfig()) == "\n\n");
         }
     }
 
@@ -65,14 +76,14 @@ TEST_CASE("Doc System", "[doc]")
         {
             config.casing.keywords = common::CaseStyle::LOWER;
             const Doc doc = Doc::keyword("Select");
-            REQUIRE(doc.render(config) == "select");
+            REQUIRE(render(doc, config) == "select");
         }
 
         SECTION("Upper case rendering")
         {
             config.casing.keywords = common::CaseStyle::UPPER;
             const Doc doc = Doc::keyword("select");
-            REQUIRE(doc.render(config) == "SELECT");
+            REQUIRE(render(doc, config) == "SELECT");
         }
 
         SECTION("Keyword concatenation (Preserves identity)")
@@ -81,14 +92,14 @@ TEST_CASE("Doc System", "[doc]")
             config.casing.keywords = common::CaseStyle::UPPER;
             const Doc doc = Doc::keyword("end") & Doc::keyword("process"); // "END PROCESS"
 
-            REQUIRE(doc.render(config) == "END PROCESS");
+            REQUIRE(render(doc, config) == "END PROCESS");
         }
 
         SECTION("Mixed Text and Keywords")
         {
             config.casing.keywords = common::CaseStyle::UPPER;
             const Doc doc = Doc::keyword("signal") & Doc::text("my_sig");
-            REQUIRE(doc.render(config) == "SIGNAL my_sig");
+            REQUIRE(render(doc, config) == "SIGNAL my_sig");
         }
     }
 
@@ -104,24 +115,24 @@ TEST_CASE("Doc System", "[doc]")
         {
             SECTION("Direct concatenation (+)")
             {
-                REQUIRE((a + b).render(defaultConfig()) == "ab");
+                REQUIRE(render(a + b, defaultConfig()) == "ab");
             }
             SECTION("Space concatenation (&)")
             {
-                REQUIRE((a & b).render(defaultConfig()) == "a b");
+                REQUIRE(render(a & b, defaultConfig()) == "a b");
             }
             SECTION("Soft line concatenation (/)")
             {
-                REQUIRE((a / b).render(defaultConfig()) == "a\nb");
+                REQUIRE(render(a / b, defaultConfig()) == "a\nb");
             }
             SECTION("Hard line concatenation (|)")
             {
-                REQUIRE((a | b).render(defaultConfig()) == "a\nb");
+                REQUIRE(render(a | b, defaultConfig()) == "a\nb");
             }
             SECTION("Nest operator (<<)")
             {
                 const Doc doc = Doc::text("begin") << Doc::text("end");
-                REQUIRE(doc.render(defaultConfig()) == "begin\n  end");
+                REQUIRE(render(doc, defaultConfig()) == "begin\n  end");
             }
         }
 
@@ -131,31 +142,31 @@ TEST_CASE("Doc System", "[doc]")
             {
                 Doc doc = a;
                 doc += b;
-                REQUIRE(doc.render(defaultConfig()) == "ab");
+                REQUIRE(render(doc, defaultConfig()) == "ab");
             }
             SECTION("Space Append (&=)")
             {
                 Doc doc = a;
                 doc &= b;
-                REQUIRE(doc.render(defaultConfig()) == "a b");
+                REQUIRE(render(doc, defaultConfig()) == "a b");
             }
             SECTION("Softline Append (/=)")
             {
                 Doc doc = a;
                 doc /= b;
-                REQUIRE(doc.render(defaultConfig()) == "a\nb");
+                REQUIRE(render(doc, defaultConfig()) == "a\nb");
             }
             SECTION("Hardline Append (|=)")
             {
                 Doc doc = a;
                 doc |= b;
-                REQUIRE(doc.render(defaultConfig()) == "a\nb");
+                REQUIRE(render(doc, defaultConfig()) == "a\nb");
             }
             SECTION("Nest Append (<<=)")
             {
                 Doc doc = Doc::text("root");
                 doc <<= Doc::text("child");
-                REQUIRE(doc.render(defaultConfig()) == "root\n  child");
+                REQUIRE(render(doc, defaultConfig()) == "root\n  child");
             }
         }
     }
@@ -168,19 +179,19 @@ TEST_CASE("Doc System", "[doc]")
         SECTION("Basic Grouping behavior")
         {
             const Doc doc = Doc::group(Doc::text("hello") / Doc::text("world"));
-            REQUIRE(doc.render(defaultConfig()) == "hello world");
+            REQUIRE(render(doc, defaultConfig()) == "hello world");
         }
 
         SECTION("Hardlines inside groups never collapse")
         {
             const Doc doc = Doc::group(Doc::text("hello") | Doc::text("world"));
-            REQUIRE(doc.render(defaultConfig()) == "hello\nworld");
+            REQUIRE(render(doc, defaultConfig()) == "hello\nworld");
         }
 
         SECTION("hardIndent always forces break")
         {
             const Doc doc = Doc::group(Doc::text("begin").hardIndent(Doc::text("end")));
-            REQUIRE(doc.render(defaultConfig()) == "begin\n  end");
+            REQUIRE(render(doc, defaultConfig()) == "begin\n  end");
         }
 
         SECTION("Width sensitivity")
@@ -191,21 +202,21 @@ TEST_CASE("Doc System", "[doc]")
             {
                 auto config = defaultConfig();
                 config.line_config.line_length = 80;
-                REQUIRE(doc.render(config) == "short text");
+                REQUIRE(render(doc, config) == "short text");
             }
 
             SECTION("Too narrow")
             {
                 auto config = defaultConfig();
                 config.line_config.line_length = 5;
-                REQUIRE(doc.render(config) == "short\ntext");
+                REQUIRE(render(doc, config) == "short\ntext");
             }
         }
 
         SECTION("hardlines(0) as break enforcer")
         {
             const Doc doc = Doc::group(Doc::text("A") / Doc::text("B") + Doc::hardlines(0));
-            REQUIRE(doc.render(defaultConfig()) == "A\nB");
+            REQUIRE(render(doc, defaultConfig()) == "A\nB");
         }
     }
 
@@ -217,13 +228,13 @@ TEST_CASE("Doc System", "[doc]")
         SECTION("Bracket Pattern")
         {
             const Doc doc = Doc::bracket(Doc::text("begin"), Doc::text("stmt;"), Doc::text("end"));
-            REQUIRE(doc.render(defaultConfig()) == "begin\n  stmt;\nend");
+            REQUIRE(render(doc, defaultConfig()) == "begin\n  stmt;\nend");
         }
 
         SECTION("Nested Indentation Accumulation")
         {
             const Doc doc = Doc::text("L1") << (Doc::text("L2") << Doc::text("L3"));
-            REQUIRE(doc.render(defaultConfig()) == "L1\n  L2\n    L3");
+            REQUIRE(render(doc, defaultConfig()) == "L1\n  L2\n    L3");
         }
 
         SECTION("Complex Conditional Structure")
@@ -233,7 +244,7 @@ TEST_CASE("Doc System", "[doc]")
             const Doc footer = Doc::text("end if;");
 
             const Doc doc = (header << body) / footer;
-            REQUIRE(doc.render(defaultConfig()) == "if cond then\n  A;\n  B;\nend if;");
+            REQUIRE(render(doc, defaultConfig()) == "if cond then\n  A;\n  B;\nend if;");
         }
     }
 
@@ -252,7 +263,7 @@ TEST_CASE("Doc System", "[doc]")
             // "123" (3 chars)
             const Doc doc
               = Doc::align(Doc::text("1", 1) / Doc::text("12", 1) / Doc::text("123", 1));
-            REQUIRE(doc.render(config) == "1  \n12 \n123");
+            REQUIRE(render(doc, config) == "1  \n12 \n123");
         }
 
         SECTION("Multiple Alignment Columns")
@@ -264,7 +275,7 @@ TEST_CASE("Doc System", "[doc]")
 
             constexpr std::string_view EXPECTED = "col1 : val1\n"
                                                   "c1   : v1  ";
-            REQUIRE(doc.render(config) == EXPECTED);
+            REQUIRE(render(doc, config) == EXPECTED);
         }
 
         SECTION("Keyword Alignment Preservation")
@@ -278,7 +289,7 @@ TEST_CASE("Doc System", "[doc]")
             const Doc doc = Doc::align(row1 / row2);
 
             // Expected: "IN \nOUT"
-            REQUIRE(doc.render(config) == "IN \nOUT");
+            REQUIRE(render(doc, config) == "IN \nOUT");
         }
     }
 
@@ -387,15 +398,15 @@ TEST_CASE("Doc System", "[doc]")
         {
             const Doc original = Doc::text("A");
             const Doc copy = original; // NOLINT
-            REQUIRE(original.render(defaultConfig()) == "A");
-            REQUIRE(copy.render(defaultConfig()) == "A");
+            REQUIRE(render(original, defaultConfig()) == "A");
+            REQUIRE(render(copy, defaultConfig()) == "A");
         }
 
         SECTION("Move Semantics")
         {
             Doc original = Doc::text("A");
             const Doc moved = std::move(original);
-            REQUIRE(moved.render(defaultConfig()) == "A");
+            REQUIRE(render(moved, defaultConfig()) == "A");
         }
 
         SECTION("Immutability via Compound Assignment")
@@ -404,8 +415,8 @@ TEST_CASE("Doc System", "[doc]")
             Doc modified = base;
             modified += Doc::text(" appended");
 
-            REQUIRE(base.render(defaultConfig()) == "base");
-            REQUIRE(modified.render(defaultConfig()) == "base appended");
+            REQUIRE(render(base, defaultConfig()) == "base");
+            REQUIRE(render(modified, defaultConfig()) == "base appended");
         }
 
         SECTION("Structural Sharing")
@@ -414,8 +425,8 @@ TEST_CASE("Doc System", "[doc]")
             const Doc d1 = shared + Doc::text("1");
             const Doc d2 = shared + Doc::text("2");
 
-            REQUIRE(d1.render(defaultConfig()) == "shared1");
-            REQUIRE(d2.render(defaultConfig()) == "shared2");
+            REQUIRE(render(d1, defaultConfig()) == "shared1");
+            REQUIRE(render(d2, defaultConfig()) == "shared2");
         }
     }
 
@@ -427,15 +438,15 @@ TEST_CASE("Doc System", "[doc]")
         SECTION("Empty document interaction")
         {
             const Doc doc = Doc::text("A") + Doc::empty() + Doc::text("B");
-            REQUIRE(doc.render(defaultConfig()) == "AB");
+            REQUIRE(render(doc, defaultConfig()) == "AB");
         }
 
         SECTION("Empty string text vs Empty doc")
         {
             const Doc t = Doc::text("");
             const Doc e = Doc::empty();
-            REQUIRE(t.render(defaultConfig()).empty());
-            REQUIRE(e.render(defaultConfig()).empty());
+            REQUIRE(render(t, defaultConfig()).empty());
+            REQUIRE(render(e, defaultConfig()).empty());
         }
     }
 }

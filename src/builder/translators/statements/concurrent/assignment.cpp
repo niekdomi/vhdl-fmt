@@ -4,6 +4,7 @@
 #include "vhdlParser.h"
 
 #include <ranges>
+#include <stdexcept>
 
 namespace builder {
 
@@ -13,11 +14,13 @@ auto Translator::makeConcurrentAssignBody(
     if (auto *cond = ctx.conditional_signal_assignment()) {
         return makeConditionalAssign(*cond);
     }
+
     if (auto *sel = ctx.selected_signal_assignment()) {
         return makeSelectedAssign(*sel);
     }
-    // Should be unreachable
-    return ast::ConditionalConcurrentAssign{};
+
+    // Unreachable, just abort as loss is guaranteed
+    throw std::runtime_error("Unknown concurrent assignment type");
 }
 
 auto Translator::makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext &ctx)

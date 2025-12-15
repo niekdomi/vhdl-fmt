@@ -32,6 +32,9 @@ class NodeBuilder
     T node_{};
 
   public:
+    /// @brief Constructs a builder, without binding trivia.
+    explicit NodeBuilder() = default;
+
     /// @brief Constructs a builder, binding trivia from the parse context.
     template<typename Ctx>
     explicit NodeBuilder(Ctx &ctx, TriviaBinder &trivia)

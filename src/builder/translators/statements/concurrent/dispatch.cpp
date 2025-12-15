@@ -9,6 +9,7 @@ namespace builder {
 auto Translator::makeConcurrentStatement(vhdlParser::Architecture_statementContext &ctx)
   -> ast::ConcurrentStatement
 {
+    // TODO(vedivad): Investigate whether to bind trivia here or in the kind
     return build<ast::ConcurrentStatement>(ctx)
       .maybe(&ast::ConcurrentStatement::label,
              ctx.label_colon(),

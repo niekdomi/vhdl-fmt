@@ -3,7 +3,8 @@
 
 #include "ast/node.hpp"
 #include "common/config.hpp"
-#include "emit/pretty_printer.hpp"
+#include "emit/format.hpp"
+#include "emit/pretty_printer/renderer.hpp"
 
 #include <concepts>
 #include <string>
@@ -27,17 +28,13 @@ constexpr auto defaultConfig() -> common::Config
 // Helper to render an AST node with default config
 auto render(const ASTNode auto &node) -> std::string
 {
-    const emit::PrettyPrinter printer{};
-    const auto doc = printer.visit(node);
-    return doc.render(defaultConfig());
+    return emit::format(node, defaultConfig());
 }
 
 // Helper to render an AST node with custom config
 auto render(const ASTNode auto &node, const common::Config &config) -> std::string
 {
-    const emit::PrettyPrinter printer{};
-    const auto doc = printer.visit(node);
-    return doc.render(config);
+    return emit::format(node, config);
 }
 
 } // namespace emit::test

@@ -10,42 +10,26 @@ namespace emit {
 
 auto PrettyPrinter::operator()(const ast::Entity &node) const -> Doc
 {
-    std::optional<Doc> result;
-
-    // Emit context clauses (library and use) first
-    for (const auto &ctx : node.context) {
-        if (!result.has_value()) {
-            result = visit(ctx);
-        } else {
-            *result /= visit(ctx);
-        }
-    }
-
     // Emit entity declaration
-    const Doc entity_line = Doc::keyword(("entity")) & Doc::text(node.name) & Doc::keyword(("is"));
-    if (!result.has_value()) {
-        result = entity_line;
-    } else {
-        *result /= entity_line;
-    }
+    Doc result = Doc::keyword(("entity")) & Doc::text(node.name) & Doc::keyword(("is"));
 
     if (!std::ranges::empty(node.generic_clause.generics)) {
-        *result <<= visit(node.generic_clause);
+        result <<= visit(node.generic_clause);
     }
 
     if (!std::ranges::empty(node.port_clause.ports)) {
-        *result <<= visit(node.port_clause);
+        result <<= visit(node.port_clause);
     }
 
     // Declarations
-    *result = std::ranges::fold_left(
-      node.decls, *result, [this](auto acc, const auto &decl) { return acc <<= visit(decl); });
+    result = std::ranges::fold_left(
+      node.decls, result, [this](auto acc, const auto &decl) { return acc <<= visit(decl); });
 
     // Begin section (concurrent statements)
     if (!std::ranges::empty(node.stmts)) {
-        *result /= Doc::keyword(("begin"));
-        *result = std::ranges::fold_left(
-          node.stmts, *result, [this](auto acc, const auto &stmt) { return acc <<= visit(stmt); });
+        result /= Doc::keyword(("begin"));
+        result = std::ranges::fold_left(
+          node.stmts, result, [this](auto acc, const auto &stmt) { return acc <<= visit(stmt); });
     }
 
     Doc end_line = Doc::keyword(("end"));
@@ -57,7 +41,7 @@ auto PrettyPrinter::operator()(const ast::Entity &node) const -> Doc
     }
     end_line += Doc::text(";");
 
-    return *result / end_line;
+    return result / end_line;
 }
 
 } // namespace emit
