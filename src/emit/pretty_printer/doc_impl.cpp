@@ -1,6 +1,7 @@
 #include "emit/pretty_printer/doc_impl.hpp"
 
 #include "emit/pretty_printer/doc.hpp"
+#include "emit/pretty_printer/walker.hpp"
 
 #include <memory>
 #include <optional>
@@ -127,7 +128,7 @@ auto flatten(const DocPtr &doc) -> DocPtr
         return doc;
     }
 
-    return transformImpl(doc, [](auto &&node) -> DocPtr {
+    return DocWalker::transform(doc, [](auto &&node) -> DocPtr {
         using T = std::decay_t<decltype(node)>;
 
         // Convert SoftLine to Space

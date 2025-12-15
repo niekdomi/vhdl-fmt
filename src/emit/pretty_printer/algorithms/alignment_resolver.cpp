@@ -1,8 +1,11 @@
 #include "emit/pretty_printer/algorithms/alignment_resolver.hpp"
 
 #include "emit/pretty_printer/doc_impl.hpp"
+#include "emit/pretty_printer/walker.hpp"
 
 #include <algorithm>
+#include <map>
+#include <type_traits>
 #include <variant>
 
 namespace emit {
@@ -49,7 +52,8 @@ void AlignmentResolver::measure(const DocPtr &doc, std::map<int, int> &widths)
         }
 
         // 3. Recurse
-        traverseChildren(node, [&](const DocPtr &child) -> void { measure(child, widths); });
+        DocWalker::traverseChildren(node,
+                                    [&](const DocPtr &child) -> void { measure(child, widths); });
     };
 
     std::visit(visitor, doc->value);
@@ -89,7 +93,7 @@ auto AlignmentResolver::apply(const DocPtr &doc, const std::map<int, int> &width
 
         // 3. Recurse and Rebuild
         return std::make_shared<DocImpl>(
-          mapChildren(node, [&](const auto &c) { return apply(c, widths); }));
+          DocWalker::mapChildren(node, [&](const auto &c) { return apply(c, widths); }));
     };
 
     return std::visit(visitor, doc->value);
