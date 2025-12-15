@@ -2,6 +2,8 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
+#include <stdexcept>
+
 namespace builder {
 
 auto Translator::makeContextItem(vhdlParser::Context_itemContext *ctx) -> ast::ContextItem

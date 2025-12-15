@@ -4,6 +4,8 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
+#include <stdexcept>
+
 namespace builder {
 
 auto Translator::buildDesignFile(vhdlParser::Design_fileContext *ctx) -> ast::DesignFile
