@@ -1,0 +1,28 @@
+#ifndef EMIT_PRETTY_PRINTER_WALKERS_ALIGNMENT_RESOLVER_HPP
+#define EMIT_PRETTY_PRINTER_WALKERS_ALIGNMENT_RESOLVER_HPP
+
+#include "emit/pretty_printer/doc.hpp"
+
+#include <map>
+
+namespace emit {
+
+class AlignmentResolver
+{
+  public:
+    /// @brief Applies alignment to the given document
+    [[nodiscard]]
+    static auto resolve(const DocPtr &doc) -> DocPtr;
+
+  private:
+    // Pass 1: Recursive Analysis
+    static void measure(const DocPtr &doc, std::map<int, int> &widths);
+
+    // Pass 2: Recursive Transformation
+    [[nodiscard]]
+    static auto apply(const DocPtr &doc, const std::map<int, int> &widths) -> DocPtr;
+};
+
+} // namespace emit
+
+#endif // EMIT_PRETTY_PRINTER_WALKERS_ALIGNMENT_RESOLVER_HPP

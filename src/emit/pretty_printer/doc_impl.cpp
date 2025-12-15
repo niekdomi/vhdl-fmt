@@ -2,7 +2,6 @@
 
 #include "emit/pretty_printer/doc.hpp"
 
-#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -146,55 +145,6 @@ auto flatten(const DocPtr &doc) -> DocPtr
         // Default: Pass everything else through (Concat, Text, HardLine, etc.)
         else {
             return std::make_shared<DocImpl>(std::forward<decltype(node)>(node));
-        }
-    });
-}
-
-auto resolveAlignment(const DocPtr &doc) -> DocPtr
-{
-    if (!doc) {
-        return doc;
-    }
-
-    // 1: Find max width FOR EACH level
-    std::map<int, int> max_widths;
-    traverseImpl(doc, [&](const auto &node) {
-        using T = std::decay_t<decltype(node)>;
-        if constexpr (IS_ANY_OF_V<T, Text, Keyword>) {
-            if (node.level < 0) {
-                return;
-            }
-            const int len = static_cast<int>(node.content.length());
-            if (len > max_widths[node.level]) {
-                max_widths[node.level] = len;
-            }
-        }
-    });
-
-    if (max_widths.empty()) {
-        return doc;
-    }
-
-    // 2: Apply padding
-    return transformImpl(doc, [&](const auto &node) -> DocPtr {
-        using T = std::decay_t<decltype(node)>;
-        if constexpr (IS_ANY_OF_V<T, Text, Keyword>) {
-            // Skip non-aligned nodes
-            if (node.level < 0) {
-                return std::make_shared<DocImpl>(node);
-            }
-
-            const int padding = max_widths.at(node.level) - static_cast<int>(node.content.length());
-            auto content_node = std::make_shared<DocImpl>(T{ .content = node.content });
-
-            // Skip if no padding is needed
-            if (padding == 0) {
-                return content_node;
-            }
-
-            return makeConcat(content_node, makeText(std::string(padding, ' ')));
-        } else {
-            return std::make_shared<DocImpl>(node);
         }
     });
 }

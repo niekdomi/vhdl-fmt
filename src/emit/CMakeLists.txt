@@ -6,6 +6,9 @@ add_library(
     pretty_printer/renderer.cpp
     pretty_printer/trivia.cpp
     #
+    # Algorithms
+    pretty_printer/algorithms/alignment_resolver.cpp
+    #
     # Design Units
     pretty_printer/nodes/design_file.cpp
     pretty_printer/nodes/design_units/entity.cpp
