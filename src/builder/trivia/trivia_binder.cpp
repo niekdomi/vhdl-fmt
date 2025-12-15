@@ -20,7 +20,7 @@ TriviaBinder::TriviaBinder(antlr4::CommonTokenStream &ts) : tokens_(ts), used_(t
 
 auto TriviaBinder::extractTrivia(std::span<antlr4::Token *const> range) -> std::vector<ast::Trivia>
 {
-    constexpr unsigned BREAK_BREAKOFF = 2; // Minimum newlines to register a Break trivia
+    constexpr unsigned BREAK_THRESHOLD = 2; // Minimum newlines to register a Break trivia
 
     std::vector<ast::Trivia> result{};
 
@@ -35,7 +35,7 @@ auto TriviaBinder::extractTrivia(std::span<antlr4::Token *const> range) -> std::
         }
 
         if (isComment(token)) {
-            if (pending_newlines >= BREAK_BREAKOFF) {
+            if (pending_newlines >= BREAK_THRESHOLD) {
                 result.emplace_back(ast::Break{ .blank_lines = pending_newlines - 1 });
             }
             pending_newlines = 0;
@@ -44,7 +44,7 @@ auto TriviaBinder::extractTrivia(std::span<antlr4::Token *const> range) -> std::
         }
     }
 
-    if (pending_newlines >= BREAK_BREAKOFF) {
+    if (pending_newlines >= BREAK_THRESHOLD) {
         result.emplace_back(ast::Break{ .blank_lines = pending_newlines - 1 });
     }
 
