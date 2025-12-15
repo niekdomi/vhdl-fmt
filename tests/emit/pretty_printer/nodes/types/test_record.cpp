@@ -37,10 +37,7 @@ TEST_CASE("TypeDecl: Record", "[pretty_printer][type][record]")
                                       "  data : std_logic_vector;\n"
                                       "end record;";
 
-            auto config = emit::test::defaultConfig();
-            config.port_map.align_signals = true;
-
-            REQUIRE(emit::test::render(type_decl, config) == EXPECTED);
+            REQUIRE(emit::test::render(type_decl) == EXPECTED);
         }
     }
 

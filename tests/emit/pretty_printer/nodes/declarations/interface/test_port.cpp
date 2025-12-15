@@ -99,7 +99,6 @@ TEST_CASE("PortClause Rendering", "[pretty_printer][clauses][port]")
     {
         auto config = emit::test::defaultConfig();
         config.line_config.line_length = 10; // Ensure no grouping
-        config.port_map.align_signals = true;
 
         clause.ports.push_back(makePort("clk", "in", "std_logic"));
         clause.ports.push_back(makePort("data_valid", "out", "std_logic"));
