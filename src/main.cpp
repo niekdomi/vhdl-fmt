@@ -4,7 +4,6 @@
 #include "cli/config_reader.hpp"
 #include "common/logger.hpp"
 #include "emit/format.hpp"
-#include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/renderer.hpp"
 
 #include <cstdlib>
