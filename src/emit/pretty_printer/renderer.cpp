@@ -2,6 +2,7 @@
 
 #include "common/config.hpp"
 #include "common/overload.hpp"
+#include "emit/pretty_printer/algorithms/alignment_resolver.hpp"
 #include "emit/pretty_printer/doc_impl.hpp"
 
 #include <cctype>
@@ -84,14 +85,7 @@ void Renderer::renderDoc(int indent, Mode mode, const DocPtr &doc)
 
         // Align (conditional pre-processing)
         [&](const Align &node) -> void {
-            DocPtr doc_to_render = node.doc;
-            if (config_.port_map.align_signals) {
-                // Run the two-pass logic to resolve alignment
-                doc_to_render = resolveAlignment(node.doc);
-            }
-
-            // Render the (possibly) aligned inner document
-            renderDoc(indent, mode, doc_to_render);
+            renderDoc(indent, mode, AlignmentResolver::resolve(node.doc));
         },
 
         // Union (decision point)

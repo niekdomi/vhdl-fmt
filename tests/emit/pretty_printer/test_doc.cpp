@@ -1,6 +1,7 @@
 #include "common/config.hpp"
 #include "emit/pretty_printer/doc.hpp"
 #include "emit/pretty_printer/doc_impl.hpp"
+#include "emit/pretty_printer/walker.hpp"
 #include "emit/test_utils.hpp"
 
 #include <algorithm>
@@ -298,7 +299,7 @@ TEST_CASE("Doc System", "[doc]")
         {
             // Case: a + empty -> a
             const DocPtr res1 = makeConcat(makeText("a"), makeEmpty());
-            REQUIRE(emit::foldImpl(res1, 0, NODE_COUNTER) == 1); // 1 Text node
+            REQUIRE(emit::DocWalker::fold(res1, 0, NODE_COUNTER) == 1); // 1 Text node
 
             const auto *text1 = std::get_if<emit::Text>(&res1->value);
             REQUIRE(text1 != nullptr);
@@ -306,7 +307,7 @@ TEST_CASE("Doc System", "[doc]")
 
             // Case: empty + a -> a
             const DocPtr res2 = makeConcat(makeEmpty(), makeText("a"));
-            REQUIRE(emit::foldImpl(res2, 0, NODE_COUNTER) == 1);
+            REQUIRE(emit::DocWalker::fold(res2, 0, NODE_COUNTER) == 1);
 
             // Case: empty + empty -> empty
             const DocPtr res3 = makeConcat(makeEmpty(), makeEmpty());
@@ -318,7 +319,7 @@ TEST_CASE("Doc System", "[doc]")
             // makeConcat("a", "b") -> Text("ab")
             const DocPtr res = makeConcat(makeText("a"), makeText("b"));
 
-            REQUIRE(emit::foldImpl(res, 0, NODE_COUNTER) == 1);
+            REQUIRE(emit::DocWalker::fold(res, 0, NODE_COUNTER) == 1);
 
             const auto *text = std::get_if<emit::Text>(&res->value);
             REQUIRE(text != nullptr);
@@ -331,7 +332,7 @@ TEST_CASE("Doc System", "[doc]")
             const DocPtr res1
               = makeConcat(makeConcat(makeHardLines(2), makeHardLine()), makeHardLines(3));
 
-            REQUIRE(emit::foldImpl(res1, 0, NODE_COUNTER) == 1);
+            REQUIRE(emit::DocWalker::fold(res1, 0, NODE_COUNTER) == 1);
 
             const auto *lines1 = std::get_if<emit::HardLines>(&res1->value);
             REQUIRE(lines1 != nullptr);
@@ -340,7 +341,7 @@ TEST_CASE("Doc System", "[doc]")
             // HardLines(1) + HardLines(0) -> HardLine(1)
             const DocPtr res2 = makeConcat(makeHardLines(1), makeHardLines(0));
 
-            REQUIRE(emit::foldImpl(res2, 0, NODE_COUNTER) == 1);
+            REQUIRE(emit::DocWalker::fold(res2, 0, NODE_COUNTER) == 1);
             REQUIRE(std::holds_alternative<emit::HardLine>(res2->value));
         }
 
@@ -355,7 +356,7 @@ TEST_CASE("Doc System", "[doc]")
                 });
 
             // The tree should be fully flattened into one Text node
-            REQUIRE(emit::foldImpl(result, 0, NODE_COUNTER) == 1);
+            REQUIRE(emit::DocWalker::fold(result, 0, NODE_COUNTER) == 1);
 
             const auto *text = std::get_if<emit::Text>(&result->value);
             REQUIRE(text != nullptr);
@@ -369,7 +370,7 @@ TEST_CASE("Doc System", "[doc]")
             const DocPtr rhs = makeConcat(makeText("C"), makeEmpty());
             const DocPtr final_doc = makeConcat(lhs, rhs);
 
-            REQUIRE(emit::foldImpl(final_doc, 0, NODE_COUNTER) == 1);
+            REQUIRE(emit::DocWalker::fold(final_doc, 0, NODE_COUNTER) == 1);
 
             const auto *text = std::get_if<emit::Text>(&final_doc->value);
             REQUIRE(text != nullptr);

@@ -16,15 +16,6 @@ namespace emit {
 struct DocImpl;
 using DocPtr = std::shared_ptr<DocImpl>;
 
-template<typename Fn>
-auto transformImpl(const DocPtr &doc, const Fn &fn) -> DocPtr;
-
-template<typename T, typename Fn>
-auto foldImpl(const DocPtr &doc, T init, const Fn &fn) -> T;
-
-template<typename Fn>
-auto traverseImpl(const DocPtr &doc, const Fn &fn) -> void;
-
 /// @brief An immutable abstraction for a pretty-printable document.
 /// @note This class is a lightweight handle (PImpl pattern) to the underlying
 ///       document structure (DocImpl).
@@ -139,40 +130,6 @@ class Doc final
     /// @return A `Hang` node.
     [[nodiscard]]
     static auto hang(const Doc &doc) -> Doc;
-
-    // ========================================================================
-    // Tree Traversal & Analysis
-    // ========================================================================
-
-    /// @brief Recursively transforms the document tree.
-    /// @param fn A callable that takes a `DocImpl` variant node (e.g., `Text`,
-    ///           `Concat`) and returns a new `DocPtr`.
-    /// @return A new `Doc` with the transformed structure.
-    template<typename Fn>
-    auto transform(Fn &&fn) const -> Doc
-    {
-        return Doc(transformImpl(impl_, std::forward<Fn>(fn)));
-    }
-
-    /// @brief Folds (reduces) the document tree into a single value.
-    /// @tparam T The type of the accumulated value.
-    /// @param init The initial value for the accumulator.
-    /// @param fn A callable: `T f(T accumulator, const auto& node_variant)`
-    /// @return The final accumulated value.
-    template<typename T, typename Fn>
-    auto fold(T init, Fn &&fn) const -> T
-    {
-        return foldImpl(impl_, std::move(init), std::forward<Fn>(fn));
-    }
-
-    /// @brief Traverses the document tree.
-    /// @param fn A callable that takes a `DocImpl` variant node (e.g., `Text`,
-    ///           `Concat`) and returns void.
-    template<typename Fn>
-    auto traverse(Fn &&fn) const -> void
-    {
-        traverseImpl(impl_, std::forward<Fn>(fn));
-    }
 
     // ========================================================================
     // Rendering
