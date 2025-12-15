@@ -83,8 +83,8 @@ end Behavioral;
     // BENCHMARKS
     // ==============================================================================
 
-    // 1. RAW PARSING (CST Generation)
-    BENCHMARK("Stage 1: Parsing (SLL Mode)")
+    // 1.1 RAW PARSING (CST Generation)
+    BENCHMARK("Stage 1.1: Parsing (SLL Mode)")
     {
         golden_ctx.tokens->seek(0);
 
@@ -95,26 +95,38 @@ end Behavioral;
         return golden_ctx.parser->design_file();
     };
 
+    // 1.2 RAW PARSING (CST Generation)
+    BENCHMARK("Stage 1.2: Parsing (LL Mode)")
+    {
+        golden_ctx.tokens->seek(0);
+
+        auto *interpreter = golden_ctx.parser->getInterpreter<antlr4::atn::ParserATNSimulator>();
+        interpreter->setPredictionMode(antlr4::atn::PredictionMode::LL);
+        golden_ctx.parser->setErrorHandler(std::make_shared<antlr4::BailErrorStrategy>());
+
+        return golden_ctx.parser->design_file();
+    };
+
     // 2. AST TRANSLATION
-    BENCHMARK("Stage 2: AST Translation")
+    BENCHMARK("Stage 2.0: AST Translation")
     {
         return builder::Translator{ *golden_ctx.tokens }.buildDesignFile(golden_tree);
     };
 
     // 3. PRETTY PRINTING (Doc Generation)
-    BENCHMARK("Stage 3: Doc Generation (Visitor)")
+    BENCHMARK("Stage 3.0: Doc Generation (Visitor)")
     {
         return emit::PrettyPrinter{}.visit(golden_ast);
     };
 
     // 4. RENDERING
-    BENCHMARK("Stage 4: Rendering to String")
+    BENCHMARK("Stage 4.0: Rendering to String")
     {
         return emit::Renderer{ default_config }.render(pre_calculated_doc);
     };
 
     // 5. VERIFICATION (Safety Check)
-    BENCHMARK("Stage 5: Verification")
+    BENCHMARK("Stage 5.0: Verification")
     {
         auto output_ctx = builder::createContext(std::string_view{ formatted_output });
 
