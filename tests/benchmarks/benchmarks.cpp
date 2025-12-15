@@ -77,7 +77,7 @@ end Behavioral;
     // 4. Pre-calculate Formatted Output (for Verification benchmark)
     std::string formatted_output;
     {
-        const emit::PrettyPrinter printer{ default_config };
+        const emit::PrettyPrinter printer{};
         auto doc = printer.visit(golden_ast);
         formatted_output = doc.render(default_config);
     }
@@ -110,14 +110,14 @@ end Behavioral;
     // 3. PRETTY PRINTING (Doc Generation)
     BENCHMARK("Stage 3: Doc Generation (Visitor)")
     {
-        const emit::PrettyPrinter printer{ default_config };
+        const emit::PrettyPrinter printer{};
         return printer.visit(golden_ast);
     };
 
     // 4. RENDERING
     BENCHMARK("Stage 4: Rendering to String")
     {
-        const emit::PrettyPrinter printer{ default_config };
+        const emit::PrettyPrinter printer{};
         auto doc = printer.visit(golden_ast);
         return doc.render(default_config);
     };
