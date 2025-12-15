@@ -2,7 +2,9 @@
 #include "builder/translator.hpp"
 #include "builder/verifier.hpp"
 #include "common/config.hpp"
+#include "emit/format.hpp"
 #include "emit/pretty_printer.hpp"
+#include "emit/pretty_printer/renderer.hpp"
 #include "nodes/design_file.hpp"
 
 #include <antlr4-runtime/BailErrorStrategy.h>
@@ -74,13 +76,11 @@ end Behavioral;
         translator.buildDesignFile(golden_ast, golden_tree);
     }
 
-    // 4. Pre-calculate Formatted Output (for Verification benchmark)
-    std::string formatted_output;
-    {
-        const emit::PrettyPrinter printer{};
-        auto doc = printer.visit(golden_ast);
-        formatted_output = doc.render(default_config);
-    }
+    // 4. Pre-calculate Doc (for Rendering benchmark)
+    const auto pre_calculated_doc = emit::PrettyPrinter{}.visit(golden_ast);
+
+    // 5. Pre-calculate Formatted Output (for Verification benchmark)
+    std::string formatted_output = emit::format(golden_ast, default_config);
 
     // ==============================================================================
     // BENCHMARKS
@@ -110,16 +110,13 @@ end Behavioral;
     // 3. PRETTY PRINTING (Doc Generation)
     BENCHMARK("Stage 3: Doc Generation (Visitor)")
     {
-        const emit::PrettyPrinter printer{};
-        return printer.visit(golden_ast);
+        return emit::PrettyPrinter{}.visit(golden_ast);
     };
 
     // 4. RENDERING
     BENCHMARK("Stage 4: Rendering to String")
     {
-        const emit::PrettyPrinter printer{};
-        auto doc = printer.visit(golden_ast);
-        return doc.render(default_config);
+        return emit::Renderer{ default_config }.render(pre_calculated_doc);
     };
 
     // 5. VERIFICATION (Safety Check)

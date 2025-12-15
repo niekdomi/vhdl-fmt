@@ -13,12 +13,12 @@
 
 namespace emit {
 
-auto Renderer::render(const DocPtr &doc) -> std::string
+auto Renderer::render(const Doc &doc) -> std::string
 {
     output_.clear();
     column_ = 0;
 
-    renderDoc(0, Mode::BREAK, doc);
+    renderDoc(0, Mode::BREAK, doc.getImpl());
 
     return std::move(output_);
 }

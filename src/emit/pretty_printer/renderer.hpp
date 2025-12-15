@@ -1,6 +1,7 @@
 #ifndef EMIT_RENDERER_HPP
 #define EMIT_RENDERER_HPP
 
+#include "emit/pretty_printer/doc.hpp"
 #include "emit/pretty_printer/doc_impl.hpp"
 
 #include <cstdint>
@@ -34,7 +35,7 @@ class Renderer final
     auto operator=(Renderer &&) -> Renderer & = delete;
 
     // Core rendering function
-    auto render(const DocPtr &doc) -> std::string;
+    auto render(const Doc &doc) -> std::string;
 
   private:
     // Internal rendering using visitor pattern

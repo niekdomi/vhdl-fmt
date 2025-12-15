@@ -259,7 +259,7 @@ BENCHMARK_CURRENT   := $(BENCHMARK_RESULTS)/new.xml
 
 benchmark-build:
 	@echo "Preparing Release build for accurate benchmarking..."
-	@$(MAKE) --no-print-directory BUILD_TYPE=Release
+	@$(MAKE) --no-print-directory BUILD_TYPE=Release ENABLE_STATIC_LINKING=OFF
 
 benchmark: benchmark-build
 	@echo "Running Benchmarks (Samples: $(BENCHMARK_SAMPLES))..."
