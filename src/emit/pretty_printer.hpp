@@ -45,6 +45,7 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     // Node visitors
     auto operator()(const ast::Architecture &node) const -> Doc;
     auto operator()(const ast::DesignFile &node) const -> Doc;
+    auto operator()(const ast::DesignUnit &node) const -> Doc;
     auto operator()(const ast::Entity &node) const -> Doc;
     auto operator()(const ast::GenericClause &node) const -> Doc;
     auto operator()(const ast::PortClause &node) const -> Doc;

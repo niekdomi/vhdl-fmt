@@ -59,27 +59,19 @@ TEST_CASE("Architecture Rendering", "[pretty_printer][design_units][architecture
     }
 }
 
-TEST_CASE("Architecture with Context Clauses", "[pretty_printer][design_units][context]")
+TEST_CASE("Design Unit (Architecture) with Context Clauses",
+          "[pretty_printer][design_units][context]")
 {
+    ast::DesignUnit du{};
+    du.unit = ast::Architecture{ .name = "rtl", .entity_name = "test_unit" };
+
     SECTION("Architecture with library clause")
     {
-        ast::Architecture arch{ .name = "rtl", .entity_name = "test_unit" };
-        arch.context.emplace_back(ast::LibraryClause{ .logical_names = { "work" } });
+        du.context.emplace_back(ast::LibraryClause{ .logical_names = { "work" } });
 
-        const std::string result = emit::test::render(arch);
+        const std::string result = emit::test::render(du);
         constexpr std::string_view EXPECTED = "library work;\n"
                                               "architecture rtl of test_unit is\n"
-                                              "begin\n"
-                                              "end;";
-        REQUIRE(result == EXPECTED);
-    }
-
-    SECTION("Architecture without context clauses")
-    {
-        const ast::Architecture arch{ .name = "rtl", .entity_name = "test_unit" };
-
-        const std::string result = emit::test::render(arch);
-        constexpr std::string_view EXPECTED = "architecture rtl of test_unit is\n"
                                               "begin\n"
                                               "end;";
         REQUIRE(result == EXPECTED);

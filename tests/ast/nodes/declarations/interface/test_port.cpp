@@ -26,7 +26,7 @@ auto parsePorts(std::string_view port_content) -> const ast::Entity *
         return nullptr;
     }
 
-    return std::get_if<ast::Entity>(&design.units.front());
+    return std::get_if<ast::Entity>(&design.units.front().unit);
 }
 
 } // namespace

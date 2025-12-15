@@ -9,40 +9,23 @@ namespace emit {
 
 auto PrettyPrinter::operator()(const ast::Architecture &node) const -> Doc
 {
-    std::optional<Doc> result;
-
-    // Emit context clauses (library and use) first
-    for (const auto &ctx : node.context) {
-        if (!result.has_value()) {
-            result = visit(ctx);
-        } else {
-            *result /= visit(ctx);
-        }
-    }
-
     // Emit architecture declaration
-    const Doc arch_line = Doc::keyword(("architecture"))
-                        & Doc::text(node.name)
-                        & Doc::keyword(("of"))
-                        & Doc::text(node.entity_name)
-                        & Doc::keyword(("is"));
-
-    if (!result.has_value()) {
-        result = arch_line;
-    } else {
-        *result /= arch_line;
-    }
+    Doc result = Doc::keyword(("architecture"))
+               & Doc::text(node.name)
+               & Doc::keyword(("of"))
+               & Doc::text(node.entity_name)
+               & Doc::keyword(("is"));
 
     // Declarative items (components, constants, signals, etc. - in order)
-    *result = std::ranges::fold_left(
-      node.decls, *result, [this](auto acc, const auto &item) { return acc <<= visit(item); });
+    result = std::ranges::fold_left(
+      node.decls, result, [this](auto acc, const auto &item) { return acc <<= visit(item); });
 
     // begin
-    *result /= Doc::keyword(("begin"));
+    result /= Doc::keyword(("begin"));
 
     // Concurrent statements
-    *result = std::ranges::fold_left(
-      node.stmts, *result, [this](auto acc, const auto &stmt) { return acc <<= visit(stmt); });
+    result = std::ranges::fold_left(
+      node.stmts, result, [this](auto acc, const auto &stmt) { return acc <<= visit(stmt); });
 
     // end [architecture] [<name>];
     Doc end_line = Doc::keyword(("end"));
@@ -54,7 +37,7 @@ auto PrettyPrinter::operator()(const ast::Architecture &node) const -> Doc
     }
     end_line += Doc::text(";");
 
-    return *result / end_line;
+    return result / end_line;
 }
 
 } // namespace emit

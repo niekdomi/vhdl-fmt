@@ -29,18 +29,20 @@ auto Translator::buildDesignFile(vhdlParser::Design_fileContext *ctx) -> ast::De
         // package_declaration)
         if (auto *primary = lib_unit->primary_unit()) {
             if (auto *entity_ctx = primary->entity_declaration()) {
-                auto entity = makeEntity(*entity_ctx);
-                entity.context = std::move(context);
-                node.units.emplace_back(std::move(entity));
+                ast::DesignUnit du{};
+                du.context = std::move(context);
+                du.unit = makeEntity(*entity_ctx);
+                node.units.emplace_back(std::move(du));
             }
             // TODO(someone): Handle configuration_declaration and package_declaration
         }
         // Check secondary units (architecture_body | package_body)
         else if (auto *secondary = lib_unit->secondary_unit()) {
             if (auto *arch_ctx = secondary->architecture_body()) {
-                auto arch = makeArchitecture(*arch_ctx);
-                arch.context = std::move(context);
-                node.units.emplace_back(std::move(arch));
+                ast::DesignUnit du{};
+                du.context = std::move(context);
+                du.unit = makeArchitecture(*arch_ctx);
+                node.units.emplace_back(std::move(du));
             }
             // TODO(someone): Handle package_body
         }
