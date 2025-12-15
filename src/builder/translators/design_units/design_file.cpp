@@ -10,6 +10,7 @@ namespace builder {
 
 auto Translator::buildDesignFile(vhdlParser::Design_fileContext *ctx) -> ast::DesignFile
 {
+    // No trivia binding here as the children should bind them instead
     return buildNoTrivia<ast::DesignFile>()
       .collect(&ast::DesignFile::units,
                ctx->design_unit(),
@@ -24,6 +25,7 @@ auto Translator::makeDesignUnit(vhdlParser::Design_unitContext *ctx) -> ast::Des
         return {};
     }
 
+    // No trivia binding here as the children should bind them instead
     return buildNoTrivia<ast::DesignUnit>()
       .collectFrom(
         &ast::DesignUnit::context,
