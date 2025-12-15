@@ -4,9 +4,11 @@
 #include "emit/pretty_printer/walker.hpp"
 
 #include <algorithm>
-#include <map>
+#include <cstddef>
+#include <span>
 #include <type_traits>
 #include <variant>
+#include <vector>
 
 namespace emit {
 
@@ -16,7 +18,10 @@ auto AlignmentResolver::resolve(const DocPtr &doc) -> DocPtr
         return doc;
     }
 
-    std::map<int, int> widths{};
+    // There will never be this many levels of alignment
+    constexpr int MAX_LEVELS = 8;
+    std::vector<int> widths{};
+    widths.reserve(MAX_LEVELS);
 
     // Pass 1: Measure
     measure(doc, widths);
@@ -29,7 +34,7 @@ auto AlignmentResolver::resolve(const DocPtr &doc) -> DocPtr
     return apply(doc, widths);
 }
 
-void AlignmentResolver::measure(const DocPtr &doc, std::map<int, int> &widths)
+void AlignmentResolver::measure(const DocPtr &doc, std::vector<int> &widths)
 {
     if (!doc) {
         return;
@@ -38,20 +43,27 @@ void AlignmentResolver::measure(const DocPtr &doc, std::map<int, int> &widths)
     auto visitor = [&](const auto &node) {
         using T = std::decay_t<decltype(node)>;
 
-        // 1. Stop recursion at Align nodes
         if constexpr (std::is_same_v<T, Align>) {
-            return;
+            return; // Firewall
         }
 
-        // 2. Measure Leaves
         if constexpr (IS_ANY_OF_V<T, Text, Keyword>) {
-            if (node.level >= 0) {
-                widths[node.level]
-                  = std::max(widths[node.level], static_cast<int>(node.content.length()));
+            // Only process valid levels
+            if (node.level < 0) {
+                return;
             }
+
+            // Resize widths vector if necessary
+            if (static_cast<size_t>(node.level) >= widths.size()) {
+                widths.resize(node.level + 1, 0);
+            }
+
+            // Update max width
+            widths[node.level]
+              = std::max(widths[node.level], static_cast<int>(node.content.length()));
         }
 
-        // 3. Recurse
+        // Recurse
         DocWalker::traverseChildren(node,
                                     [&](const DocPtr &child) -> void { measure(child, widths); });
     };
@@ -59,13 +71,13 @@ void AlignmentResolver::measure(const DocPtr &doc, std::map<int, int> &widths)
     std::visit(visitor, doc->value);
 }
 
-auto AlignmentResolver::apply(const DocPtr &doc, const std::map<int, int> &widths) -> DocPtr
+auto AlignmentResolver::apply(const DocPtr &doc, std::span<const int> widths) -> DocPtr
 {
     if (!doc) {
         return doc;
     }
 
-    auto visitor = [&](const auto &node) {
+    auto visitor = [&doc, widths](const auto &node) {
         using T = std::decay_t<decltype(node)>;
 
         // 1. Return Align nodes as-is
@@ -75,20 +87,20 @@ auto AlignmentResolver::apply(const DocPtr &doc, const std::map<int, int> &width
 
         // 2. Apply Padding to Leaves
         if constexpr (IS_ANY_OF_V<T, Text, Keyword>) {
-            // Only apply padding to levels >= 0
-            if (node.level < 0) {
+            // Only apply padding to levels >= 0 || Safe bound check
+            if (node.level < 0 || static_cast<size_t>(node.level) >= widths.size()) {
                 return doc;
             }
 
-            // Safe lookup since measured first
-            if (auto it = widths.find(node.level); it != widths.end()) {
-                const int padding = it->second - static_cast<int>(node.content.length());
+            if (const int width = widths[node.level]; width > 0) {
+                const int padding = width - static_cast<int>(node.content.length());
                 if (padding > 0) {
                     auto content = std::make_shared<DocImpl>(T{ .content = node.content });
                     return makeConcat(content, makeText(std::string(padding, ' ')));
                 }
             }
-            return doc; // No padding needed
+
+            return doc;
         }
 
         // 3. Recurse and Rebuild

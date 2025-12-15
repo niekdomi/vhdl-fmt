@@ -3,7 +3,8 @@
 
 #include "emit/pretty_printer/doc.hpp"
 
-#include <map>
+#include <span>
+#include <vector>
 
 namespace emit {
 
@@ -16,11 +17,11 @@ class AlignmentResolver
 
   private:
     // Pass 1: Recursive Analysis
-    static void measure(const DocPtr &doc, std::map<int, int> &widths);
+    static void measure(const DocPtr &doc, std::vector<int> &widths);
 
     // Pass 2: Recursive Transformation
     [[nodiscard]]
-    static auto apply(const DocPtr &doc, const std::map<int, int> &widths) -> DocPtr;
+    static auto apply(const DocPtr &doc, std::span<const int> widths) -> DocPtr;
 };
 
 } // namespace emit
