@@ -3,6 +3,7 @@
 #include "common/config.hpp"
 #include "common/overload.hpp"
 #include "emit/pretty_printer/algorithms/alignment_resolver.hpp"
+#include "emit/pretty_printer/doc.hpp"
 #include "emit/pretty_printer/doc_impl.hpp"
 
 #include <cctype>
