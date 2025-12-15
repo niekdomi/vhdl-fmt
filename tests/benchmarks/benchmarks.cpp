@@ -70,11 +70,8 @@ end Behavioral;
     auto *golden_tree = golden_ctx.parser->design_file();
 
     // 3. Pre-calculate AST (for PrettyPrinter benchmark)
-    ast::DesignFile golden_ast;
-    {
-        builder::Translator translator(*golden_ctx.tokens);
-        translator.buildDesignFile(golden_ast, golden_tree);
-    }
+    ast::DesignFile golden_ast
+      = builder::Translator{ *golden_ctx.tokens }.buildDesignFile(golden_tree);
 
     // 4. Pre-calculate Doc (for Rendering benchmark)
     const auto pre_calculated_doc = emit::PrettyPrinter{}.visit(golden_ast);
@@ -101,10 +98,7 @@ end Behavioral;
     // 2. AST TRANSLATION
     BENCHMARK("Stage 2: AST Translation")
     {
-        ast::DesignFile ast{};
-        builder::Translator translator(*golden_ctx.tokens);
-        translator.buildDesignFile(ast, golden_tree);
-        return ast;
+        return builder::Translator{ *golden_ctx.tokens }.buildDesignFile(golden_tree);
     };
 
     // 3. PRETTY PRINTING (Doc Generation)

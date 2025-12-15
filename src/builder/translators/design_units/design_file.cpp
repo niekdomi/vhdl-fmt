@@ -9,8 +9,10 @@
 
 namespace builder {
 
-void Translator::buildDesignFile(ast::DesignFile &dest, vhdlParser::Design_fileContext *ctx)
+auto Translator::buildDesignFile(vhdlParser::Design_fileContext *ctx) -> ast::DesignFile
 {
+    ast::DesignFile node{};
+
     for (auto *unit_ctx : ctx->design_unit()) {
         auto *lib_unit = unit_ctx->library_unit();
         if (lib_unit == nullptr) {
@@ -29,7 +31,7 @@ void Translator::buildDesignFile(ast::DesignFile &dest, vhdlParser::Design_fileC
             if (auto *entity_ctx = primary->entity_declaration()) {
                 auto entity = makeEntity(*entity_ctx);
                 entity.context = std::move(context);
-                dest.units.emplace_back(std::move(entity));
+                node.units.emplace_back(std::move(entity));
             }
             // TODO(someone): Handle configuration_declaration and package_declaration
         }
@@ -38,11 +40,13 @@ void Translator::buildDesignFile(ast::DesignFile &dest, vhdlParser::Design_fileC
             if (auto *arch_ctx = secondary->architecture_body()) {
                 auto arch = makeArchitecture(*arch_ctx);
                 arch.context = std::move(context);
-                dest.units.emplace_back(std::move(arch));
+                node.units.emplace_back(std::move(arch));
             }
             // TODO(someone): Handle package_body
         }
     }
+
+    return node;
 }
 
 } // namespace builder

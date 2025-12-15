@@ -32,7 +32,7 @@ class Translator final
     explicit Translator(antlr4::CommonTokenStream &tokens) : trivia_(tokens) {}
 
     /// @brief Build the entire design file by walking the CST
-    void buildDesignFile(ast::DesignFile &dest, vhdlParser::Design_fileContext *ctx);
+    auto buildDesignFile(vhdlParser::Design_fileContext *ctx) -> ast::DesignFile;
 
     ~Translator() = default;
 
