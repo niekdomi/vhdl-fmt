@@ -87,7 +87,7 @@ auto AlignmentResolver::apply(const DocPtr &doc, std::span<const int> widths) ->
 
         // 2. Apply Padding to Leaves
         if constexpr (IS_ANY_OF_V<T, Text, Keyword>) {
-            // Only apply padding to levels >= 0 || Safe bound check
+            // Skip nodes with invalid levels (< 0) or out-of-bounds levels
             if (node.level < 0 || static_cast<size_t>(node.level) >= widths.size()) {
                 return doc;
             }
