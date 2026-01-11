@@ -22,6 +22,7 @@ target_link_libraries(
         common
         builder
         emit
+        onetbb::onetbb
 )
 
 # Static linking for distribution builds

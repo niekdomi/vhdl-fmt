@@ -56,9 +56,11 @@ TEST_CASE("ArgumentParser with valid arguments including all options", "[argumen
 
     const cli::ArgumentParser parser{ args_span };
 
-    REQUIRE(parser.getInputPath() == std::filesystem::canonical(temp_input));
-    REQUIRE(parser.getConfigPath().has_value());
-    REQUIRE(parser.getConfigPath().value() == std::filesystem::canonical(temp_config));
+    const auto files = parser.getFilesToFormat();
+    REQUIRE(files.size() == 1);
+    REQUIRE(files[0] == std::filesystem::canonical(temp_input));
+    REQUIRE(parser.getConfigFilePath().has_value());
+    REQUIRE(parser.getConfigFilePath().value() == std::filesystem::canonical(temp_config));
     REQUIRE(parser.isFlagSet(cli::ArgumentFlag::WRITE));
     REQUIRE(parser.isFlagSet(cli::ArgumentFlag::CHECK));
 
@@ -86,8 +88,10 @@ TEST_CASE("ArgumentParser with valid arguments minimal options", "[argument_pars
 
     const cli::ArgumentParser parser{ args_span };
 
-    REQUIRE(parser.getInputPath() == std::filesystem::canonical(temp_input));
-    REQUIRE_FALSE(parser.getConfigPath().has_value());
+    const auto files = parser.getFilesToFormat();
+    REQUIRE(files.size() == 1);
+    REQUIRE(files[0] == std::filesystem::canonical(temp_input));
+    REQUIRE_FALSE(parser.getConfigFilePath().has_value());
     REQUIRE_FALSE(parser.isFlagSet(cli::ArgumentFlag::WRITE));
     REQUIRE_FALSE(parser.isFlagSet(cli::ArgumentFlag::CHECK));
 

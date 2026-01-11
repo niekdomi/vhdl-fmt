@@ -71,6 +71,7 @@ find_package(yaml-cpp REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(Catch2 CONFIG REQUIRED)
+find_package(TBB CONFIG REQUIRED)
 
 # ------------------------------------------------------------------
 # ANTLR Generation
