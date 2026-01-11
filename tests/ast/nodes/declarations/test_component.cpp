@@ -1,14 +1,15 @@
 #include "ast/nodes/declarations.hpp"
-#include "ast/nodes/declarations/decl_utils.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
 TEST_CASE("Declaration: Component", "[builder][decl][component]")
 {
+    auto parse_decl = test_helpers::parseDecl<ast::ComponentDecl>;
+
     SECTION("Simple Component")
     {
-        const auto *decl
-          = decl_utils::parse<ast::ComponentDecl>("component my_comp is end component;");
+        const auto *decl = parse_decl("component my_comp is end component;");
         REQUIRE(decl != nullptr);
         REQUIRE(decl->name == "my_comp");
         REQUIRE(decl->has_is_keyword == true);
@@ -16,10 +17,9 @@ TEST_CASE("Declaration: Component", "[builder][decl][component]")
 
     SECTION("Component with Generics")
     {
-        const auto *decl
-          = decl_utils::parse<ast::ComponentDecl>("component adder is\n"
-                                                  "  generic(WIDTH : integer := 32);\n"
-                                                  "end component;");
+        const auto *decl = parse_decl("component adder is\n"
+                                      "  generic(WIDTH : integer := 32);\n"
+                                      "end component;");
         REQUIRE(decl != nullptr);
 
         const auto &generics = decl->generic_clause.generics;
@@ -34,14 +34,13 @@ TEST_CASE("Declaration: Component", "[builder][decl][component]")
 
     SECTION("Component with Ports")
     {
-        const auto *decl
-          = decl_utils::parse<ast::ComponentDecl>("component mux is\n"
-                                                  "  port(\n"
-                                                  "    sel : in std_logic;\n"
-                                                  "    d_in : in std_logic_vector(3 downto 0);\n"
-                                                  "    d_out : out std_logic\n"
-                                                  "  );\n"
-                                                  "end component;");
+        const auto *decl = parse_decl("component mux is\n"
+                                      "  port(\n"
+                                      "    sel : in std_logic;\n"
+                                      "    d_in : in std_logic_vector(3 downto 0);\n"
+                                      "    d_out : out std_logic\n"
+                                      "  );\n"
+                                      "end component;");
         REQUIRE(decl != nullptr);
 
         const auto &ports = decl->port_clause.ports;

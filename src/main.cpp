@@ -3,7 +3,8 @@
 #include "cli/argument_parser.hpp"
 #include "cli/config_reader.hpp"
 #include "common/logger.hpp"
-#include "emit/pretty_printer.hpp"
+#include "emit/format.hpp"
+#include "emit/pretty_printer/renderer.hpp"
 
 #include <algorithm>
 #include <cstdlib>
@@ -32,21 +33,17 @@ auto formatFile(const std::filesystem::path &file,
         const auto root = builder::build(ctx_orig);
 
         // 3. Format
-        const emit::PrettyPrinter printer{};
-        const auto doc = printer.visit(root);
-        const std::string formatted_code = doc.render(config);
+        const std::string formatted_code = emit::format(root, config);
 
         // 4. Verify Safety
         const auto ctx_fmt = builder::createContext(std::string_view{ formatted_code });
         const auto result = builder::verify::ensureSafety(*ctx_orig.tokens, *ctx_fmt.tokens);
 
-        // if (!result) {
-        //     logger.critical("Formatter corrupted the code semantics.");
-        //     logger.critical("{}", result.error().message);
-        //     logger.info("Aborting write to prevent data loss.");
-
-        //     return;
-        // }
+        if (!result) {
+            logger.critical("Formatter corrupted the code semantics.");
+            logger.critical("{}", result.error().message);
+            logger.info("Aborting write to prevent data loss.");
+        }
 
         // 5. Output
         if (argparser.isFlagSet(cli::ArgumentFlag::WRITE)) {

@@ -28,15 +28,19 @@ struct VariableAssign : NodeBase
 
 struct IfStatement : NodeBase
 {
-    struct Branch
+    struct ConditionalBranch : NodeBase
     {
         Expr condition;
         std::vector<SequentialStatement> body;
     };
 
-    Branch if_branch;
-    std::vector<Branch> elsif_branches;
-    std::optional<Branch> else_branch;
+    struct ElseBranch : NodeBase
+    {
+        std::vector<SequentialStatement> body;
+    };
+
+    std::vector<ConditionalBranch> branches;
+    std::optional<ElseBranch> else_branch;
 };
 
 struct CaseStatement : NodeBase
@@ -53,7 +57,6 @@ struct CaseStatement : NodeBase
 
 struct Loop : NodeBase
 {
-    std::optional<std::string> label;
     std::vector<SequentialStatement> body;
 };
 
@@ -73,6 +76,8 @@ struct ForLoop : NodeBase
 /// @brief Represents a NULL statement.
 struct NullStatement : NodeBase
 {};
+
+// TODO(vedivad): Report, Next, Exit, Return, Wait statements.
 
 } // namespace ast
 

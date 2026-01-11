@@ -1,10 +1,7 @@
 #include "emit/pretty_printer/doc.hpp"
 
-#include "common/config.hpp"
 #include "emit/pretty_printer/doc_impl.hpp"
-#include "emit/pretty_printer/renderer.hpp"
 
-#include <string>
 #include <string_view>
 #include <variant>
 
@@ -20,7 +17,22 @@ auto Doc::empty() -> Doc
 
 auto Doc::text(std::string_view str) -> Doc
 {
-    return Doc(makeText(str));
+    return Doc(makeText(str, -1));
+}
+
+auto Doc::text(std::string_view str, int level) -> Doc
+{
+    return Doc(makeText(str, level));
+}
+
+auto Doc::keyword(std::string_view str) -> Doc
+{
+    return Doc(makeKeyword(str, -1));
+}
+
+auto Doc::keyword(std::string_view str, int level) -> Doc
+{
+    return Doc(makeKeyword(str, level));
 }
 
 auto Doc::line() -> Doc
@@ -40,11 +52,6 @@ auto Doc::hardlines(unsigned count) -> Doc
     }
     // Count 0 can act as a marker to prevent flattening
     return Doc(makeHardLines(count));
-}
-
-auto Doc::alignText(std::string_view str, int level) -> Doc
-{
-    return Doc(makeAlignText(str, level));
 }
 
 // ========================================================================
@@ -141,16 +148,6 @@ auto Doc::group(const Doc &doc) -> Doc
 auto Doc::hang(const Doc &doc) -> Doc
 {
     return Doc(makeHang(doc.impl_));
-}
-
-// ========================================================================
-// Rendering
-// ========================================================================
-
-auto Doc::render(const common::Config &config) const -> std::string
-{
-    Renderer renderer(config);
-    return renderer.render(impl_);
 }
 
 // =======================================================================

@@ -1,218 +1,90 @@
-#include "ast/nodes/design_units.hpp"
-#include "ast/nodes/statements/concurrent.hpp"
+#include "ast/nodes/expressions.hpp"
 #include "ast/nodes/statements/sequential.hpp"
-#include "builder/ast_builder.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>
 #include <variant>
 
-TEST_CASE("CaseStatement: Simple case with when clauses", "[statements][case]")
+TEST_CASE("CaseStatement", "[statements][case]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process
-            begin
-                case state is
-                    when IDLE =>
-                        next_state := RUNNING;
-                    when RUNNING =>
-                        next_state := DONE;
-                    when others =>
-                        next_state := IDLE;
-                end case;
-            end process;
-        end RTL;
-    )";
+    auto parse_case = test_helpers::parseSequentialStmt<ast::CaseStatement>;
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
+    SECTION("Simple case with when clauses")
+    {
+        constexpr std::string_view CODE = R"(
+            case state is
+                when IDLE => next_state := RUNNING;
+                when RUNNING => next_state := DONE;
+                when others => next_state := IDLE;
+            end case;
+        )";
 
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-    REQUIRE_FALSE(proc->body.empty());
+        const auto *case_stmt = parse_case(CODE);
+        REQUIRE(case_stmt != nullptr);
 
-    const auto *case_stmt = std::get_if<ast::CaseStatement>(proc->body.data());
-    REQUIRE(case_stmt != nullptr);
-    REQUIRE(case_stmt->when_clauses.size() == 3);
-}
+        // Verify Selector
+        CHECK(std::get<ast::TokenExpr>(case_stmt->selector).text == "state");
+        REQUIRE(case_stmt->when_clauses.size() == 3);
 
-TEST_CASE("CaseStatement: Case with integer values", "[statements][case]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process
-            begin
-                case selector is
-                    when 0 =>
-                        result := "000";
-                    when 1 =>
-                        result := "001";
-                    when 2 =>
-                        result := "010";
-                    when 3 =>
-                        result := "011";
-                    when others =>
-                        result := "111";
-                end case;
-            end process;
-        end RTL;
-    )";
+        // 1. Verify IDLE Clause
+        const auto &idle = case_stmt->when_clauses[0];
+        REQUIRE(idle.choices.size() == 1);
+        CHECK(std::get<ast::TokenExpr>(idle.choices[0]).text == "IDLE");
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
+        REQUIRE(idle.body.size() == 1);
+        // Access Wrapper -> Kind
+        CHECK(std::holds_alternative<ast::VariableAssign>(idle.body[0].kind));
+        const auto &assign = std::get<ast::VariableAssign>(idle.body[0].kind);
+        CHECK(std::get<ast::TokenExpr>(assign.value).text == "RUNNING");
 
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-    REQUIRE_FALSE(proc->body.empty());
+        // 2. Verify others Clause
+        const auto &others = case_stmt->when_clauses[2];
+        REQUIRE(others.choices.size() == 1);
+        CHECK(std::get<ast::TokenExpr>(others.choices[0]).text == "others");
+    }
 
-    const auto *case_stmt = std::get_if<ast::CaseStatement>(proc->body.data());
-    REQUIRE(case_stmt != nullptr);
-    REQUIRE(case_stmt->when_clauses.size() == 5);
-}
+    SECTION("Case with different literal choices")
+    {
+        constexpr std::string_view CODE = R"(
+            case val is
+                when 0 => null;      -- Integer
+                when "00" => null;   -- Bit String
+                when '1' => null;    -- Character
+                when others => null;
+            end case;
+        )";
 
-TEST_CASE("CaseStatement: Case with bit patterns", "[statements][case]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process
-            begin
-                case opcode is
-                    when "00" =>
-                        operation := ADD;
-                    when "01" =>
-                        operation := SUB;
-                    when "10" =>
-                        operation := MUL;
-                    when "11" =>
-                        operation := DIV;
-                end case;
-            end process;
-        end RTL;
-    )";
+        const auto *case_stmt = parse_case(CODE);
+        REQUIRE(case_stmt != nullptr);
+        REQUIRE(case_stmt->when_clauses.size() == 4);
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
+        CHECK(std::get<ast::TokenExpr>(case_stmt->when_clauses[0].choices[0]).text == "0");
+        CHECK(std::get<ast::TokenExpr>(case_stmt->when_clauses[1].choices[0]).text == "\"00\"");
+        CHECK(std::get<ast::TokenExpr>(case_stmt->when_clauses[2].choices[0]).text == "'1'");
+    }
 
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-    REQUIRE_FALSE(proc->body.empty());
+    SECTION("Nested case statements")
+    {
+        constexpr std::string_view CODE = R"(
+            case outer_sel is
+                when A =>
+                    case inner_sel is
+                        when 0 => res := '0';
+                    end case;
+            end case;
+        )";
 
-    const auto *case_stmt = std::get_if<ast::CaseStatement>(proc->body.data());
-    REQUIRE(case_stmt != nullptr);
-    REQUIRE(case_stmt->when_clauses.size() == 4);
-}
+        const auto *outer = parse_case(CODE);
+        REQUIRE(outer != nullptr);
 
-TEST_CASE("CaseStatement: Case with multiple statements per branch", "[statements][case]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process
-            begin
-                case mode is
-                    when INIT =>
-                        counter := 0;
-                        valid := '0';
-                        ready := '0';
-                    when RUN =>
-                        counter := counter + 1;
-                        valid := '1';
-                    when STOP =>
-                        valid := '0';
-                end case;
-            end process;
-        end RTL;
-    )";
+        const auto &outer_body = outer->when_clauses[0].body;
+        REQUIRE(outer_body.size() == 1);
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
+        // Verify inner is a CaseStatement
+        CHECK(std::holds_alternative<ast::CaseStatement>(outer_body[0].kind));
 
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-    REQUIRE_FALSE(proc->body.empty());
-
-    const auto *case_stmt = std::get_if<ast::CaseStatement>(proc->body.data());
-    REQUIRE(case_stmt != nullptr);
-    REQUIRE(case_stmt->when_clauses.size() == 3);
-}
-
-TEST_CASE("CaseStatement: Nested case statements", "[statements][case]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process
-            begin
-                case outer_sel is
-                    when A =>
-                        case inner_sel is
-                            when 0 =>
-                                result := X;
-                            when 1 =>
-                                result := Y;
-                        end case;
-                    when B =>
-                        result := Z;
-                end case;
-            end process;
-        end RTL;
-    )";
-
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
-
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-    REQUIRE_FALSE(proc->body.empty());
-
-    const auto *case_stmt = std::get_if<ast::CaseStatement>(proc->body.data());
-    REQUIRE(case_stmt != nullptr);
-    REQUIRE(case_stmt->when_clauses.size() == 2);
-}
-
-TEST_CASE("CaseStatement: Case with null statement", "[statements][case]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process
-            begin
-                case sel is
-                    when 0 =>
-                        data := input;
-                    when 1 =>
-                        null;
-                    when others =>
-                        data := default_val;
-                end case;
-            end process;
-        end RTL;
-    )";
-
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
-
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-    REQUIRE_FALSE(proc->body.empty());
-
-    const auto *case_stmt = std::get_if<ast::CaseStatement>(proc->body.data());
-    REQUIRE(case_stmt != nullptr);
-    REQUIRE(case_stmt->when_clauses.size() == 3);
+        const auto &inner = std::get<ast::CaseStatement>(outer_body[0].kind);
+        CHECK(std::get<ast::TokenExpr>(inner.selector).text == "inner_sel");
+    }
 }

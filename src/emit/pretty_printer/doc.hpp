@@ -2,7 +2,6 @@
 #define EMIT_DOC_HPP
 
 #include <memory>
-#include <string>
 #include <string_view>
 #include <utility>
 
@@ -15,12 +14,6 @@ namespace emit {
 
 struct DocImpl;
 using DocPtr = std::shared_ptr<DocImpl>;
-
-template<typename Fn>
-auto transformImpl(const DocPtr &doc, Fn &&fn) -> DocPtr;
-
-template<typename T, typename Fn>
-auto foldImpl(const DocPtr &doc, T init, Fn &&fn) -> T;
 
 /// @brief An immutable abstraction for a pretty-printable document.
 /// @note This class is a lightweight handle (PImpl pattern) to the underlying
@@ -39,6 +32,20 @@ class Doc final
     /// @note The text must not contain newlines.
     static auto text(std::string_view str) -> Doc;
 
+    /// @brief Creates a document from a string.
+    /// @note The text must not contain newlines.
+    /// @param level The level of the document.
+    static auto text(std::string_view str, int level) -> Doc;
+
+    /// @brief Creates a document from a keyword.
+    /// @note The text must not contain newlines.
+    static auto keyword(std::string_view str) -> Doc;
+
+    /// @brief Creates a document from a keyword.
+    /// @note The text must not contain newlines.
+    /// @param level The level of the document.
+    static auto keyword(std::string_view str, int level) -> Doc;
+
     /// @brief A "soft" line break. Renders as a space if it fits,
     ///        or a newline and indent if in "break" mode.
     static auto line() -> Doc;
@@ -50,13 +57,6 @@ class Doc final
     /// @param count The number of hard line breaks to insert.
     /// @note Can be zero to mark something that should not break.
     static auto hardlines(unsigned count) -> Doc;
-
-    /// @brief Creates a special text for alignment.
-    /// @note The renderer will append spaces based on other
-    ///       texts within the same alignment group.
-    /// @param str The text content for this text.
-    /// @param level An integer key that defines the alignment group.
-    static auto alignText(std::string_view str, int level) -> Doc;
 
     // ========================================================================
     // Low-Level Combinators (Operators)
@@ -131,43 +131,20 @@ class Doc final
     static auto hang(const Doc &doc) -> Doc;
 
     // ========================================================================
-    // Tree Traversal & Analysis
+    // Utility
     // ========================================================================
-
-    /// @brief Recursively transforms the document tree.
-    /// @param fn A callable that takes a `DocImpl` variant node (e.g., `Text`,
-    ///           `Concat`) and returns a new `DocPtr`.
-    /// @return A new `Doc` with the transformed structure.
-    template<typename Fn>
-    auto transform(Fn &&fn) const -> Doc
-    {
-        return Doc(transformImpl(impl_, std::forward<Fn>(fn)));
-    }
-
-    /// @brief Folds (reduces) the document tree into a single value.
-    /// @tparam T The type of the accumulated value.
-    /// @param init The initial value for the accumulator.
-    /// @param fn A callable: `T f(T accumulator, const auto& node_variant)`
-    /// @return The final accumulated value.
-    template<typename T, typename Fn>
-    auto fold(T init, Fn &&fn) const -> T
-    {
-        return foldImpl(impl_, std::move(init), std::forward<Fn>(fn));
-    }
-
-    // ========================================================================
-    // Rendering
-    // ========================================================================
-
-    /// @brief Renders the document to a string based on the given config.
-    /// @param config The configuration containing layout rules (line width, etc.)
-    [[nodiscard]]
-    auto render(const common::Config &config) const -> std::string;
 
     /// @brief Checks if the document is an Empty node.
     /// @return True if the document is 'Doc::empty()', false otherwise.
     [[nodiscard]]
     auto isEmpty() const -> bool;
+
+    /// @brief Access the underlying DocImpl pointer.
+    [[nodiscard]]
+    auto getImpl() const -> DocPtr
+    {
+        return impl_;
+    }
 
   private:
     /// @brief Private constructor for internal factory functions.

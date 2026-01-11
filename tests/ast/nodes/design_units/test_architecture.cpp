@@ -1,82 +1,70 @@
+#include "ast/nodes/declarations.hpp"
+#include "ast/nodes/declarations/objects.hpp"
 #include "ast/nodes/design_units.hpp"
-#include "builder/ast_builder.hpp"
+#include "ast/nodes/statements/concurrent.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
-#include <string_view>
 #include <variant>
 
-TEST_CASE("Architecture: With component declarations", "[design_units][architecture][component]")
+TEST_CASE("Architecture", "[design_units][architecture]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
-        entity test_ent is
-        end test_ent;
+    auto parse_arch = test_helpers::parseDesignUnit<ast::Architecture>;
 
-        architecture rtl of test_ent is
-            component my_comp
-                generic (WIDTH : integer := 8);
-                port (clk : in std_logic);
-            end component;
-        begin
-        end architecture rtl;
-    )";
+    SECTION("Header and Footer (Metadata)")
+    {
+        const auto *arch = parse_arch(R"(
+            architecture RTL of MyEntity is
+            begin
+            end architecture RTL;
+        )");
+        REQUIRE(arch != nullptr);
 
-    auto design = builder::buildFromString(VHDL_FILE);
-    REQUIRE(design.units.size() == 2);
+        CHECK(arch->name == "RTL");
+        CHECK(arch->entity_name == "MyEntity");
+        CHECK(arch->has_end_architecture_keyword);
+        CHECK(arch->end_label.value_or("") == "RTL");
+    }
 
-    auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
-    REQUIRE(arch->decls.size() == 1);
+    SECTION("Declarative Part Container")
+    {
+        // Verify architecture can hold different types of declarations.
+        const auto *arch = parse_arch(R"(
+            architecture Mixed of Test is
+                constant C : integer := 0;
+                signal S : bit;
+                component MyComp is end component;
+            begin
+            end;
+        )");
+        REQUIRE(arch != nullptr);
+        REQUIRE(arch->decls.size() == 3);
 
-    auto *comp = std::get_if<ast::ComponentDecl>(arch->decls.data());
-    REQUIRE(comp != nullptr);
-    REQUIRE(comp->name == "my_comp");
-    REQUIRE(comp->generic_clause.generics.size() == 1);
-    REQUIRE(comp->port_clause.ports.size() == 1);
-}
+        CHECK(std::holds_alternative<ast::ConstantDecl>(arch->decls[0]));
+        CHECK(std::holds_alternative<ast::SignalDecl>(arch->decls[1]));
+        CHECK(std::holds_alternative<ast::ComponentDecl>(arch->decls[2]));
+    }
 
-TEST_CASE("Architecture: Basic architecture without statements", "[design_units][architecture]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        architecture RTL of MyEntity is
-            signal temp : std_logic;
-        begin
-            temp <= '1';
-        end RTL;
-    )";
+    SECTION("Statement Part Container")
+    {
+        // Verify architecture can hold different types of concurrent statements.
+        const auto *arch = parse_arch(R"(
+            architecture Logic of Test is
+            begin
+                -- Conditional Assignment
+                s <= '1' when en else '0';
+                
+                -- Process
+                process begin wait; end process;
+            end;
+        )");
+        REQUIRE(arch != nullptr);
+        REQUIRE(arch->stmts.size() == 2);
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    REQUIRE(design.units.size() == 1);
+        // Check statement 1 (Assignment)
+        CHECK(std::holds_alternative<ast::ConditionalConcurrentAssign>(arch->stmts[0].kind));
 
-    const auto *arch = std::get_if<ast::Architecture>(design.units.data());
-    REQUIRE(arch != nullptr);
-    REQUIRE(arch->name == "RTL");
-    REQUIRE(arch->entity_name == "MyEntity");
-    REQUIRE_FALSE(arch->decls.empty());
-    REQUIRE_FALSE(arch->stmts.empty());
-}
-
-TEST_CASE("Architecture: Multiple architectures for same entity", "[design_units][architecture]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        architecture RTL of Counter is
-        begin
-        end RTL;
-
-        architecture Behavioral of Counter is
-        begin
-        end Behavioral;
-    )";
-
-    const auto design = builder::buildFromString(VHDL_FILE);
-    REQUIRE(design.units.size() == 2);
-
-    const auto *arch1 = std::get_if<ast::Architecture>(design.units.data());
-    REQUIRE(arch1 != nullptr);
-    REQUIRE(arch1->name == "RTL");
-    REQUIRE(arch1->entity_name == "Counter");
-
-    const auto *arch2 = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch2 != nullptr);
-    REQUIRE(arch2->name == "Behavioral");
-    REQUIRE(arch2->entity_name == "Counter");
+        // Check statement 2 (Process)
+        CHECK(std::holds_alternative<ast::Process>(arch->stmts[1].kind));
+    }
 }

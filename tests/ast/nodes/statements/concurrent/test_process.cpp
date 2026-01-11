@@ -1,8 +1,10 @@
 #include "ast/nodes/declarations.hpp"
 #include "ast/nodes/declarations/objects.hpp"
+#include "ast/nodes/design_units.hpp"
+#include "ast/nodes/statements.hpp" // For ConcurrentStatement wrapper
 #include "ast/nodes/statements/concurrent.hpp"
 #include "ast/nodes/statements/sequential.hpp"
-#include "ast/nodes/statements/stmt_utils.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <format>
@@ -11,19 +13,19 @@
 
 namespace {
 
-/// @brief Helper for testing the Process Header (Label, Sensitivity).
+/// @brief Helper for testing the Process Header (Sensitivity).
 [[nodiscard]]
 auto parseProcess(std::string_view process_code) -> const ast::Process *
 {
-    return stmt_utils::parseConcurrent<ast::Process>(process_code);
+    return test_helpers::parseConcurrentStmt<ast::Process>(process_code);
 }
 
 /// @brief Helper for testing Process Declarations.
 [[nodiscard]]
 auto parseProcessDecls(std::string_view decls) -> const ast::Process *
 {
-    const auto code = std::format("process(clk)\n{}\nbegin\n    null;\nend process;", decls);
-    return stmt_utils::parseConcurrent<ast::Process>(code);
+    const auto code = std::format("process(clk)\n{}\nbegin\nend process;", decls);
+    return test_helpers::parseConcurrentStmt<ast::Process>(code);
 }
 
 /// @brief Helper for testing Process Body.
@@ -31,33 +33,23 @@ auto parseProcessDecls(std::string_view decls) -> const ast::Process *
 auto parseProcessBody(std::string_view body) -> const ast::Process *
 {
     const auto code = std::format("process(clk)\nbegin\n{}\nend process;", body);
-    return stmt_utils::parseConcurrent<ast::Process>(code);
+    return test_helpers::parseConcurrentStmt<ast::Process>(code);
 }
 
 } // namespace
 
 TEST_CASE("Process", "[builder][statements][process]")
 {
-    SECTION("Labels and Sensitivity Lists")
+    SECTION("Sensitivity Lists")
     {
         SECTION("Standard sensitivity list")
         {
             const auto *proc = parseProcess("process(clk, rst) begin null; end process;");
             REQUIRE(proc != nullptr);
 
-            CHECK_FALSE(proc->label.has_value());
             REQUIRE(proc->sensitivity_list.size() == 2);
             CHECK(proc->sensitivity_list[0] == "clk");
             CHECK(proc->sensitivity_list[1] == "rst");
-        }
-
-        SECTION("Process with Label")
-        {
-            const auto *proc = parseProcess("sync_logic: process(clk) begin null; end process;");
-            REQUIRE(proc != nullptr);
-
-            REQUIRE(proc->label.has_value());
-            CHECK(proc->label.value() == "sync_logic");
         }
 
         SECTION("Process without sensitivity list (Implicit)")
@@ -66,23 +58,29 @@ TEST_CASE("Process", "[builder][statements][process]")
             REQUIRE(proc != nullptr);
             CHECK(proc->sensitivity_list.empty());
         }
+    }
 
-        /* // TODO(vedivad): Support for Process End Labels
-        SECTION("Process with End Label")
-        {
-            const auto *proc = parseProcess(
-                "my_proc: process(clk)\n"
-                "begin\n"
-                "    null;\n"
-                "end process my_proc;"
-            );
-            REQUIRE(proc != nullptr);
+    SECTION("Process Label (Verified on Wrapper)")
+    {
+        constexpr std::string_view CODE = "sync_logic: process(clk) begin null; end process;";
 
-            // Assuming ast::Process adds: std::optional<std::string> end_label;
-            REQUIRE(proc->end_label.has_value());
-            CHECK(proc->end_label.value() == "my_proc");
-        }
-        */
+        const auto *arch = test_helpers::parseArchitectureWithStmt(CODE);
+        REQUIRE(arch != nullptr);
+        REQUIRE(arch->stmts.size() == 1);
+
+        const auto &wrapper = arch->stmts[0];
+
+        // Verify Label on Wrapper
+        REQUIRE(wrapper.label.has_value());
+        CHECK(wrapper.label.value() == "sync_logic");
+
+        // Verify Kind
+        CHECK(std::holds_alternative<ast::Process>(wrapper.kind));
+
+        // Verify Content access
+        const auto &proc = std::get<ast::Process>(wrapper.kind);
+        CHECK(proc.sensitivity_list.size() == 1);
+        CHECK(proc.sensitivity_list[0] == "clk");
     }
 
     SECTION("Declarative Part")
@@ -127,12 +125,14 @@ TEST_CASE("Process", "[builder][statements][process]")
             CHECK(type->name == "state_t");
         }
 
+        // TODO(vedivad): Support for Aliases and Files
         SECTION("Aliases and Files")
         {
             const auto *proc
               = parseProcessDecls("file output : text open write_mode is \"out.txt\";\n"
                                   "alias my_sig is external_sig;");
             REQUIRE(proc != nullptr);
+
             REQUIRE(proc->decls.size() == 2);
         }
     }
@@ -147,14 +147,18 @@ TEST_CASE("Process", "[builder][statements][process]")
             REQUIRE(proc != nullptr);
             REQUIRE(proc->body.size() == 2);
 
-            CHECK(std::holds_alternative<ast::VariableAssign>(proc->body[0]));
-            CHECK(std::holds_alternative<ast::NullStatement>(proc->body[1]));
+            // Process body contains SequentialStatement wrappers.
+            // Check the 'kind' inside them.
+
+            const auto &stmt1 = proc->body[0];
+            CHECK(std::holds_alternative<ast::VariableAssign>(stmt1.kind));
+
+            const auto &stmt2 = proc->body[1];
+            CHECK(std::holds_alternative<ast::NullStatement>(stmt2.kind));
         }
 
         SECTION("Empty Body")
         {
-            // Technically an empty process is valid syntax: `begin end process;`
-            // But it creates an infinite simulation loop.
             const auto *proc = parseProcessBody("");
             REQUIRE(proc != nullptr);
             CHECK(proc->body.empty());

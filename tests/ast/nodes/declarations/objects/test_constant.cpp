@@ -1,15 +1,17 @@
-#include "ast/nodes/declarations/decl_utils.hpp"
 #include "ast/nodes/declarations/objects.hpp"
 #include "ast/nodes/expressions.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <variant>
 
 TEST_CASE("Declaration: Constant", "[builder][decl][constant]")
 {
+    auto parse_decl = test_helpers::parseDecl<ast::ConstantDecl>;
+
     SECTION("Simple integer constant")
     {
-        const auto *decl = decl_utils::parse<ast::ConstantDecl>("constant WIDTH : integer := 8;");
+        const auto *decl = parse_decl("constant WIDTH : integer := 8;");
         REQUIRE(decl != nullptr);
 
         REQUIRE(decl->names.size() == 1);
@@ -28,8 +30,7 @@ TEST_CASE("Declaration: Constant", "[builder][decl][constant]")
 
     SECTION("Constant with Range Constraint")
     {
-        const auto *decl
-          = decl_utils::parse<ast::ConstantDecl>("constant VAL : integer range 0 to 255 := 10;");
+        const auto *decl = parse_decl("constant VAL : integer range 0 to 255 := 10;");
         REQUIRE(decl != nullptr);
 
         REQUIRE(decl->subtype.type_mark == "integer");
@@ -42,8 +43,7 @@ TEST_CASE("Declaration: Constant", "[builder][decl][constant]")
 
     SECTION("Multiple constants in one line")
     {
-        const auto *decl
-          = decl_utils::parse<ast::ConstantDecl>("constant A, B : std_logic := '0';");
+        const auto *decl = parse_decl("constant A, B : std_logic := '0';");
         REQUIRE(decl != nullptr);
 
         REQUIRE(decl->names.size() == 2);

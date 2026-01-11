@@ -24,11 +24,13 @@ TEST_CASE("DesignFile Rendering", "[pretty_printer][design_file]")
     {
         SECTION("Entity only")
         {
-            file.units.emplace_back(ast::Entity{
-              .name = "test_entity",
-              // Simulate default behavior where end label matches name if not explicitly cleared
-              .end_label = "test_entity",
-              .has_end_entity_keyword = true });
+            file.units.emplace_back(ast::DesignUnit{
+              .unit = ast::Entity{
+                                  .name = "test_entity",
+                                  // Simulate default behavior where end label matches name if not explicitly cleared
+                .end_label = "test_entity",
+                                  .has_end_entity_keyword = true }
+            });
 
             const std::string result = emit::test::render(file);
             constexpr std::string_view EXPECTED = "entity test_entity is\n"
@@ -38,10 +40,12 @@ TEST_CASE("DesignFile Rendering", "[pretty_printer][design_file]")
 
         SECTION("Architecture only")
         {
-            file.units.emplace_back(ast::Architecture{ .name = "rtl",
-                                                       .entity_name = "processor",
-                                                       .end_label = "rtl",
-                                                       .has_end_architecture_keyword = true });
+            file.units.emplace_back(ast::DesignUnit{
+              .unit = ast::Architecture{ .name = "rtl",
+                                        .entity_name = "processor",
+                                        .end_label = "rtl",
+                                        .has_end_architecture_keyword = true }
+            });
 
             const std::string result = emit::test::render(file);
             constexpr std::string_view EXPECTED = "architecture rtl of processor is\n"
@@ -70,8 +74,8 @@ TEST_CASE("DesignFile Rendering", "[pretty_printer][design_file]")
                                     .end_label = "rtl",
                                     .has_end_architecture_keyword = true };
 
-            file.units.emplace_back(std::move(entity));
-            file.units.emplace_back(std::move(arch));
+            file.units.emplace_back(ast::DesignUnit{ .unit = std::move(entity) });
+            file.units.emplace_back(ast::DesignUnit{ .unit = std::move(arch) });
 
             const std::string result = emit::test::render(file);
             constexpr std::string_view EXPECTED = "entity counter is\n"
@@ -86,18 +90,24 @@ TEST_CASE("DesignFile Rendering", "[pretty_printer][design_file]")
         SECTION("Multiple independent entities and architectures")
         {
             // Entity 1
-            file.units.emplace_back(ast::Entity{
-              .name = "entity1", .end_label = "entity1", .has_end_entity_keyword = true });
+            file.units.emplace_back(ast::DesignUnit{
+              .unit = ast::Entity{
+                                  .name = "entity1", .end_label = "entity1", .has_end_entity_keyword = true }
+            });
 
             // Entity 2
-            file.units.emplace_back(ast::Entity{
-              .name = "entity2", .end_label = "entity2", .has_end_entity_keyword = true });
+            file.units.emplace_back(ast::DesignUnit{
+              .unit = ast::Entity{
+                                  .name = "entity2", .end_label = "entity2", .has_end_entity_keyword = true }
+            });
 
             // Arch for Entity 1
-            file.units.emplace_back(ast::Architecture{ .name = "behavioral",
-                                                       .entity_name = "entity1",
-                                                       .end_label = "behavioral",
-                                                       .has_end_architecture_keyword = true });
+            file.units.emplace_back(ast::DesignUnit{
+              .unit = ast::Architecture{ .name = "behavioral",
+                                        .entity_name = "entity1",
+                                        .end_label = "behavioral",
+                                        .has_end_architecture_keyword = true }
+            });
 
             const std::string result = emit::test::render(file);
             constexpr std::string_view EXPECTED = "entity entity1 is\n"

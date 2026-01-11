@@ -8,6 +8,7 @@
 #include "ast/nodes/design_file.hpp"
 #include "ast/nodes/design_units.hpp"
 #include "ast/nodes/expressions.hpp"
+#include "ast/nodes/statements.hpp"
 #include "ast/nodes/statements/concurrent.hpp"
 #include "ast/nodes/statements/sequential.hpp"
 #include "ast/nodes/statements/waveform.hpp"
@@ -44,6 +45,7 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     // Node visitors
     auto operator()(const ast::Architecture &node) const -> Doc;
     auto operator()(const ast::DesignFile &node) const -> Doc;
+    auto operator()(const ast::DesignUnit &node) const -> Doc;
     auto operator()(const ast::Entity &node) const -> Doc;
     auto operator()(const ast::GenericClause &node) const -> Doc;
     auto operator()(const ast::PortClause &node) const -> Doc;
@@ -87,6 +89,8 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     auto operator()(const ast::RangeConstraint &node) const -> Doc;
 
     // Concurrent Statements
+    auto operator()(const ast::ConcurrentStatement &node) const -> Doc;
+    auto operator()(const ast::SequentialStatement &node) const -> Doc;
     auto operator()(const ast::Process &node) const -> Doc;
     auto operator()(const ast::Waveform &node) const -> Doc;
     auto operator()(const ast::Waveform::Element &node, bool is_last) const -> Doc;

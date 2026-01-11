@@ -1,64 +1,52 @@
 #include "ast/nodes/design_units.hpp"
-#include "builder/ast_builder.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
-#include <string_view>
-#include <variant>
 
-TEST_CASE("Entity: Basic entity declaration with ports and generics", "[design_units][entity]")
+TEST_CASE("Entity", "[design_units][entity]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
-        entity MyEntity is
-            generic (WIDTH : integer := 8);
-            port (clk : in std_logic; data : out std_logic_vector(7 downto 0));
-        end MyEntity;
-    )";
+    auto parse_entity = test_helpers::parseDesignUnit<ast::Entity>;
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    REQUIRE(design.units.size() == 1);
+    SECTION("Minimal Entity (Structure)")
+    {
+        const auto *entity = parse_entity("entity Minimal is end Minimal;");
+        REQUIRE(entity != nullptr);
 
-    const auto *entity = std::get_if<ast::Entity>(design.units.data());
-    REQUIRE(entity != nullptr);
-    REQUIRE(entity->name == "MyEntity");
-    REQUIRE(entity->end_label.has_value());
-    REQUIRE(entity->end_label.value() == "MyEntity");
-    REQUIRE(entity->generic_clause.generics.size() == 1);
-    REQUIRE(entity->port_clause.ports.size() == 2);
-}
+        CHECK(entity->name == "Minimal");
+        CHECK_FALSE(entity->has_end_entity_keyword);
+        CHECK(entity->end_label.value_or("") == "Minimal");
 
-TEST_CASE("Entity: Multiple generics", "[design_units][entity]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Counter is
-            generic (
-                WIDTH : integer := 8;
-                RESET_VAL : integer := 0;
-                ENABLE_ASYNC : boolean := false
-            );
-            port (clk : in std_logic);
-        end Counter;
-    )";
+        CHECK(entity->generic_clause.generics.empty());
+        CHECK(entity->port_clause.ports.empty());
+    }
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *entity = std::get_if<ast::Entity>(design.units.data());
-    REQUIRE(entity != nullptr);
-    REQUIRE(entity->generic_clause.generics.size() == 3);
-    REQUIRE(entity->generic_clause.generics[0].names[0] == "WIDTH");
-    REQUIRE(entity->generic_clause.generics[1].names[0] == "RESET_VAL");
-    REQUIRE(entity->generic_clause.generics[2].names[0] == "ENABLE_ASYNC");
-}
+    SECTION("Entity with 'end entity' keyword")
+    {
+        const auto *entity = parse_entity("entity KW_Test is end entity;");
+        REQUIRE(entity != nullptr);
 
-TEST_CASE("Entity: Minimal entity without ports or generics", "[design_units][entity]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity MinimalEntity is
-        end MinimalEntity;
-    )";
+        CHECK(entity->name == "KW_Test");
+        CHECK(entity->has_end_entity_keyword);
+        CHECK_FALSE(entity->end_label.has_value());
+    }
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *entity = std::get_if<ast::Entity>(design.units.data());
-    REQUIRE(entity != nullptr);
-    REQUIRE(entity->name == "MinimalEntity");
-    REQUIRE(entity->generic_clause.generics.empty());
-    REQUIRE(entity->port_clause.ports.empty());
+    SECTION("Entity with Interface Lists (Container Check)")
+    {
+        // Verify that the entity parser correctly captures the clauses.
+        const auto *entity = parse_entity(R"(
+            entity InterfaceTest is
+                generic (G : integer);
+                port (clk : in bit);
+            end InterfaceTest;
+        )");
+        REQUIRE(entity != nullptr);
+
+        // Verify Generic Clause presence
+        REQUIRE(entity->generic_clause.generics.size() == 1);
+        CHECK(entity->generic_clause.generics[0].names[0] == "G");
+
+        // Verify Port Clause presence
+        REQUIRE(entity->port_clause.ports.size() == 1);
+        CHECK(entity->port_clause.ports[0].names[0] == "clk");
+    }
 }

@@ -123,11 +123,7 @@ auto build(Context &ctx) -> ast::DesignFile
         throw std::runtime_error("Parser returned null tree.");
     }
 
-    ast::DesignFile root{};
-    Translator translator(*ctx.tokens);
-    translator.buildDesignFile(root, tree);
-
-    return root;
+    return Translator{ *ctx.tokens }.buildDesignFile(tree);
 }
 
 // --- High-level Wrapper Implementation ---

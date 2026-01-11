@@ -1,95 +1,87 @@
-#include "ast/nodes/design_units.hpp"
+#include "ast/nodes/statements.hpp"
 #include "ast/nodes/statements/concurrent.hpp"
 #include "ast/nodes/statements/sequential.hpp"
-#include "builder/ast_builder.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <string>
 #include <string_view>
 #include <variant>
 
-TEST_CASE("Loop: Simple infinite loop", "[statements][loop]")
+TEST_CASE("Loop", "[statements][loop]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process
-            begin
-                loop
-                    wait until clk = '1';
-                end loop;
-            end process;
-        end RTL;
-    )";
+    // Helper to parse just the inner loop body
+    auto parse_loop_body = test_helpers::parseSequentialStmt<ast::Loop>;
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
+    SECTION("Simple infinite loop")
+    {
+        const auto *loop = parse_loop_body("loop null; end loop;");
+        REQUIRE(loop != nullptr);
 
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-    REQUIRE_FALSE(proc->body.empty());
+        REQUIRE(loop->body.size() == 1);
+        CHECK(std::holds_alternative<ast::NullStatement>(loop->body[0].kind));
+    }
 
-    const auto *loop = std::get_if<ast::Loop>(proc->body.data());
-    REQUIRE(loop != nullptr);
-    REQUIRE_FALSE(loop->label.has_value());
-}
+    SECTION("Infinite loop with multiple statements")
+    {
+        constexpr std::string_view CODE = R"(
+            loop
+                data_out <= data_in;
+                count := count + 1;
+                status <= '1';
+            end loop;
+        )";
 
-TEST_CASE("Loop: Labeled infinite loop", "[statements][loop]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process
-            begin
-                main_loop: loop
-                    count := count + 1;
-                end loop;
-            end process;
-        end RTL;
-    )";
+        const auto *loop = parse_loop_body(CODE);
+        REQUIRE(loop != nullptr);
+        CHECK(loop->body.size() == 3);
+    }
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
+    SECTION("Labeled infinite loop")
+    {
+        constexpr std::string_view CODE = "process begin "
+                                          "  main_loop: loop count := count + 1; end loop; "
+                                          "end process;";
 
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-    REQUIRE_FALSE(proc->body.empty());
+        const auto *proc = test_helpers::parseConcurrentStmt<ast::Process>(CODE);
+        REQUIRE(proc != nullptr);
+        REQUIRE(proc->body.size() == 1);
 
-    const auto *loop = std::get_if<ast::Loop>(proc->body.data());
-    REQUIRE(loop != nullptr);
-    REQUIRE(loop->label.has_value());
-    REQUIRE(loop->label.value() == "main_loop");
-}
+        const auto &wrapper = proc->body[0];
 
-TEST_CASE("Loop: Infinite loop with multiple statements", "[statements][loop]")
-{
-    constexpr std::string_view VHDL_FILE = R"(
-        entity Test is end Test;
-        architecture RTL of Test is
-        begin
-            process
-            begin
-                loop
-                    data_out <= data_in;
-                    count := count + 1;
-                    status <= '1';
-                end loop;
-            end process;
-        end RTL;
-    )";
+        // 1. Verify Label on Wrapper
+        REQUIRE(wrapper.label.has_value());
+        CHECK(wrapper.label.value() == "main_loop");
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
-    REQUIRE(arch != nullptr);
+        // 2. Verify Inner Kind is Loop
+        CHECK(std::holds_alternative<ast::Loop>(wrapper.kind));
+    }
 
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
-    REQUIRE(proc != nullptr);
-    REQUIRE_FALSE(proc->body.empty());
+    SECTION("Labeled loop with end label")
+    {
+        constexpr std::string_view LOOP_CODE = "my_loop: loop\n"
+                                               "    x := x + 1;\n"
+                                               "    null;\n"
+                                               "end loop my_loop;";
 
-    const auto *loop = std::get_if<ast::Loop>(proc->body.data());
-    REQUIRE(loop != nullptr);
-    REQUIRE(loop->body.size() == 3);
+        const std::string proc_code = "process begin " + std::string(LOOP_CODE) + " end process;";
+
+        const auto *proc = test_helpers::parseConcurrentStmt<ast::Process>(proc_code);
+        REQUIRE(proc != nullptr);
+        REQUIRE(proc->body.size() == 1);
+
+        const auto &wrapper = proc->body[0];
+
+        // 1. Verify Label
+        REQUIRE(wrapper.label.has_value());
+        CHECK(wrapper.label.value() == "my_loop");
+
+        // 2. Verify Body Structure
+        const auto *loop = std::get_if<ast::Loop>(&wrapper.kind);
+        REQUIRE(loop != nullptr);
+        REQUIRE(loop->body.size() == 2);
+
+        CHECK(std::holds_alternative<ast::VariableAssign>(loop->body[0].kind));
+        CHECK(std::holds_alternative<ast::NullStatement>(loop->body[1].kind));
+    }
 }

@@ -20,7 +20,7 @@ endif
 
 TARGET := build/$(BUILD_TYPE)/bin/vhdl_formatter
 CONAN_STAMP := build/.conan.$(BUILD_TYPE).stamp
-BUILD_STAMP := build/.build.$(BUILD_TYPE).stamp
+BUILD_STAMP := build/.build.$(BUILD_TYPE).$(ENABLE_COVERAGE).stamp
 
 SOURCES := $(shell find src tests -type f \( -name '*.cpp' -o -name '*.hpp' \) ! -path "*/build/*")
 SOURCES_CMAKE := $(shell find src tests . -name 'CMakeLists.txt')
@@ -259,7 +259,7 @@ BENCHMARK_CURRENT   := $(BENCHMARK_RESULTS)/new.xml
 
 benchmark-build:
 	@echo "Preparing Release build for accurate benchmarking..."
-	@$(MAKE) --no-print-directory BUILD_TYPE=Release
+	@$(MAKE) --no-print-directory BUILD_TYPE=Release ENABLE_STATIC_LINKING=OFF
 
 benchmark: benchmark-build
 	@echo "Running Benchmarks (Samples: $(BENCHMARK_SAMPLES))..."

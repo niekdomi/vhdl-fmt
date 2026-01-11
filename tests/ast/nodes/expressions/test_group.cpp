@@ -1,5 +1,5 @@
 #include "ast/nodes/expressions.hpp"
-#include "expr_utils.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <variant>
@@ -8,7 +8,7 @@ TEST_CASE("GroupExpr", "[expressions][group]")
 {
     SECTION("Positional aggregate")
     {
-        const auto *expr = expr_utils::parseExpr("(0, 1, 2)");
+        const auto *expr = test_helpers::parseExpr("(0, 1, 2)");
         const auto *group = std::get_if<ast::GroupExpr>(expr);
         REQUIRE(group != nullptr);
         REQUIRE(group->children.size() == 3);
@@ -28,7 +28,7 @@ TEST_CASE("GroupExpr", "[expressions][group]")
 
     SECTION("Named associations")
     {
-        const auto *expr = expr_utils::parseExpr("(0 => '1', 1 => '0')");
+        const auto *expr = test_helpers::parseExpr("(0 => '1', 1 => '0')");
         const auto *group = std::get_if<ast::GroupExpr>(expr);
         REQUIRE(group != nullptr);
         REQUIRE(group->children.size() == 2);
@@ -60,7 +60,7 @@ TEST_CASE("GroupExpr", "[expressions][group]")
 
     SECTION("Others keyword")
     {
-        const auto *expr = expr_utils::parseExpr("(0 => '1', others => '0')");
+        const auto *expr = test_helpers::parseExpr("(0 => '1', others => '0')");
         const auto *group = std::get_if<ast::GroupExpr>(expr);
         REQUIRE(group != nullptr);
         REQUIRE(group->children.size() == 2);
@@ -80,7 +80,7 @@ TEST_CASE("GroupExpr", "[expressions][group]")
 
     SECTION("Nested aggregates")
     {
-        const auto *expr = expr_utils::parseExpr("((1, 2), (3, 4))");
+        const auto *expr = test_helpers::parseExpr("((1, 2), (3, 4))");
         const auto *outer_group = std::get_if<ast::GroupExpr>(expr);
         REQUIRE(outer_group != nullptr);
         REQUIRE(outer_group->children.size() == 2);

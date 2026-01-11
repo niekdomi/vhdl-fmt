@@ -19,14 +19,14 @@ auto parsePorts(std::string_view port_content) -> const ast::Entity *
 {
     const auto code = std::format("entity E is port ({}); end E;", port_content);
 
-    static ast::DesignFile design;
+    static ast::DesignFile design{};
     design = builder::buildFromString(code);
 
     if (design.units.empty()) {
         return nullptr;
     }
 
-    return std::get_if<ast::Entity>(&design.units.front());
+    return std::get_if<ast::Entity>(&design.units.front().unit);
 }
 
 } // namespace

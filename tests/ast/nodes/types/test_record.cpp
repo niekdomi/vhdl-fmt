@@ -1,7 +1,7 @@
 #include "ast/nodes/declarations.hpp"
 #include "ast/nodes/expressions.hpp"
 #include "ast/nodes/types.hpp"
-#include "type_utils.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <variant>
@@ -11,7 +11,7 @@ TEST_CASE("TypeDecl: Record", "[builder][type][record]")
     SECTION("Simple record")
     {
         const auto *decl
-          = type_utils::parseType("type point_t is record x, y : integer; end record;");
+          = test_helpers::parseType("type point_t is record x, y : integer; end record;");
         REQUIRE(decl != nullptr);
         REQUIRE(decl->name == "point_t");
 
@@ -28,10 +28,10 @@ TEST_CASE("TypeDecl: Record", "[builder][type][record]")
 
     SECTION("Record with constraints and end label")
     {
-        const auto *decl = type_utils::parseType("type packet_t is record \n"
-                                                 "  data : std_logic_vector(7 downto 0);\n"
-                                                 "  id   : integer;\n"
-                                                 "end record packet_t;");
+        const auto *decl = test_helpers::parseType("type packet_t is record \n"
+                                                   "  data : std_logic_vector(7 downto 0);\n"
+                                                   "  id   : integer;\n"
+                                                   "end record packet_t;");
         REQUIRE(decl != nullptr);
 
         const auto *def = std::get_if<ast::RecordTypeDef>(&decl->type_def.value());

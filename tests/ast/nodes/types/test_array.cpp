@@ -1,7 +1,7 @@
 #include "ast/nodes/declarations.hpp"
 #include "ast/nodes/expressions.hpp"
 #include "ast/nodes/types.hpp"
-#include "type_utils.hpp"
+#include "test_helpers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <string>
@@ -12,7 +12,7 @@ TEST_CASE("TypeDecl: Array", "[builder][type][array]")
     SECTION("Unconstrained array")
     {
         const auto *decl
-          = type_utils::parseType("type mem_t is array(natural range <>) of std_logic;");
+          = test_helpers::parseType("type mem_t is array(natural range <>) of std_logic;");
         REQUIRE(decl != nullptr);
         REQUIRE(decl->name == "mem_t");
 
@@ -29,7 +29,7 @@ TEST_CASE("TypeDecl: Array", "[builder][type][array]")
 
     SECTION("Constrained array (Discrete Range)")
     {
-        const auto *decl = type_utils::parseType("type byte_t is array(7 downto 0) of bit;");
+        const auto *decl = test_helpers::parseType("type byte_t is array(7 downto 0) of bit;");
         REQUIRE(decl != nullptr);
 
         const auto *def = std::get_if<ast::ArrayTypeDef>(&decl->type_def.value());
@@ -51,7 +51,7 @@ TEST_CASE("TypeDecl: Array", "[builder][type][array]")
     {
         // Changed from invalid mixed syntax to valid 2D constrained array
         const auto *decl
-          = type_utils::parseType("type matrix_t is array(0 to 3, 0 to 15) of real;");
+          = test_helpers::parseType("type matrix_t is array(0 to 3, 0 to 15) of real;");
         REQUIRE(decl != nullptr);
 
         const auto *def = std::get_if<ast::ArrayTypeDef>(&decl->type_def.value());
@@ -72,7 +72,7 @@ TEST_CASE("TypeDecl: Array", "[builder][type][array]")
 
     SECTION("Array with Element Constraint")
     {
-        const auto *decl = type_utils::parseType(
+        const auto *decl = test_helpers::parseType(
           "type word_array is array(0 to 3) of std_logic_vector(31 downto 0);");
         REQUIRE(decl != nullptr);
 

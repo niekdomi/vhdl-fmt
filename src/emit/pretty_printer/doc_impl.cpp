@@ -1,10 +1,8 @@
 #include "emit/pretty_printer/doc_impl.hpp"
 
-#include "common/overload.hpp"
 #include "emit/pretty_printer/doc.hpp"
+#include "emit/pretty_printer/walker.hpp"
 
-#include <algorithm>
-#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -23,7 +21,22 @@ auto makeEmpty() -> DocPtr
 
 auto makeText(std::string_view text) -> DocPtr
 {
-    return std::make_shared<DocImpl>(Text{ std::string(text) });
+    return std::make_shared<DocImpl>(Text{ .content = std::string{ text } });
+}
+
+auto makeText(std::string_view text, int level) -> DocPtr
+{
+    return std::make_shared<DocImpl>(Text{ .content = std::string{ text }, .level = level });
+}
+
+auto makeKeyword(std::string_view text) -> DocPtr
+{
+    return std::make_shared<DocImpl>(Keyword{ .content = std::string{ text } });
+}
+
+auto makeKeyword(std::string_view text, int level) -> DocPtr
+{
+    return std::make_shared<DocImpl>(Keyword{ .content = std::string{ text }, .level = level });
 }
 
 auto makeLine() -> DocPtr
@@ -58,7 +71,9 @@ auto makeConcat(DocPtr left, DocPtr right) -> DocPtr
     if (auto *left_text = std::get_if<Text>(&left->value)) {
         if (auto *right_text = std::get_if<Text>(&right->value)) {
             // Create a new merged text node directly
-            return makeText(left_text->content + right_text->content);
+            if (left_text->level < 0 && right_text->level < 0) {
+                return makeText(left_text->content + right_text->content, -1);
+            }
         }
     }
 
@@ -101,11 +116,6 @@ auto makeUnion(DocPtr flat, DocPtr broken) -> DocPtr
     return std::make_shared<DocImpl>(Union{ .flat = std::move(flat), .broken = std::move(broken) });
 }
 
-auto makeAlignText(std::string_view text, int level) -> DocPtr
-{
-    return std::make_shared<DocImpl>(AlignText{ .content = std::string(text), .level = level });
-}
-
 auto makeAlign(DocPtr doc) -> DocPtr
 {
     return std::make_shared<DocImpl>(Align{ .doc = std::move(doc) });
@@ -118,57 +128,24 @@ auto flatten(const DocPtr &doc) -> DocPtr
         return doc;
     }
 
-    return transformImpl(
-      doc,
-      common::Overload{
-        [](const SoftLine &) -> DocPtr { return makeText(" "); },
-        [](const Union &node) -> DocPtr {
-            // In flat mode, we just pick the 'flat' branch.
-            return node.flat;
-        },
-        [](const AlignText &node) -> DocPtr {
-            // In flat mode, alignment is just the text.
-            return makeText(node.content);
-        },
-        [](const Align &node) -> DocPtr {
-            // In flat mode, the alignment group is just its content.
-            return node.doc;
-        },
-        // For all other nodes (Concat, Nest, Hang, Text, Empty, HardLine, etc.),
-        [](const auto &node) -> DocPtr { return std::make_shared<DocImpl>(node); } });
-}
-
-auto resolveAlignment(const DocPtr &doc) -> DocPtr
-{
-    // === Pass 1: Find max width FOR EACH level ===
-    std::map<int, int> max_widths_by_level;
-    max_widths_by_level = foldImpl(
-      doc, std::move(max_widths_by_level), [](std::map<int, int> current_maxes, const auto &node) {
-          using T = std::decay_t<decltype(node)>;
-          if constexpr (std::is_same_v<T, AlignText>) {
-              const int current_max = current_maxes[node.level];
-              current_maxes[node.level]
-                = std::max(current_max, static_cast<int>(node.content.length()));
-          }
-          return current_maxes; // Pass accumulator through
-      });
-
-    // Handle the case where no aligned text was found
-    if (max_widths_by_level.empty()) {
-        return doc;
-    }
-
-    // === Pass 2: Apply padding based on the level's max width ===
-    return transformImpl(doc, [&](const auto &node) -> DocPtr {
+    return DocWalker::transform(doc, [](auto &&node) -> DocPtr {
         using T = std::decay_t<decltype(node)>;
 
-        if constexpr (std::is_same_v<T, AlignText>) {
-            // Look up the max width for this text's level
-            const int max_width = max_widths_by_level.at(node.level);
-            const int padding = max_width - static_cast<int>(node.content.length());
-            return makeText(node.content + std::string(padding, ' '));
-        } else {
-            return std::make_shared<DocImpl>(node);
+        // Convert SoftLine to Space
+        if constexpr (std::is_same_v<T, SoftLine>) {
+            return makeText(" ", -1);
+        }
+        // Unwrap Unions (Pick the pre-flattened branch)
+        else if constexpr (std::is_same_v<T, Union>) {
+            return node.flat;
+        }
+        // Unwrap Align scopes
+        else if constexpr (std::is_same_v<T, Align>) {
+            return node.doc;
+        }
+        // Default: Pass everything else through (Concat, Text, HardLine, etc.)
+        else {
+            return std::make_shared<DocImpl>(std::forward<decltype(node)>(node));
         }
     });
 }
