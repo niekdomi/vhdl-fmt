@@ -87,10 +87,11 @@ void TriviaBinder::bind(ast::NodeBase& node, const antlr4::ParserRuleContext& ct
 
     // Commit to Node
     if (!leading.empty() || !trailing.empty() || inline_comment.has_value()) {
-        node.trivia = std::make_unique<ast::NodeTrivia>(
-          ast::NodeTrivia{.leading = std::move(leading),
-                          .trailing = std::move(trailing),
-                          .inline_comment = std::move(inline_comment)});
+        node.trivia = std::make_unique<ast::NodeTrivia>(ast::NodeTrivia{
+          .leading = std::move(leading),
+          .trailing = std::move(trailing),
+          .inline_comment = std::move(inline_comment),
+        });
     }
 }
 
@@ -105,4 +106,3 @@ auto TriviaBinder::markAsUsed(const antlr4::Token* token) -> void
 }
 
 } // namespace builder
-

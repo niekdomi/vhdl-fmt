@@ -17,7 +17,7 @@ namespace builder {
 /// enabling move semantics on the final build() when used as a temporary.
 ///
 /// Example usage (via Translator::build<T>):
-/// @code
+/// ```cpp
 /// return build<ast::Entity>(ctx)
 ///     .set(&ast::Entity::name, ctx.identifier(0)->getText())
 ///     .maybe(&ast::Entity::generic_clause, ctx.entity_header()->generic_clause(),
@@ -25,7 +25,7 @@ namespace builder {
 ///     .collect(&ast::Entity::ports, ctx.port_list(),
 ///              [&](auto* p) { return makePort(*p); })
 ///     .build();
-/// @endcode
+/// ```
 template<typename T>
 class NodeBuilder final
 {

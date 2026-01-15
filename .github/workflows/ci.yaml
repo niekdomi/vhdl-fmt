@@ -173,7 +173,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Lint Source
     needs: [get-changed-cpp-files, build]
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     container:
       image: ghcr.io/niekdomi/vhdl-fmt/vhdlfmt-ci:latest
@@ -208,7 +208,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Lint Header
     needs: [get-changed-cpp-files, build]
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     container:
       image: ghcr.io/niekdomi/vhdl-fmt/vhdlfmt-ci:latest
