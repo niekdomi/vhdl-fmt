@@ -113,7 +113,7 @@ If you prefer a local setup, the following tools are used in development and CI:
 
   ```bash
   uv venv
-  uv pip install conan gersemi==0.19.3
+  uv pip install conan gersemi
   source .venv/bin/activate
   ```
 
