@@ -18,12 +18,12 @@
         "ms-vscode.makefile-tools",
         "ms-vscode.test-adapter-converter",
         "redhat.vscode-yaml",
-        "streetsidesoftware.code-spell-checker"
+        "streetsidesoftware.code-spell-checker",
       ],
       "settings": {
         "clangd.path": "/usr/bin/clangd",
         "clangd.arguments": [
-          "--compile-commands-dir=${workspaceFolder}/build/Debug"
+          "--compile-commands-dir=${workspaceFolder}/build/Debug",
         ],
         "cmake.configureOnOpen": false,
         "cmake.generator": "Ninja",
@@ -31,9 +31,9 @@
           {
             "pattern": "{build,Build,BUILD,out,Out,OUT}/**/*{test,Test,TEST}*",
             "runTask": {
-              "before": ["build"]
-            }
-          }
+              "before": ["build"],
+            },
+          },
         ],
         "testMate.cpp.discovery.loadOnStartup": true,
         "testMate.cpp.debug.configTemplate": {
@@ -43,18 +43,13 @@
           "cwd": "${cwd}",
           "env": "${envObj}",
           "environment": "${envObjArray}",
-          "sourceFileMap": "${sourceFileMapObj}"
+          "sourceFileMap": "${sourceFileMapObj}",
         },
-        "terminal.integrated.profiles.linux": {
-          "zsh": {
-            "path": "/usr/bin/zsh"
-          }
-        },
-        "cmake.ctest.testExplorerIntegrationEnabled": false
-      }
-    }
+        "cmake.ctest.testExplorerIntegrationEnabled": false,
+      },
+    },
   },
   "postCreateCommand": "make",
   "remoteUser": "root",
-  "overrideCommand": true
+  "overrideCommand": true,
 }

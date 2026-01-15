@@ -62,4 +62,8 @@ RUN dnf install -y --setopt=install_weak_deps=false \
 # ==================================================
 FROM builder AS ci
 
+RUN dnf install -y --setopt=install_weak_deps=false \
+    ccache \
+    && dnf clean all
+
 WORKDIR /app
