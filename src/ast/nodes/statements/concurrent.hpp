@@ -25,6 +25,7 @@ struct ConditionalConcurrentAssign final : NodeBase
         Waveform waveform;
         std::optional<Expr> condition;
     };
+
     std::vector<ConditionalWaveform> waveforms;
 };
 
@@ -39,6 +40,7 @@ struct SelectedConcurrentAssign final : NodeBase
         Waveform waveform;
         std::vector<Expr> choices;
     };
+
     std::vector<Selection> selections;
 };
 

@@ -9,20 +9,22 @@
 #include <exception>
 #include <fstream>
 #include <iostream>
+#include <iterator>
+#include <ranges>
 #include <span>
 #include <string>
 #include <string_view>
 
-auto main(int argc, char *argv[]) -> int
+auto main(int argc, char* argv[]) -> int
 {
-    auto &logger = common::Logger::instance();
+    auto& logger = common::Logger::instance();
 
     try {
         const cli::ArgumentParser argparser{
-            std::ranges::subrange{ argv, std::next(argv, argc) }
+          std::ranges::subrange{argv, std::next(argv, argc)}
         };
 
-        cli::ConfigReader config_reader{ argparser.getConfigPath() };
+        cli::ConfigReader config_reader{argparser.getConfigPath()};
         const auto config = config_reader.readConfigFile().value();
 
         // 1. Create Context (keeps tokens alive)
@@ -37,7 +39,7 @@ auto main(int argc, char *argv[]) -> int
         const std::string formatted_code = doc.render(config);
 
         // 4. Verify Safety
-        const auto ctx_fmt = builder::createContext(std::string_view{ formatted_code });
+        const auto ctx_fmt = builder::createContext(std::string_view{formatted_code});
 
         const auto result = builder::verify::ensureSafety(*ctx_orig.tokens, *ctx_fmt.tokens);
 
@@ -56,8 +58,8 @@ auto main(int argc, char *argv[]) -> int
         } else {
             std::cout << formatted_code;
         }
-
-    } catch (const std::exception &e) {
+    }
+    catch (const std::exception& e) {
         logger.error("Error: {}", e.what());
         return EXIT_FAILURE;
     }

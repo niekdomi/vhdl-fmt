@@ -8,45 +8,45 @@ TEST_CASE("QualifiedExpr", "[expressions][qualified]")
 {
     SECTION("Simple type qualification")
     {
-        const auto *expr = expr_utils::parseExpr("integer'(42)");
-        const auto *qual = std::get_if<ast::QualifiedExpr>(expr);
+        const auto* expr = expr_utils::parseExpr("integer'(42)");
+        const auto* qual = std::get_if<ast::QualifiedExpr>(expr);
         REQUIRE(qual != nullptr);
         REQUIRE(qual->type_mark.type_mark == "integer");
         REQUIRE(qual->operand != nullptr);
 
-        const auto *group = std::get_if<ast::GroupExpr>(qual->operand.get());
+        const auto* group = std::get_if<ast::GroupExpr>(qual->operand.get());
         REQUIRE(group != nullptr);
 
-        const auto *operand = std::get_if<ast::TokenExpr>(group->children.data());
+        const auto* operand = std::get_if<ast::TokenExpr>(group->children.data());
         REQUIRE(operand != nullptr);
         REQUIRE(operand->text == "42");
     }
 
     SECTION("Type qualification with aggregate")
     {
-        const auto *expr = expr_utils::parseExpr("array_type'(1, 2, 3)");
-        const auto *qual = std::get_if<ast::QualifiedExpr>(expr);
+        const auto* expr = expr_utils::parseExpr("array_type'(1, 2, 3)");
+        const auto* qual = std::get_if<ast::QualifiedExpr>(expr);
         REQUIRE(qual != nullptr);
         REQUIRE(qual->type_mark.type_mark == "array_type");
         REQUIRE(qual->operand != nullptr);
 
-        const auto *group = std::get_if<ast::GroupExpr>(qual->operand.get());
+        const auto* group = std::get_if<ast::GroupExpr>(qual->operand.get());
         REQUIRE(group != nullptr);
         REQUIRE(group->children.size() == 3);
     }
 
     SECTION("Type qualification with named association")
     {
-        const auto *expr = expr_utils::parseExpr("record_type'(field => value)");
-        const auto *qual = std::get_if<ast::QualifiedExpr>(expr);
+        const auto* expr = expr_utils::parseExpr("record_type'(field => value)");
+        const auto* qual = std::get_if<ast::QualifiedExpr>(expr);
         REQUIRE(qual != nullptr);
         REQUIRE(qual->type_mark.type_mark == "record_type");
         REQUIRE(qual->operand != nullptr);
 
-        const auto *group = std::get_if<ast::GroupExpr>(qual->operand.get());
+        const auto* group = std::get_if<ast::GroupExpr>(qual->operand.get());
         REQUIRE(group != nullptr);
 
-        const auto *binary = std::get_if<ast::BinaryExpr>(group->children.data());
+        const auto* binary = std::get_if<ast::BinaryExpr>(group->children.data());
         REQUIRE(binary != nullptr);
         REQUIRE(binary->op == "=>");
     }
@@ -54,8 +54,8 @@ TEST_CASE("QualifiedExpr", "[expressions][qualified]")
     SECTION("Qualified expression with subtype constraint")
     {
         // Example: vector(7 downto 0)'(others => '0')
-        const auto *expr = expr_utils::parseExpr("vector(7 downto 0)'(others => '0')");
-        const auto *qual = std::get_if<ast::QualifiedExpr>(expr);
+        const auto* expr = expr_utils::parseExpr("vector(7 downto 0)'(others => '0')");
+        const auto* qual = std::get_if<ast::QualifiedExpr>(expr);
 
         REQUIRE(qual != nullptr);
         REQUIRE(qual->type_mark.type_mark == "vector");
@@ -64,8 +64,8 @@ TEST_CASE("QualifiedExpr", "[expressions][qualified]")
         REQUIRE(qual->type_mark.constraint.has_value());
 
         // Verify it is an index constraint (parens)
-        const auto *idx_constr
-          = std::get_if<ast::IndexConstraint>(&qual->type_mark.constraint.value());
+        const auto* idx_constr =
+          std::get_if<ast::IndexConstraint>(&qual->type_mark.constraint.value());
         REQUIRE(idx_constr != nullptr);
     }
 }

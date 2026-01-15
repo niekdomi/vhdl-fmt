@@ -17,12 +17,13 @@ RUN dnf install -y --setopt=install_weak_deps=false \
     nodejs \
     && dnf clean all
 
+
 # Get the latest version of uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # Setup venv
 RUN uv venv /opt/venv --seed \
-    && /opt/venv/bin/pip install --no-cache-dir conan gersemi==0.19.3
+    && /opt/venv/bin/pip install --no-cache-dir conan gersemi
 
 ENV PATH="/opt/venv/bin:$PATH"
 ENV VIRTUAL_ENV="/opt/venv"

@@ -16,18 +16,18 @@
 
 namespace builder {
 
-TriviaBinder::TriviaBinder(antlr4::CommonTokenStream &ts) : tokens_(ts), used_(ts.size(), false) {}
+TriviaBinder::TriviaBinder(antlr4::CommonTokenStream& ts) : tokens_(ts), used_(ts.size(), false) {}
 
-auto TriviaBinder::extractTrivia(std::span<antlr4::Token *const> range) -> std::vector<ast::Trivia>
+auto TriviaBinder::extractTrivia(std::span<antlr4::Token* const> range) -> std::vector<ast::Trivia>
 {
     // Minimum newlines to register a Break trivia
     constexpr unsigned BREAK_BREAKOFF = 2;
 
     std::vector<ast::Trivia> result{};
 
-    unsigned int pending_newlines{ 0 };
+    unsigned int pending_newlines{0};
 
-    for (auto *token : range | std::views::filter([this](auto *t) { return !isUsed(t); })) {
+    for (auto* token : range | std::views::filter([this](auto* t) { return !isUsed(t); })) {
         markAsUsed(token);
 
         if (isNewline(token)) {
@@ -58,7 +58,7 @@ auto TriviaBinder::extractTrivia(std::span<antlr4::Token *const> range) -> std::
     return result;
 }
 
-auto TriviaBinder::findContextEnd(const antlr4::ParserRuleContext &ctx) const -> std::size_t
+auto TriviaBinder::findContextEnd(const antlr4::ParserRuleContext& ctx) const -> std::size_t
 {
     const auto stop = ctx.getStop()->getTokenIndex();
 
@@ -75,7 +75,7 @@ auto TriviaBinder::findContextEnd(const antlr4::ParserRuleContext &ctx) const ->
     return stop;
 }
 
-auto TriviaBinder::bind(ast::NodeBase &node, const antlr4::ParserRuleContext &ctx) -> void
+auto TriviaBinder::bind(ast::NodeBase& node, const antlr4::ParserRuleContext& ctx) -> void
 {
     const auto start_idx = ctx.getStart()->getTokenIndex();
     const auto stop_idx = findContextEnd(ctx);
@@ -83,8 +83,8 @@ auto TriviaBinder::bind(ast::NodeBase &node, const antlr4::ParserRuleContext &ct
     // Extract Inline (Immediate Right of stop)
     std::optional<ast::Comment> inline_comment{};
     if (stop_idx + 1 < tokens_.size()) {
-        if (const auto *token = tokens_.get(stop_idx + 1); isComment(token) && !isUsed(token)) {
-            inline_comment = ast::Comment{ token->getText() };
+        if (const auto* token = tokens_.get(stop_idx + 1); isComment(token) && !isUsed(token)) {
+            inline_comment = ast::Comment{token->getText()};
             markAsUsed(token);
         }
     }
@@ -102,12 +102,12 @@ auto TriviaBinder::bind(ast::NodeBase &node, const antlr4::ParserRuleContext &ct
     }
 }
 
-auto TriviaBinder::isUsed(const antlr4::Token *token) const -> bool
+auto TriviaBinder::isUsed(const antlr4::Token* token) const -> bool
 {
     return used_[token->getTokenIndex()];
 }
 
-auto TriviaBinder::markAsUsed(const antlr4::Token *token) -> void
+auto TriviaBinder::markAsUsed(const antlr4::Token* token) -> void
 {
     used_[token->getTokenIndex()] = true;
 }

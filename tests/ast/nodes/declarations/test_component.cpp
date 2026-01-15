@@ -7,8 +7,8 @@ TEST_CASE("Declaration: Component", "[builder][decl][component]")
 {
     SECTION("Simple Component")
     {
-        const auto *decl
-          = decl_utils::parse<ast::ComponentDecl>("component my_comp is end component;");
+        const auto* decl =
+          decl_utils::parse<ast::ComponentDecl>("component my_comp is end component;");
         REQUIRE(decl != nullptr);
         REQUIRE(decl->name == "my_comp");
         REQUIRE(decl->has_is_keyword == true);
@@ -16,16 +16,14 @@ TEST_CASE("Declaration: Component", "[builder][decl][component]")
 
     SECTION("Component with Generics")
     {
-        const auto *decl
-          = decl_utils::parse<ast::ComponentDecl>("component adder is\n"
-                                                  "  generic(WIDTH : integer := 32);\n"
-                                                  "end component;");
+        const auto* decl = decl_utils::parse<ast::ComponentDecl>(
+          "component adder is\n" "  generic(WIDTH : integer := 32);\n" "end component;");
         REQUIRE(decl != nullptr);
 
-        const auto &generics = decl->generic_clause.generics;
+        const auto& generics = decl->generic_clause.generics;
         REQUIRE(generics.size() == 1);
 
-        const auto &g0 = generics[0];
+        const auto& g0 = generics[0];
         REQUIRE(g0.names.size() == 1);
         REQUIRE(g0.names[0] == "WIDTH");
         REQUIRE(g0.subtype.type_mark == "integer");
@@ -34,17 +32,11 @@ TEST_CASE("Declaration: Component", "[builder][decl][component]")
 
     SECTION("Component with Ports")
     {
-        const auto *decl
-          = decl_utils::parse<ast::ComponentDecl>("component mux is\n"
-                                                  "  port(\n"
-                                                  "    sel : in std_logic;\n"
-                                                  "    d_in : in std_logic_vector(3 downto 0);\n"
-                                                  "    d_out : out std_logic\n"
-                                                  "  );\n"
-                                                  "end component;");
+        const auto* decl = decl_utils::parse<ast::ComponentDecl>(
+          "component mux is\n" "  port(\n" "    sel : in std_logic;\n" "    d_in : in std_logic_vector(3 downto 0);\n" "    d_out : out std_logic\n" "  );\n" "end component;");
         REQUIRE(decl != nullptr);
 
-        const auto &ports = decl->port_clause.ports;
+        const auto& ports = decl->port_clause.ports;
         REQUIRE(ports.size() == 3);
 
         // Port 0

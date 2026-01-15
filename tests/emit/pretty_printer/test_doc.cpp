@@ -199,8 +199,8 @@ TEST_CASE("Alignment Logic", "[doc][alignment]")
 
     SECTION("Basic Alignment")
     {
-        const Doc doc
-          = Doc::align(Doc::alignText("1", 1) / Doc::alignText("12", 1) / Doc::alignText("123", 1));
+        const Doc doc =
+          Doc::align(Doc::alignText("1", 1) / Doc::alignText("12", 1) / Doc::alignText("123", 1));
         REQUIRE(doc.render(config) == "1  \n12 \n123");
     }
 
@@ -211,9 +211,8 @@ TEST_CASE("Alignment Logic", "[doc][alignment]")
 
         const Doc doc = Doc::align(row1 / row2);
 
-        constexpr std::string_view EXPECTED = "col1 : val1\n"
-                                              "c1   : v1  ";
-        REQUIRE(doc.render(config) == EXPECTED);
+        const std::string_view expected = "col1 : val1\n" "c1   : v1  ";
+        REQUIRE(doc.render(config) == expected);
     }
 }
 

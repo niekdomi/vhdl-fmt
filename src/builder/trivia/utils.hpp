@@ -8,13 +8,13 @@
 namespace builder {
 
 [[nodiscard]]
-static auto isComment(const antlr4::Token *t) noexcept -> bool
+static auto isComment(const antlr4::Token* t) noexcept -> bool
 {
     return (t != nullptr) && (t->getChannel() == vhdlLexer::COMMENTS);
 }
 
 [[nodiscard]]
-static auto isNewline(const antlr4::Token *t) noexcept -> bool
+static auto isNewline(const antlr4::Token* t) noexcept -> bool
 {
     return (t != nullptr) && (t->getChannel() == vhdlLexer::NEWLINES);
 }

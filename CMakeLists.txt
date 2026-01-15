@@ -41,7 +41,10 @@ if(ENABLE_STATIC_LINKING)
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         message(STATUS "  Static linking: ENABLED (C++ runtime)")
         # Apply static linking globally
-        add_link_options(-static-libgcc -static-libstdc++)
+        add_link_options(
+            -static-libgcc
+            -static-libstdc++
+        )
     else()
         message(WARNING "Static linking is only supported with GCC or Clang")
     endif()
@@ -58,9 +61,7 @@ add_compile_options(
 )
 
 # Release link-time optimizations
-add_link_options(
-    $<$<CONFIG:Release>:-flto=full>
-)
+add_link_options($<$<CONFIG:Release>:-flto=full>)
 
 # Warning flags (applies to all targets)
 add_compile_options(
@@ -69,7 +70,6 @@ add_compile_options(
     -Werror
     -Wpedantic
     -Wdeprecated
-
     # Safety
     -Wnon-virtual-dtor
     -Wsuggest-override
@@ -78,7 +78,6 @@ add_compile_options(
     -Wconsumed
     -Wthread-safety
     -Wformat=2
-
     # Type Safety & Performance
     -Wconversion
     -Wcast-align
@@ -87,14 +86,12 @@ add_compile_options(
     -Wdouble-promotion
     -Wcast-function-type
     -Wzero-as-null-pointer-constant
-
     # Logical & Control Flow
     -Wimplicit-fallthrough
     -Wshadow-all
     -Wunreachable-code-aggressive
     -Wloop-analysis
     -Wcovered-switch-default
-
     # Cross-Platform
     -Wpoison-system-directories
 )

@@ -1,6 +1,8 @@
 #include "ast/nodes/expressions.hpp"
-#include "ast/nodes/statements.hpp"
 #include "emit/test_utils.hpp"
+#include "nodes/statements/concurrent.hpp"
+#include "nodes/statements/sequential.hpp"
+#include "nodes/statements/waveform.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <memory>
@@ -86,8 +88,8 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
         SECTION("Fits on line (Flat)")
         {
             // Default config width is 80, this string is ~45 chars.
-            constexpr std::string_view EXPECTED = "data_out <= '1' when en = '1' else '0';";
-            REQUIRE(emit::test::render(assign) == EXPECTED);
+            const std::string_view expected = "data_out <= '1' when en = '1' else '0';";
+            REQUIRE(emit::test::render(assign) == expected);
         }
 
         SECTION("Forces Break (Hanging)")
@@ -98,10 +100,10 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
 
             // "data_out <= " is 12 chars.
             // The hang establishes indentation at column 12 for subsequent lines.
-            constexpr std::string_view EXPECTED = "data_out <= '1' when en = '1' else\n"
-                                                  "            '0';";
+            const std::string_view expected =
+              "data_out <= '1' when en = '1' else\n" "            '0';";
 
-            REQUIRE(emit::test::render(assign, config) == EXPECTED);
+            REQUIRE(emit::test::render(assign, config) == expected);
         }
     }
 
@@ -126,9 +128,9 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
 
         SECTION("Fits on line (Flat)")
         {
-            constexpr std::string_view EXPECTED
-              = "with sel select data_out <= '0' when \"00\", '1' when others;";
-            REQUIRE(emit::test::render(assign) == EXPECTED);
+            const std::string_view expected =
+              "with sel select data_out <= '0' when \"00\", '1' when others;";
+            REQUIRE(emit::test::render(assign) == expected);
         }
 
         SECTION("Forces Break (Hanging)")
@@ -138,11 +140,10 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
 
             // The header "with sel select" and target likely force a break.
             // "data_out <= " sets the hang anchor.
-            constexpr std::string_view EXPECTED = "with sel select\n"
-                                                  "data_out <= '0' when \"00\",\n"
-                                                  "            '1' when others;";
+            const std::string_view expected =
+              "with sel select\n" "data_out <= '0' when \"00\",\n" "            '1' when others;";
 
-            REQUIRE(emit::test::render(assign, config) == EXPECTED);
+            REQUIRE(emit::test::render(assign, config) == expected);
         }
     }
 
@@ -165,9 +166,9 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
         w2.condition = std::nullopt;
         assign.waveforms.emplace_back(std::move(w2));
 
-        constexpr std::string_view EXPECTED
-          = "mux_select: data_out <= data_in when sel = '1' else '0';";
-        REQUIRE(emit::test::render(assign) == EXPECTED);
+        const std::string_view expected =
+          "mux_select: data_out <= data_in when sel = '1' else '0';";
+        REQUIRE(emit::test::render(assign) == expected);
     }
 
     SECTION("Selected Assignment with Label")
@@ -190,8 +191,8 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
         sel2.choices.emplace_back(token("others"));
         assign.selections.emplace_back(std::move(sel2));
 
-        constexpr std::string_view EXPECTED
-          = R"(decoder: with counter select data_out <= x"00" when 0, x"FF" when others;)";
-        REQUIRE(emit::test::render(assign) == EXPECTED);
+        const std::string_view expected =
+          R"(decoder: with counter select data_out <= x"00" when 0, x"FF" when others;)";
+        REQUIRE(emit::test::render(assign) == expected);
     }
 }

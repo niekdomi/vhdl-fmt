@@ -9,7 +9,7 @@ TEST_CASE("Declaration: Signal", "[builder][decl][signal]")
 {
     SECTION("Basic signal")
     {
-        const auto *decl = decl_utils::parse<ast::SignalDecl>("signal clk : std_logic;");
+        const auto* decl = decl_utils::parse<ast::SignalDecl>("signal clk : std_logic;");
         REQUIRE(decl != nullptr);
 
         REQUIRE(decl->names.size() == 1);
@@ -20,7 +20,7 @@ TEST_CASE("Declaration: Signal", "[builder][decl][signal]")
 
     SECTION("Signal with resolution function")
     {
-        const auto *decl = decl_utils::parse<ast::SignalDecl>("signal s : resolved std_logic;");
+        const auto* decl = decl_utils::parse<ast::SignalDecl>("signal s : resolved std_logic;");
         REQUIRE(decl != nullptr);
 
         REQUIRE(decl->subtype.resolution_func.has_value());
@@ -31,7 +31,7 @@ TEST_CASE("Declaration: Signal", "[builder][decl][signal]")
     SECTION("Signal with BUS keyword")
     {
         // Requires VHDL-2008 or specific parser support, but AST supports it
-        const auto *decl = decl_utils::parse<ast::SignalDecl>("signal bus_sig : wire bus;");
+        const auto* decl = decl_utils::parse<ast::SignalDecl>("signal bus_sig : wire bus;");
         REQUIRE(decl != nullptr);
 
         REQUIRE(decl->names[0] == "bus_sig");
@@ -41,7 +41,7 @@ TEST_CASE("Declaration: Signal", "[builder][decl][signal]")
 
     SECTION("Signal with index constraint and init")
     {
-        const auto *decl = decl_utils::parse<ast::SignalDecl>(
+        const auto* decl = decl_utils::parse<ast::SignalDecl>(
           "signal data : std_logic_vector(7 downto 0) := (others => '0');");
         REQUIRE(decl != nullptr);
 
@@ -49,7 +49,7 @@ TEST_CASE("Declaration: Signal", "[builder][decl][signal]")
 
         // Verify Constraint
         REQUIRE(decl->subtype.constraint.has_value());
-        const auto *idx = std::get_if<ast::IndexConstraint>(&decl->subtype.constraint.value());
+        const auto* idx = std::get_if<ast::IndexConstraint>(&decl->subtype.constraint.value());
         REQUIRE(idx != nullptr);
 
         // Verify Init Expr (Aggregate)

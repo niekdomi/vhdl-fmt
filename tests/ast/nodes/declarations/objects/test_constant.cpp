@@ -9,7 +9,7 @@ TEST_CASE("Declaration: Constant", "[builder][decl][constant]")
 {
     SECTION("Simple integer constant")
     {
-        const auto *decl = decl_utils::parse<ast::ConstantDecl>("constant WIDTH : integer := 8;");
+        const auto* decl = decl_utils::parse<ast::ConstantDecl>("constant WIDTH : integer := 8;");
         REQUIRE(decl != nullptr);
 
         REQUIRE(decl->names.size() == 1);
@@ -21,29 +21,29 @@ TEST_CASE("Declaration: Constant", "[builder][decl][constant]")
 
         // Check Init Expr
         REQUIRE(decl->init_expr.has_value());
-        const auto *lit = std::get_if<ast::TokenExpr>(&decl->init_expr.value());
+        const auto* lit = std::get_if<ast::TokenExpr>(&decl->init_expr.value());
         REQUIRE(lit != nullptr);
         REQUIRE(lit->text == "8");
     }
 
     SECTION("Constant with Range Constraint")
     {
-        const auto *decl
-          = decl_utils::parse<ast::ConstantDecl>("constant VAL : integer range 0 to 255 := 10;");
+        const auto* decl =
+          decl_utils::parse<ast::ConstantDecl>("constant VAL : integer range 0 to 255 := 10;");
         REQUIRE(decl != nullptr);
 
         REQUIRE(decl->subtype.type_mark == "integer");
         REQUIRE(decl->subtype.constraint.has_value());
 
-        const auto *rc = std::get_if<ast::RangeConstraint>(&decl->subtype.constraint.value());
+        const auto* rc = std::get_if<ast::RangeConstraint>(&decl->subtype.constraint.value());
         REQUIRE(rc != nullptr);
         REQUIRE(rc->range.op == "to");
     }
 
     SECTION("Multiple constants in one line")
     {
-        const auto *decl
-          = decl_utils::parse<ast::ConstantDecl>("constant A, B : std_logic := '0';");
+        const auto* decl =
+          decl_utils::parse<ast::ConstantDecl>("constant A, B : std_logic := '0';");
         REQUIRE(decl != nullptr);
 
         REQUIRE(decl->names.size() == 2);

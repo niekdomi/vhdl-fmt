@@ -16,7 +16,7 @@ using emit::makeText;
 
 namespace {
 // Helper lambda for counting all nodes in a Doc tree
-constexpr auto NODE_COUNTER = [](int count, const auto & /*node*/) { return count + 1; };
+constexpr auto NODE_COUNTER = [](int count, const auto& /*node*/) { return count + 1; };
 } // namespace
 
 TEST_CASE("Smart Constructor Optimization", "[pretty_printer][smart_ctor]")
@@ -29,7 +29,7 @@ TEST_CASE("Smart Constructor Optimization", "[pretty_printer][smart_ctor]")
         // Verification: Should be 1 node (Text), not 2 (Concat(Text, Empty))
         REQUIRE(emit::foldImpl(res1, 0, NODE_COUNTER) == 1);
 
-        const auto *text1 = std::get_if<emit::Text>(&res1->value);
+        const auto* text1 = std::get_if<emit::Text>(&res1->value);
         REQUIRE(text1 != nullptr);
         REQUIRE(text1->content == "a");
 
@@ -49,7 +49,7 @@ TEST_CASE("Smart Constructor Optimization", "[pretty_printer][smart_ctor]")
 
         REQUIRE(emit::foldImpl(res, 0, NODE_COUNTER) == 1);
 
-        const auto *text = std::get_if<emit::Text>(&res->value);
+        const auto* text = std::get_if<emit::Text>(&res->value);
         REQUIRE(text != nullptr);
         REQUIRE(text->content == "ab");
     }
@@ -57,12 +57,12 @@ TEST_CASE("Smart Constructor Optimization", "[pretty_printer][smart_ctor]")
     SECTION("Rule 3: HardLine Merging")
     {
         // (HardLines(2) + HardLine) + HardLines(3) -> HardLines(6)
-        const DocPtr res1
-          = makeConcat(makeConcat(makeHardLines(2), makeHardLine()), makeHardLines(3));
+        const DocPtr res1 =
+          makeConcat(makeConcat(makeHardLines(2), makeHardLine()), makeHardLines(3));
 
         REQUIRE(emit::foldImpl(res1, 0, NODE_COUNTER) == 1);
 
-        const auto *lines1 = std::get_if<emit::HardLines>(&res1->value);
+        const auto* lines1 = std::get_if<emit::HardLines>(&res1->value);
         REQUIRE(lines1 != nullptr);
         REQUIRE(lines1->count == 6);
 
@@ -80,17 +80,17 @@ TEST_CASE("Smart Constructor Optimization", "[pretty_printer][smart_ctor]")
     {
         // Simulate building a long string from many small parts
         constexpr auto PARTS = std::to_array<std::string_view>(
-          { "This", " ", "is", " ", "a", " ", "complex", " ", "merge." });
+          {"This", " ", "is", " ", "a", " ", "complex", " ", "merge."});
 
-        const DocPtr result
-          = std::ranges::fold_left(PARTS, makeEmpty(), [](auto acc, const auto &str) {
-                return makeConcat(std::move(acc), makeText(str));
-            });
+        const DocPtr result =
+          std::ranges::fold_left(PARTS, makeEmpty(), [](auto acc, const auto& str) {
+              return makeConcat(std::move(acc), makeText(str));
+          });
 
         // Verification: The tree should be fully flattened into one Text node
         REQUIRE(emit::foldImpl(result, 0, NODE_COUNTER) == 1);
 
-        const auto *text = std::get_if<emit::Text>(&result->value);
+        const auto* text = std::get_if<emit::Text>(&result->value);
         REQUIRE(text != nullptr);
         REQUIRE(text->content == "This is a complex merge.");
     }
@@ -105,7 +105,7 @@ TEST_CASE("Smart Constructor Optimization", "[pretty_printer][smart_ctor]")
 
         REQUIRE(emit::foldImpl(final_doc, 0, NODE_COUNTER) == 1);
 
-        const auto *text = std::get_if<emit::Text>(&final_doc->value);
+        const auto* text = std::get_if<emit::Text>(&final_doc->value);
         REQUIRE(text != nullptr);
         REQUIRE(text->content == "ABC");
     }

@@ -9,12 +9,12 @@ TEST_CASE("TypeDecl: Enumeration", "[builder][type][enum]")
 {
     SECTION("Standard enumeration")
     {
-        const auto *decl = type_utils::parseType("type state_t is (IDLE, RUNNING, STOPPED);");
+        const auto* decl = type_utils::parseType("type state_t is (IDLE, RUNNING, STOPPED);");
         REQUIRE(decl != nullptr);
         REQUIRE(decl->name == "state_t");
         REQUIRE(decl->type_def.has_value());
 
-        const auto *def = std::get_if<ast::EnumerationTypeDef>(&decl->type_def.value());
+        const auto* def = std::get_if<ast::EnumerationTypeDef>(&decl->type_def.value());
         REQUIRE(def != nullptr);
 
         REQUIRE(def->literals.size() == 3);
@@ -25,10 +25,10 @@ TEST_CASE("TypeDecl: Enumeration", "[builder][type][enum]")
 
     SECTION("Single literal")
     {
-        const auto *decl = type_utils::parseType("type mode_t is (SINGLE);");
+        const auto* decl = type_utils::parseType("type mode_t is (SINGLE);");
         REQUIRE(decl != nullptr);
 
-        const auto *def = std::get_if<ast::EnumerationTypeDef>(&decl->type_def.value());
+        const auto* def = std::get_if<ast::EnumerationTypeDef>(&decl->type_def.value());
         REQUIRE(def != nullptr);
 
         REQUIRE(def->literals.size() == 1);

@@ -13,20 +13,19 @@ struct ConcurrentStatement;
 struct SequentialStatement;
 
 struct ConcurrentStatement final
-  : std::variant<ConditionalConcurrentAssign, SelectedConcurrentAssign, Process>
+    : std::variant<ConditionalConcurrentAssign, SelectedConcurrentAssign, Process>
 {
     using variant::variant; // Inherit constructors
 };
 
-struct SequentialStatement final
-  : std::variant<VariableAssign,
-                 SignalAssign,
-                 IfStatement,
-                 CaseStatement,
-                 ForLoop,
-                 WhileLoop,
-                 Loop,
-                 NullStatement>
+struct SequentialStatement final : std::variant<VariableAssign,
+                                                SignalAssign,
+                                                IfStatement,
+                                                CaseStatement,
+                                                ForLoop,
+                                                WhileLoop,
+                                                Loop,
+                                                NullStatement>
 {
     using variant::variant; // Inherit constructors
 };

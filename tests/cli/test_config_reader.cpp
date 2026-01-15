@@ -15,7 +15,7 @@ namespace {
 
 constexpr auto getConfigPath(const std::string_view filename) -> std::filesystem::path
 {
-    return std::filesystem::path{ TEST_DATA_DIR } / "config_file" / filename;
+    return std::filesystem::path{TEST_DATA_DIR} / "config_file" / filename;
 }
 
 } // namespace
@@ -23,12 +23,12 @@ constexpr auto getConfigPath(const std::string_view filename) -> std::filesystem
 TEST_CASE("ConfigReader with valid complete configuration file", "[config]")
 {
     const auto config_path = getConfigPath("valid_complete.yaml");
-    cli::ConfigReader config_reader{ config_path };
+    cli::ConfigReader config_reader{config_path};
 
     const auto result = config_reader.readConfigFile();
 
     REQUIRE(result.has_value());
-    const auto &config = result.value();
+    const auto& config = result.value();
 
     REQUIRE(config.line_config.line_length == 120);
     REQUIRE(config.line_config.indent_size == 2);
@@ -46,12 +46,12 @@ TEST_CASE("ConfigReader with valid complete configuration file", "[config]")
 TEST_CASE("ConfigReader with empty configuration file", "[config]")
 {
     const auto config_path = getConfigPath("empty.yaml");
-    cli::ConfigReader reader{ config_path };
+    cli::ConfigReader reader{config_path};
 
     const auto result = reader.readConfigFile();
 
     REQUIRE(result.has_value());
-    const auto &config = result.value();
+    const auto& config = result.value();
 
     REQUIRE(config.line_config.line_length == 100);
     REQUIRE(config.line_config.indent_size == 4);
@@ -69,24 +69,24 @@ TEST_CASE("ConfigReader with empty configuration file", "[config]")
 TEST_CASE("ConfigReader with non-existent configuration file", "[config]")
 {
     const auto config_path = getConfigPath("non_existent_file.yaml");
-    cli::ConfigReader reader{ config_path };
+    cli::ConfigReader reader{config_path};
 
     const auto result = reader.readConfigFile();
 
     REQUIRE_FALSE(result.has_value());
-    const auto &error = result.error();
+    const auto& error = result.error();
     REQUIRE(error.message == "Config file does not exist at the defined location.");
 }
 
 TEST_CASE("ConfigReader with malformed YAML configuration file", "[config]")
 {
     const auto config_path = getConfigPath("malformed.yaml");
-    cli::ConfigReader reader{ config_path };
+    cli::ConfigReader reader{config_path};
 
     const auto result = reader.readConfigFile();
 
     REQUIRE_FALSE(result.has_value());
-    const auto &error = result.error();
+    const auto& error = result.error();
     REQUIRE(error.message.contains("Error reading config file"));
 }
 
@@ -99,11 +99,11 @@ TEST_CASE("ConfigReader with no config file path and no default config file", "[
     std::filesystem::create_directories(temp_dir);
     std::filesystem::current_path(temp_dir);
 
-    cli::ConfigReader reader{ std::nullopt };
+    cli::ConfigReader reader{std::nullopt};
     const auto result = reader.readConfigFile();
 
     REQUIRE(result.has_value());
-    const auto &config = result.value();
+    const auto& config = result.value();
 
     REQUIRE(config.line_config.line_length == 100);
     REQUIRE(config.line_config.indent_size == 4);
@@ -131,11 +131,11 @@ TEST_CASE("ConfigReader with invalid configuration parameters", "[config]")
 
     const auto temp_path = std::filesystem::temp_directory_path() / "test_valid_config.yaml";
     {
-        std::ofstream temp_file{ temp_path };
+        std::ofstream temp_file{temp_path};
         temp_file << content;
     }
 
-    cli::ConfigReader reader{ temp_path };
+    cli::ConfigReader reader{temp_path};
     const auto result = reader.readConfigFile();
 
     INFO(std::format("Description: {}", description));
@@ -143,13 +143,13 @@ TEST_CASE("ConfigReader with invalid configuration parameters", "[config]")
 
     if (result.has_value()) {
         INFO("Unexpectedly succeeded - config was accepted");
-        const auto &config = result.value();
+        const auto& config = result.value();
         INFO(std::format("Line length: {}", config.line_config.line_length));
         INFO(std::format("Indent size: {}", config.line_config.indent_size));
     }
 
     REQUIRE_FALSE(result.has_value());
-    const auto &error = result.error();
+    const auto& error = result.error();
     INFO(std::format("Expected: {}", expected_error));
     INFO(std::format("Actual: {}", error.message));
     REQUIRE(error.message.contains(expected_error));
@@ -160,26 +160,26 @@ TEST_CASE("ConfigReader with invalid configuration parameters", "[config]")
 
 TEST_CASE("ConfigReader with boundary values for line length and indent size", "[config]")
 {
-    const auto [content, expected_value, expected_field]
-      = GENERATE(table<std::string_view, std::uint8_t, std::string_view>({
-        { "line_length: 10",          10,  "line_length" },
-        { "line_length: 200",         200, "line_length" },
-        { "indentation:\n  size: 1",  1,   "indent_size" },
-        { "indentation:\n  size: 16", 16,  "indent_size" }
+    const auto [content, expected_value, expected_field] =
+      GENERATE(table<std::string_view, std::uint8_t, std::string_view>({
+        {"line_length: 10",          10,  "line_length"},
+        {"line_length: 200",         200, "line_length"},
+        {"indentation:\n  size: 1",  1,   "indent_size"},
+        {"indentation:\n  size: 16", 16,  "indent_size"}
     }));
 
-    const auto temp_path
-      = std::filesystem::temp_directory_path() / std::format("test_{}.yaml", expected_value);
+    const auto temp_path =
+      std::filesystem::temp_directory_path() / std::format("test_{}.yaml", expected_value);
     {
-        std::ofstream temp_file{ temp_path };
+        std::ofstream temp_file{temp_path};
         temp_file << content;
     }
 
-    cli::ConfigReader reader{ temp_path };
+    cli::ConfigReader reader{temp_path};
     const auto result = reader.readConfigFile();
 
     REQUIRE(result.has_value());
-    const auto &config = result.value();
+    const auto& config = result.value();
 
     if (expected_field == "line_length") {
         REQUIRE(config.line_config.line_length == expected_value);

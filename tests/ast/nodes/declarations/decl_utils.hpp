@@ -14,7 +14,7 @@ namespace decl_utils {
 /// Parse a VHDL declaration string into a specific AST node.
 /// Wraps the string in an architecture body to ensure valid parsing context.
 template<typename T>
-inline auto parse(std::string_view decl_str) -> const T *
+inline auto parse(std::string_view decl_str) -> const T*
 {
     const auto vhdl = std::format(R"(
         entity E is end E;
@@ -31,12 +31,12 @@ inline auto parse(std::string_view decl_str) -> const T *
     if (design.units.size() < 2) {
         return nullptr;
     }
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto* arch = std::get_if<ast::Architecture>(&design.units[1]);
     if ((arch == nullptr) || arch->decls.empty()) {
         return nullptr;
     }
 
-    const auto *decl_variant = &arch->decls.front();
+    const auto* decl_variant = &arch->decls.front();
 
     return std::get_if<T>(decl_variant);
 }

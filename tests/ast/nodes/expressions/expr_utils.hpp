@@ -14,7 +14,7 @@
 namespace expr_utils {
 
 /// Parse VHDL expression from a signal initialization
-inline auto parseExpr(std::string_view init_expr) -> const ast::Expr *
+inline auto parseExpr(std::string_view init_expr) -> const ast::Expr*
 {
     const auto vhdl = std::format(R"(
         entity E is end E;
@@ -31,14 +31,14 @@ inline auto parseExpr(std::string_view init_expr) -> const ast::Expr *
     if (design.units.size() < 2) {
         return nullptr;
     }
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto* arch = std::get_if<ast::Architecture>(&design.units[1]);
     if ((arch == nullptr) || arch->decls.empty()) {
         return nullptr;
     }
 
-    const auto *decl_item = arch->decls.data();
+    const auto* decl_item = arch->decls.data();
 
-    const auto *signal = std::get_if<ast::SignalDecl>(decl_item);
+    const auto* signal = std::get_if<ast::SignalDecl>(decl_item);
     if ((signal == nullptr) || !signal->init_expr.has_value()) {
         return nullptr;
     }

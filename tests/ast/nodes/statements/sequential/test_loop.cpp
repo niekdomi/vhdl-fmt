@@ -9,7 +9,7 @@
 
 TEST_CASE("Loop: Simple infinite loop", "[statements][loop]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
+    const std::string_view file = R"(
         entity Test is end Test;
         architecture RTL of Test is
         begin
@@ -22,22 +22,22 @@ TEST_CASE("Loop: Simple infinite loop", "[statements][loop]")
         end RTL;
     )";
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(file);
+    const auto* arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
 
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
+    const auto* proc = std::get_if<ast::Process>(arch->stmts.data());
     REQUIRE(proc != nullptr);
     REQUIRE_FALSE(proc->body.empty());
 
-    const auto *loop = std::get_if<ast::Loop>(proc->body.data());
+    const auto* loop = std::get_if<ast::Loop>(proc->body.data());
     REQUIRE(loop != nullptr);
     REQUIRE_FALSE(loop->label.has_value());
 }
 
 TEST_CASE("Loop: Labeled infinite loop", "[statements][loop]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
+    const std::string_view file = R"(
         entity Test is end Test;
         architecture RTL of Test is
         begin
@@ -50,15 +50,15 @@ TEST_CASE("Loop: Labeled infinite loop", "[statements][loop]")
         end RTL;
     )";
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(file);
+    const auto* arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
 
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
+    const auto* proc = std::get_if<ast::Process>(arch->stmts.data());
     REQUIRE(proc != nullptr);
     REQUIRE_FALSE(proc->body.empty());
 
-    const auto *loop = std::get_if<ast::Loop>(proc->body.data());
+    const auto* loop = std::get_if<ast::Loop>(proc->body.data());
     REQUIRE(loop != nullptr);
     REQUIRE(loop->label.has_value());
     REQUIRE(loop->label.value() == "main_loop");
@@ -66,7 +66,7 @@ TEST_CASE("Loop: Labeled infinite loop", "[statements][loop]")
 
 TEST_CASE("Loop: Infinite loop with multiple statements", "[statements][loop]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
+    const std::string_view file = R"(
         entity Test is end Test;
         architecture RTL of Test is
         begin
@@ -81,15 +81,15 @@ TEST_CASE("Loop: Infinite loop with multiple statements", "[statements][loop]")
         end RTL;
     )";
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(file);
+    const auto* arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
 
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
+    const auto* proc = std::get_if<ast::Process>(arch->stmts.data());
     REQUIRE(proc != nullptr);
     REQUIRE_FALSE(proc->body.empty());
 
-    const auto *loop = std::get_if<ast::Loop>(proc->body.data());
+    const auto* loop = std::get_if<ast::Loop>(proc->body.data());
     REQUIRE(loop != nullptr);
     REQUIRE(loop->body.size() == 3);
 }

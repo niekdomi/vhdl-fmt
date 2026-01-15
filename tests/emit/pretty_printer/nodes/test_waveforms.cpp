@@ -1,8 +1,9 @@
 #include "ast/node.hpp"
 #include "ast/nodes/expressions.hpp"
-#include "ast/nodes/statements.hpp"
 #include "common/config.hpp"
 #include "emit/test_utils.hpp"
+#include "nodes/statements/sequential.hpp"
+#include "nodes/statements/waveform.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <string>
@@ -15,16 +16,22 @@ namespace {
 // Helper: Creates a signal assignment with a target
 auto makeAssign(std::string target) -> ast::SignalAssign
 {
-    ast::SignalAssign assign{ .target = ast::TokenExpr{ .text = std::move(target) },
-                              .waveform = ast::Waveform{} };
+    ast::SignalAssign assign{
+      .target = ast::TokenExpr{.text = std::move(target)},
+      .waveform = ast::Waveform{},
+    };
+
     return assign;
 }
 
 // Helper: Creates a waveform element (value + optional after clause)
 auto makeElem(std::string value, std::string after) -> ast::Waveform::Element
 {
-    ast::Waveform::Element elem{ .value = ast::TokenExpr{ .text = std::move(value) },
-                                 .after = ast::TokenExpr{ .text = std::move(after) } };
+    ast::Waveform::Element elem{
+      .value = ast::TokenExpr{.text = std::move(value)},
+      .after = ast::TokenExpr{.text = std::move(after)},
+    };
+
     return elem;
 }
 
@@ -48,8 +55,8 @@ TEST_CASE("Waveform Rendering", "[pretty_printer][waveforms]")
 
         SECTION("Fits on one line (Flat)")
         {
-            constexpr std::string_view EXPECTED = "s <= '1' after 5 ns, '0' after 10 ns;";
-            REQUIRE(emit::test::render(assign) == EXPECTED);
+            const std::string_view expected = "s <= '1' after 5 ns, '0' after 10 ns;";
+            REQUIRE(emit::test::render(assign) == expected);
         }
 
         SECTION("Forces Break (Hanging Indent)")
@@ -58,23 +65,21 @@ TEST_CASE("Waveform Rendering", "[pretty_printer][waveforms]")
             common::Config tight_config = emit::test::defaultConfig();
             tight_config.line_config.line_length = 20;
 
-            constexpr std::string_view EXPECTED = "s <= '1' after 5 ns,\n"
-                                                  "     '0' after 10 ns;";
+            const std::string_view expected = "s <= '1' after 5 ns,\n" "     '0' after 10 ns;";
 
-            REQUIRE(emit::test::render(assign, tight_config) == EXPECTED);
+            REQUIRE(emit::test::render(assign, tight_config) == expected);
         }
 
         SECTION("With Comments")
         {
             assign.setInlineComment("-- Second value");
-            assign.waveform.elements[0].addTrailing(ast::Comment{ .text = "-- First trailing" });
+            assign.waveform.elements[0].addTrailing(ast::Comment{.text = "-- First trailing"});
             assign.waveform.elements[0].setInlineComment("-- First value");
 
-            constexpr std::string_view EXPECTED = "s <= '1' after 5 ns, -- First value\n"
-                                                  "     -- First trailing\n"
-                                                  "     '0' after 10 ns; -- Second value";
+            const std::string_view expected =
+              "s <= '1' after 5 ns, -- First value\n" "     -- First trailing\n" "     '0' after 10 ns; -- Second value";
 
-            REQUIRE(emit::test::render(assign) == EXPECTED);
+            REQUIRE(emit::test::render(assign) == expected);
         }
     }
 

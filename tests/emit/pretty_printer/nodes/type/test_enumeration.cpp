@@ -15,7 +15,7 @@ TEST_CASE("TypeDecl: Enumeration", "[pretty_printer][type][enum]")
     SECTION("Standard enumeration")
     {
         ast::EnumerationTypeDef enum_def;
-        enum_def.literals = { "IDLE", "RUNNING", "STOPPED" };
+        enum_def.literals = {"IDLE", "RUNNING", "STOPPED"};
 
         type_decl.type_def = std::move(enum_def);
 
@@ -25,7 +25,7 @@ TEST_CASE("TypeDecl: Enumeration", "[pretty_printer][type][enum]")
     SECTION("Single literal")
     {
         ast::EnumerationTypeDef enum_def;
-        enum_def.literals = { "SINGLE" };
+        enum_def.literals = {"SINGLE"};
 
         type_decl.type_def = std::move(enum_def);
 

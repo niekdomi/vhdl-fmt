@@ -4,6 +4,7 @@
 #include "emit/pretty_printer/doc.hpp"
 
 #include <algorithm>
+#include <cstddef>
 #include <map>
 #include <memory>
 #include <optional>
@@ -23,7 +24,7 @@ auto makeEmpty() -> DocPtr
 
 auto makeText(std::string_view text) -> DocPtr
 {
-    return std::make_shared<DocImpl>(Text{ std::string(text) });
+    return std::make_shared<DocImpl>(Text{std::string(text)});
 }
 
 auto makeLine() -> DocPtr
@@ -38,7 +39,7 @@ auto makeHardLine() -> DocPtr
 
 auto makeHardLines(unsigned count) -> DocPtr
 {
-    return std::make_shared<DocImpl>(HardLines{ count });
+    return std::make_shared<DocImpl>(HardLines{count});
 }
 
 auto makeConcat(DocPtr left, DocPtr right) -> DocPtr
@@ -55,19 +56,19 @@ auto makeConcat(DocPtr left, DocPtr right) -> DocPtr
     }
 
     // === Rule 2: Merge adjacent Text nodes ===
-    if (auto *left_text = std::get_if<Text>(&left->value)) {
-        if (auto *right_text = std::get_if<Text>(&right->value)) {
+    if (auto* left_text = std::get_if<Text>(&left->value)) {
+        if (auto* right_text = std::get_if<Text>(&right->value)) {
             // Create a new merged text node directly
             return makeText(left_text->content + right_text->content);
         }
     }
 
     // === Rule 3: Merge adjacent HardLines/HardLine nodes ===
-    auto get_lines = [](const DocPtr &d) -> std::optional<unsigned> {
+    auto get_lines = [](const DocPtr& d) -> std::optional<unsigned> {
         if (std::holds_alternative<HardLine>(d->value)) {
             return 1;
         }
-        if (auto *hl = std::get_if<HardLines>(&d->value)) {
+        if (auto* hl = std::get_if<HardLines>(&d->value)) {
             return hl->count;
         }
         return std::nullopt;
@@ -121,11 +122,11 @@ auto makeAlignText(std::string_view text, int level) -> DocPtr
 
 auto makeAlign(DocPtr doc) -> DocPtr
 {
-    return std::make_shared<DocImpl>(Align{ .doc = std::move(doc) });
+    return std::make_shared<DocImpl>(Align{.doc = std::move(doc)});
 }
 
 // Utility functions
-auto flatten(const DocPtr &doc) -> DocPtr
+auto flatten(const DocPtr& doc) -> DocPtr
 {
     if (!doc) {
         return doc;
@@ -133,35 +134,34 @@ auto flatten(const DocPtr &doc) -> DocPtr
 
     return transformImpl(
       doc,
-      common::Overload{
-        [](const SoftLine &) -> DocPtr { return makeText(" "); },
-        [](const Union &node) -> DocPtr {
-            // In flat mode, we just pick the 'flat' branch.
-            return node.flat;
-        },
-        [](const AlignText &node) -> DocPtr {
-            // In flat mode, alignment is just the text.
-            return makeText(node.content);
-        },
-        [](const Align &node) -> DocPtr {
-            // In flat mode, the alignment group is just its content.
-            return node.doc;
-        },
-        // For all other nodes (Concat, Nest, Hang, Text, Empty, HardLine, etc.),
-        [](const auto &node) -> DocPtr { return std::make_shared<DocImpl>(node); } });
+      common::Overload{[](const SoftLine&) -> DocPtr { return makeText(" "); },
+                       [](const Union& node) -> DocPtr {
+                           // In flat mode, we just pick the 'flat' branch.
+                           return node.flat;
+                       },
+                       [](const AlignText& node) -> DocPtr {
+                           // In flat mode, alignment is just the text.
+                           return makeText(node.content);
+                       },
+                       [](const Align& node) -> DocPtr {
+                           // In flat mode, the alignment group is just its content.
+                           return node.doc;
+                       },
+                       // For all other nodes (Concat, Nest, Hang, Text, Empty, HardLine, etc.),
+                       [](const auto& node) -> DocPtr { return std::make_shared<DocImpl>(node); }});
 }
 
-auto resolveAlignment(const DocPtr &doc) -> DocPtr
+auto resolveAlignment(const DocPtr& doc) -> DocPtr
 {
     // === Pass 1: Find max width FOR EACH level ===
     std::map<int, int> max_widths_by_level;
     max_widths_by_level = foldImpl(
-      doc, std::move(max_widths_by_level), [](std::map<int, int> current_maxes, const auto &node) {
+      doc, std::move(max_widths_by_level), [](std::map<int, int> current_maxes, const auto& node) {
           using T = std::decay_t<decltype(node)>;
           if constexpr (std::is_same_v<T, AlignText>) {
               const int current_max = current_maxes[node.level];
-              current_maxes[node.level]
-                = std::max(current_max, static_cast<int>(node.content.length()));
+              current_maxes[node.level] =
+                std::max(current_max, static_cast<int>(node.content.length()));
           }
           return current_maxes; // Pass accumulator through
       });
@@ -172,7 +172,7 @@ auto resolveAlignment(const DocPtr &doc) -> DocPtr
     }
 
     // === Pass 2: Apply padding based on the level's max width ===
-    return transformImpl(doc, [&](const auto &node) -> DocPtr {
+    return transformImpl(doc, [&](const auto& node) -> DocPtr {
         using T = std::decay_t<decltype(node)>;
 
         if constexpr (std::is_same_v<T, AlignText>) {

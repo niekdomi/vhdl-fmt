@@ -26,7 +26,7 @@ struct ComponentDecl final : NodeBase
     GenericClause generic_clause;
     PortClause port_clause;
     std::optional<std::string> end_label;
-    bool has_is_keyword{ false };
+    bool has_is_keyword{false};
 };
 
 /// @brief Variant type for all declarations.

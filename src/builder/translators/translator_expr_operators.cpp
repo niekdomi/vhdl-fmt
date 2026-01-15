@@ -7,18 +7,18 @@
 
 namespace builder {
 
-auto Translator::makeExpr(vhdlParser::ExpressionContext &ctx) -> ast::Expr
+auto Translator::makeExpr(vhdlParser::ExpressionContext& ctx) -> ast::Expr
 {
-    const auto &relations = ctx.relation();
+    const auto& relations = ctx.relation();
     if (relations.size() == 1) {
         return makeRelation(*relations[0]);
     }
 
     return foldBinaryLeft(
-      ctx, relations, ctx.logical_operator(), [&](auto &r) { return makeRelation(r); });
+      ctx, relations, ctx.logical_operator(), [&](auto& r) { return makeRelation(r); });
 }
 
-auto Translator::makeRelation(vhdlParser::RelationContext &ctx) -> ast::Expr
+auto Translator::makeRelation(vhdlParser::RelationContext& ctx) -> ast::Expr
 {
     if (ctx.relational_operator() == nullptr) {
         return makeShiftExpr(*ctx.shift_expression(0));
@@ -30,7 +30,7 @@ auto Translator::makeRelation(vhdlParser::RelationContext &ctx) -> ast::Expr
                       makeShiftExpr(*ctx.shift_expression(1)));
 }
 
-auto Translator::makeShiftExpr(vhdlParser::Shift_expressionContext &ctx) -> ast::Expr
+auto Translator::makeShiftExpr(vhdlParser::Shift_expressionContext& ctx) -> ast::Expr
 {
     if (ctx.shift_operator() == nullptr) {
         return makeSimpleExpr(*ctx.simple_expression(0));
@@ -42,10 +42,10 @@ auto Translator::makeShiftExpr(vhdlParser::Shift_expressionContext &ctx) -> ast:
                       makeSimpleExpr(*ctx.simple_expression(1)));
 }
 
-auto Translator::makeSimpleExpr(vhdlParser::Simple_expressionContext &ctx) -> ast::Expr
+auto Translator::makeSimpleExpr(vhdlParser::Simple_expressionContext& ctx) -> ast::Expr
 {
-    const auto &terms = ctx.term();
-    const auto &operators = ctx.adding_operator();
+    const auto& terms = ctx.term();
+    const auto& operators = ctx.adding_operator();
 
     if (terms.empty()) {
         return makeToken(ctx);
@@ -67,9 +67,9 @@ auto Translator::makeSimpleExpr(vhdlParser::Simple_expressionContext &ctx) -> as
     return init;
 }
 
-auto Translator::makeTerm(vhdlParser::TermContext &ctx) -> ast::Expr
+auto Translator::makeTerm(vhdlParser::TermContext& ctx) -> ast::Expr
 {
-    const auto &factors = ctx.factor();
+    const auto& factors = ctx.factor();
     if (factors.empty()) {
         return makeToken(ctx);
     }
@@ -79,10 +79,10 @@ auto Translator::makeTerm(vhdlParser::TermContext &ctx) -> ast::Expr
     }
 
     return foldBinaryLeft(
-      ctx, factors, ctx.multiplying_operator(), [&](auto &f) { return makeFactor(f); });
+      ctx, factors, ctx.multiplying_operator(), [&](auto& f) { return makeFactor(f); });
 }
 
-auto Translator::makeFactor(vhdlParser::FactorContext &ctx) -> ast::Expr
+auto Translator::makeFactor(vhdlParser::FactorContext& ctx) -> ast::Expr
 {
     if (ctx.DOUBLESTAR() != nullptr) {
         return makeBinary(ctx, "**", makePrimary(*ctx.primary(0)), makePrimary(*ctx.primary(1)));
@@ -99,14 +99,14 @@ auto Translator::makeFactor(vhdlParser::FactorContext &ctx) -> ast::Expr
     return makePrimary(*ctx.primary(0));
 }
 
-auto Translator::makeLiteral(vhdlParser::LiteralContext &ctx) -> ast::Expr
+auto Translator::makeLiteral(vhdlParser::LiteralContext& ctx) -> ast::Expr
 {
-    auto *num = ctx.numeric_literal();
+    auto* num = ctx.numeric_literal();
     if (num == nullptr) {
         return makeToken(ctx);
     }
 
-    auto *phys = num->physical_literal();
+    auto* phys = num->physical_literal();
     if (phys == nullptr) {
         return makeToken(ctx);
     }
@@ -117,7 +117,7 @@ auto Translator::makeLiteral(vhdlParser::LiteralContext &ctx) -> ast::Expr
       .build();
 }
 
-auto Translator::makePrimary(vhdlParser::PrimaryContext &ctx) -> ast::Expr
+auto Translator::makePrimary(vhdlParser::PrimaryContext& ctx) -> ast::Expr
 {
     if (ctx.expression() != nullptr) {
         return build<ast::ParenExpr>(ctx)
@@ -129,42 +129,42 @@ auto Translator::makePrimary(vhdlParser::PrimaryContext &ctx) -> ast::Expr
         return makeAggregate(*ctx.aggregate());
     }
 
-    if (auto *name_ctx = ctx.name()) {
+    if (auto* name_ctx = ctx.name()) {
         return makeName(*name_ctx);
     }
 
-    if (auto *lit = ctx.literal()) {
+    if (auto* lit = ctx.literal()) {
         return makeLiteral(*lit);
     }
 
-    if (auto *qual = ctx.qualified_expression()) {
+    if (auto* qual = ctx.qualified_expression()) {
         return makeQualifiedExpr(*qual);
     }
 
-    if (auto *alloc = ctx.allocator()) {
+    if (auto* alloc = ctx.allocator()) {
         return makeAllocator(*alloc);
     }
 
     return makeToken(ctx);
 }
 
-auto Translator::makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx) -> ast::Expr
+auto Translator::makeQualifiedExpr(vhdlParser::Qualified_expressionContext& ctx) -> ast::Expr
 {
     // Build the operand (Aggregate or Parenthesized Expression)
     ast::Expr operand{};
 
-    if (auto *agg = ctx.aggregate()) {
+    if (auto* agg = ctx.aggregate()) {
         operand = makeAggregate(*agg);
-    } else if (auto *expr = ctx.expression()) {
-        operand
-          = build<ast::ParenExpr>(*expr).setBox(&ast::ParenExpr::inner, makeExpr(*expr)).build();
+    } else if (auto* expr = ctx.expression()) {
+        operand =
+          build<ast::ParenExpr>(*expr).setBox(&ast::ParenExpr::inner, makeExpr(*expr)).build();
     } else {
         // Fallback for invalid parsing
         operand = makeToken(ctx);
     }
 
     // If missing, return the unwrapped operand.
-    auto *subtype = ctx.subtype_indication();
+    auto* subtype = ctx.subtype_indication();
     if (subtype == nullptr) {
         return operand;
     }
@@ -175,13 +175,13 @@ auto Translator::makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx)
       .build();
 }
 
-auto Translator::makeAllocator(vhdlParser::AllocatorContext &ctx) -> ast::Expr
+auto Translator::makeAllocator(vhdlParser::AllocatorContext& ctx) -> ast::Expr
 {
     ast::Expr operand{};
 
-    if (auto *qual = ctx.qualified_expression()) {
+    if (auto* qual = ctx.qualified_expression()) {
         operand = makeQualifiedExpr(*qual);
-    } else if (auto *subtype = ctx.subtype_indication()) {
+    } else if (auto* subtype = ctx.subtype_indication()) {
         operand = makeSubtypeIndication(*subtype);
     } else {
         operand = makeToken(ctx);

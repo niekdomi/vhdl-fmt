@@ -11,21 +11,21 @@ namespace builder {
 
 // ---------------------- Aggregates ----------------------
 
-auto Translator::makeAggregate(vhdlParser::AggregateContext &ctx) -> ast::Expr
+auto Translator::makeAggregate(vhdlParser::AggregateContext& ctx) -> ast::Expr
 {
     return build<ast::GroupExpr>(ctx)
       .collect(&ast::GroupExpr::children,
                ctx.element_association(),
-               [&](auto *elem) { return makeElementAssociation(*elem); })
+               [&](auto* elem) { return makeElementAssociation(*elem); })
       .build();
 }
 
-auto Translator::makeElementAssociation(vhdlParser::Element_associationContext &ctx) -> ast::Expr
+auto Translator::makeElementAssociation(vhdlParser::Element_associationContext& ctx) -> ast::Expr
 {
     // element_association: (choices ARROW)? expression
     // If no choices, this is positional notation - return just the expression
     if (ctx.choices() == nullptr) {
-        if (auto *expr = ctx.expression()) {
+        if (auto* expr = ctx.expression()) {
             return makeExpr(*expr);
         }
         return makeToken(ctx);
@@ -35,13 +35,13 @@ auto Translator::makeElementAssociation(vhdlParser::Element_associationContext &
     return build<ast::BinaryExpr>(ctx)
       .set(&ast::BinaryExpr::op, "=>")
       .maybeBox(
-        &ast::BinaryExpr::left, ctx.choices(), [&](auto &child) { return makeChoices(child); })
+        &ast::BinaryExpr::left, ctx.choices(), [&](auto& child) { return makeChoices(child); })
       .maybeBox(
-        &ast::BinaryExpr::right, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })
+        &ast::BinaryExpr::right, ctx.expression(), [&](auto& expr) { return makeExpr(expr); })
       .build();
 }
 
-auto Translator::makeChoices(vhdlParser::ChoicesContext &ctx) -> ast::Expr
+auto Translator::makeChoices(vhdlParser::ChoicesContext& ctx) -> ast::Expr
 {
     if (ctx.choice().size() == 1) {
         return makeChoice(*ctx.choice(0));
@@ -49,11 +49,11 @@ auto Translator::makeChoices(vhdlParser::ChoicesContext &ctx) -> ast::Expr
 
     return build<ast::GroupExpr>(ctx)
       .collect(
-        &ast::GroupExpr::children, ctx.choice(), [this](auto *child) { return makeChoice(*child); })
+        &ast::GroupExpr::children, ctx.choice(), [this](auto* child) { return makeChoice(*child); })
       .build();
 }
 
-auto Translator::makeChoice(vhdlParser::ChoiceContext &ctx) -> ast::Expr
+auto Translator::makeChoice(vhdlParser::ChoiceContext& ctx) -> ast::Expr
 {
     if (ctx.OTHERS() != nullptr) {
         return makeToken(ctx, "others");
@@ -67,7 +67,7 @@ auto Translator::makeChoice(vhdlParser::ChoiceContext &ctx) -> ast::Expr
         return makeSimpleExpr(*ctx.simple_expression());
     }
 
-    if (auto *dr = ctx.discrete_range()) {
+    if (auto* dr = ctx.discrete_range()) {
         return makeDiscreteRange(*dr);
     }
 
@@ -76,15 +76,15 @@ auto Translator::makeChoice(vhdlParser::ChoiceContext &ctx) -> ast::Expr
 
 // ---------------------- Constraints/Ranges ----------------------
 
-auto Translator::makeConstraint(vhdlParser::ConstraintContext &ctx)
+auto Translator::makeConstraint(vhdlParser::ConstraintContext& ctx)
   -> std::optional<ast::Constraint>
 {
     // Dispatch based on concrete constraint type
-    if (auto *index = ctx.index_constraint()) {
+    if (auto* index = ctx.index_constraint()) {
         return makeIndexConstraint(*index);
     }
 
-    if (auto *range = ctx.range_constraint()) {
+    if (auto* range = ctx.range_constraint()) {
         return makeRangeConstraint(*range);
     }
 
@@ -92,7 +92,7 @@ auto Translator::makeConstraint(vhdlParser::ConstraintContext &ctx)
     return std::nullopt;
 }
 
-auto Translator::makeIndexConstraint(vhdlParser::Index_constraintContext &ctx)
+auto Translator::makeIndexConstraint(vhdlParser::Index_constraintContext& ctx)
   -> ast::IndexConstraint
 {
     return build<ast::IndexConstraint>(ctx)
@@ -100,22 +100,22 @@ auto Translator::makeIndexConstraint(vhdlParser::Index_constraintContext &ctx)
            build<ast::GroupExpr>(ctx)
              .collect(&ast::GroupExpr::children,
                       ctx.discrete_range(),
-                      [&](auto *dr) { return makeDiscreteRange(*dr); })
+                      [&](auto* dr) { return makeDiscreteRange(*dr); })
              .build())
       .build();
 }
 
-auto Translator::makeRangeConstraint(vhdlParser::Range_constraintContext &ctx)
+auto Translator::makeRangeConstraint(vhdlParser::Range_constraintContext& ctx)
   -> std::optional<ast::RangeConstraint>
 {
-    auto *range_decl = ctx.range_decl();
-    auto *explicit_r = (range_decl != nullptr) ? range_decl->explicit_range() : nullptr;
+    auto* range_decl = ctx.range_decl();
+    auto* explicit_r = (range_decl != nullptr) ? range_decl->explicit_range() : nullptr;
     if (explicit_r == nullptr) {
         return std::nullopt;
     }
 
     auto range_expr = makeRange(*explicit_r);
-    auto *bin = std::get_if<ast::BinaryExpr>(&range_expr);
+    auto* bin = std::get_if<ast::BinaryExpr>(&range_expr);
     if (bin == nullptr) {
         return std::nullopt;
     }
@@ -125,7 +125,7 @@ auto Translator::makeRangeConstraint(vhdlParser::Range_constraintContext &ctx)
       .build();
 }
 
-auto Translator::makeRange(vhdlParser::Explicit_rangeContext &ctx) -> ast::Expr
+auto Translator::makeRange(vhdlParser::Explicit_rangeContext& ctx) -> ast::Expr
 {
     // If there's no direction, it's just a simple expression (single value, not a range)
     if ((ctx.direction() == nullptr) || (ctx.simple_expression().size() < 2)) {
@@ -138,11 +138,11 @@ auto Translator::makeRange(vhdlParser::Explicit_rangeContext &ctx) -> ast::Expr
                       makeSimpleExpr(*ctx.simple_expression(1)));
 }
 
-auto Translator::makeDiscreteRange(vhdlParser::Discrete_rangeContext &ctx) -> ast::Expr
+auto Translator::makeDiscreteRange(vhdlParser::Discrete_rangeContext& ctx) -> ast::Expr
 {
     // discrete_range : range_decl | subtype_indication
-    if (auto *rd = ctx.range_decl()) {
-        if (auto *er = rd->explicit_range()) {
+    if (auto* rd = ctx.range_decl()) {
+        if (auto* er = rd->explicit_range()) {
             return makeRange(*er);
         }
 
@@ -153,11 +153,11 @@ auto Translator::makeDiscreteRange(vhdlParser::Discrete_rangeContext &ctx) -> as
     return makeToken(ctx);
 }
 
-auto Translator::makeSubtypeIndication(vhdlParser::Subtype_indicationContext &ctx)
+auto Translator::makeSubtypeIndication(vhdlParser::Subtype_indicationContext& ctx)
   -> ast::SubtypeIndication
 {
     return build<ast::SubtypeIndication>(ctx)
-      .apply([&](auto &node) {
+      .apply([&](auto& node) {
           const auto names = ctx.selected_name();
 
           // Grammar: selected_name (selected_name)? ...
@@ -172,7 +172,7 @@ auto Translator::makeSubtypeIndication(vhdlParser::Subtype_indicationContext &ct
       })
       .maybe(&ast::SubtypeIndication::constraint,
              ctx.constraint(),
-             [this](auto &c) { return makeConstraint(c); })
+             [this](auto& c) { return makeConstraint(c); })
       .build();
 }
 

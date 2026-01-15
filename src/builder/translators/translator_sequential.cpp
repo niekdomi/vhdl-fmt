@@ -4,18 +4,17 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
-#include <utility>
 #include <vector>
 
 namespace builder {
 
-auto Translator::makeTarget(vhdlParser::TargetContext &ctx) -> ast::Expr
+auto Translator::makeTarget(vhdlParser::TargetContext& ctx) -> ast::Expr
 {
-    if (auto *name = ctx.name()) {
+    if (auto* name = ctx.name()) {
         return makeName(*name);
     }
 
-    if (auto *agg = ctx.aggregate()) {
+    if (auto* agg = ctx.aggregate()) {
         return makeAggregate(*agg);
     }
 
@@ -23,47 +22,47 @@ auto Translator::makeTarget(vhdlParser::TargetContext &ctx) -> ast::Expr
     return makeToken(ctx);
 }
 
-auto Translator::makeSignalAssign(vhdlParser::Signal_assignment_statementContext &ctx)
+auto Translator::makeSignalAssign(vhdlParser::Signal_assignment_statementContext& ctx)
   -> ast::SignalAssign
 {
     return build<ast::SignalAssign>(ctx)
-      .maybe(&ast::SignalAssign::target, ctx.target(), [&](auto &t) { return makeTarget(t); })
-      .maybe(&ast::SignalAssign::waveform, ctx.waveform(), [&](auto &w) { return makeWaveform(w); })
+      .maybe(&ast::SignalAssign::target, ctx.target(), [&](auto& t) { return makeTarget(t); })
+      .maybe(&ast::SignalAssign::waveform, ctx.waveform(), [&](auto& w) { return makeWaveform(w); })
       .build();
 }
 
-auto Translator::makeVariableAssign(vhdlParser::Variable_assignment_statementContext &ctx)
+auto Translator::makeVariableAssign(vhdlParser::Variable_assignment_statementContext& ctx)
   -> ast::VariableAssign
 {
     return build<ast::VariableAssign>(ctx)
-      .maybe(&ast::VariableAssign::target, ctx.target(), [&](auto &t) { return makeTarget(t); })
+      .maybe(&ast::VariableAssign::target, ctx.target(), [&](auto& t) { return makeTarget(t); })
       .maybe(
-        &ast::VariableAssign::value, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })
+        &ast::VariableAssign::value, ctx.expression(), [&](auto& expr) { return makeExpr(expr); })
       .build();
 }
 
-auto Translator::makeSequentialStatement(vhdlParser::Sequential_statementContext &ctx)
+auto Translator::makeSequentialStatement(vhdlParser::Sequential_statementContext& ctx)
   -> ast::SequentialStatement
 {
     // Dispatch based on concrete statement type
-    if (auto *signal_assign = ctx.signal_assignment_statement()) {
+    if (auto* signal_assign = ctx.signal_assignment_statement()) {
         return makeSignalAssign(*signal_assign);
     }
 
-    if (auto *var_assign = ctx.variable_assignment_statement()) {
+    if (auto* var_assign = ctx.variable_assignment_statement()) {
         return makeVariableAssign(*var_assign);
     }
 
-    if (auto *if_stmt = ctx.if_statement()) {
+    if (auto* if_stmt = ctx.if_statement()) {
         return makeIfStatement(*if_stmt);
     }
 
-    if (auto *case_stmt = ctx.case_statement()) {
+    if (auto* case_stmt = ctx.case_statement()) {
         return makeCaseStatement(*case_stmt);
     }
 
-    if (auto *loop_stmt = ctx.loop_statement()) {
-        if (auto *iter = loop_stmt->iteration_scheme()) {
+    if (auto* loop_stmt = ctx.loop_statement()) {
+        if (auto* iter = loop_stmt->iteration_scheme()) {
             if (iter->parameter_specification() != nullptr) {
                 return makeForLoop(*loop_stmt);
             }
@@ -85,12 +84,12 @@ auto Translator::makeSequentialStatement(vhdlParser::Sequential_statementContext
     return {};
 }
 
-auto Translator::makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext &ctx)
+auto Translator::makeSequenceOfStatements(vhdlParser::Sequence_of_statementsContext& ctx)
   -> std::vector<ast::SequentialStatement>
 {
     std::vector<ast::SequentialStatement> statements{};
 
-    for (auto *stmt : ctx.sequential_statement()) {
+    for (auto* stmt : ctx.sequential_statement()) {
         statements.emplace_back(makeSequentialStatement(*stmt));
     }
 

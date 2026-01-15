@@ -29,17 +29,17 @@ class Translator final
     TriviaBinder trivia_;
 
   public:
-    explicit Translator(antlr4::CommonTokenStream &tokens) : trivia_(tokens) {}
+    explicit Translator(antlr4::CommonTokenStream& tokens) : trivia_(tokens) {}
 
     /// @brief Build the entire design file by walking the CST
-    auto buildDesignFile(ast::DesignFile &dest, vhdlParser::Design_fileContext *ctx) -> void;
+    auto buildDesignFile(ast::DesignFile& dest, vhdlParser::Design_fileContext* ctx) -> void;
 
     ~Translator() = default;
 
-    Translator(const Translator &) = delete;
-    auto operator=(const Translator &) -> Translator & = delete;
-    Translator(Translator &&) = delete;
-    auto operator=(Translator &&) -> Translator & = delete;
+    Translator(const Translator&) = delete;
+    auto operator=(const Translator&) -> Translator& = delete;
+    Translator(Translator&&) = delete;
+    auto operator=(Translator&&) -> Translator& = delete;
 
   private:
     // clang-format off
@@ -136,7 +136,7 @@ class Translator final
     /// @brief Factory to create a NodeBuilder with trivia already bound
     template<typename T, typename Ctx>
     [[nodiscard]]
-    auto build(Ctx &ctx) -> NodeBuilder<T>
+    auto build(Ctx& ctx) -> NodeBuilder<T>
     {
         return NodeBuilder<T>(ctx, trivia_);
     }
@@ -144,7 +144,7 @@ class Translator final
     /// @brief Helper to create binary expressions
     template<typename Ctx>
     [[nodiscard]]
-    auto makeBinary(Ctx &ctx, std::string op, ast::Expr left, ast::Expr right) -> ast::Expr
+    auto makeBinary(Ctx& ctx, std::string op, ast::Expr left, ast::Expr right) -> ast::Expr
     {
         return build<ast::BinaryExpr>(ctx)
           .set(&ast::BinaryExpr::op, std::move(op))
@@ -156,7 +156,7 @@ class Translator final
     /// @brief Helper to create unary expressions
     template<typename Ctx>
     [[nodiscard]]
-    auto makeUnary(Ctx &ctx, std::string op, ast::Expr value) -> ast::Expr
+    auto makeUnary(Ctx& ctx, std::string op, ast::Expr value) -> ast::Expr
     {
         return build<ast::UnaryExpr>(ctx)
           .set(&ast::UnaryExpr::op, std::move(op))
@@ -167,7 +167,7 @@ class Translator final
     /// @brief Helper to create token expressions
     template<typename Ctx>
     [[nodiscard]]
-    auto makeToken(Ctx &ctx, std::string text) -> ast::Expr
+    auto makeToken(Ctx& ctx, std::string text) -> ast::Expr
     {
         return build<ast::TokenExpr>(ctx).set(&ast::TokenExpr::text, std::move(text)).build();
     }
@@ -175,7 +175,7 @@ class Translator final
     /// @brief Helper to create token expressions using ctx.getText()
     template<typename Ctx>
     [[nodiscard]]
-    auto makeToken(Ctx &ctx) -> ast::Expr
+    auto makeToken(Ctx& ctx) -> ast::Expr
     {
         return makeToken(ctx, ctx.getText());
     }
@@ -188,7 +188,7 @@ class Translator final
     /// @param make_operand Function to transform an operand context to ast::Expr.
     template<typename Ctx, typename Operands, typename Operators, typename MakeOperand>
     [[nodiscard]]
-    auto foldBinaryLeft(Ctx &ctx, Operands &&operands, Operators &&operators, MakeOperand &&make_op)
+    auto foldBinaryLeft(Ctx& ctx, Operands&& operands, Operators&& operators, MakeOperand&& make_op)
       -> ast::Expr
     {
         const auto op_range = std::forward<Operands>(operands);
@@ -197,25 +197,25 @@ class Translator final
 
         ast::Expr acc = std::forward<MakeOperand>(make_op)(**it);
 
-        for (const auto &[operand, op] : std::views::zip(op_range | std::views::drop(1), end)) {
+        for (const auto& [operand, op] : std::views::zip(op_range | std::views::drop(1), end)) {
             acc = makeBinary(ctx, op->getText(), std::move(acc), make_op(*operand));
         }
 
         return acc;
     }
 
-    static auto extractNames(vhdlParser::Identifier_listContext *ctx) -> std::vector<std::string>
+    static auto extractNames(vhdlParser::Identifier_listContext* ctx) -> std::vector<std::string>
     {
         if (ctx == nullptr) {
             return {};
         }
 
         return ctx->identifier()
-             | std::views::transform([](auto *id) { return id->getText(); })
+             | std::views::transform([](auto* id) { return id->getText(); })
              | std::ranges::to<std::vector>();
     }
 
-    static auto extractTypeName(vhdlParser::Subtype_indicationContext *ctx) -> std::string
+    static auto extractTypeName(vhdlParser::Subtype_indicationContext* ctx) -> std::string
     {
         if (ctx == nullptr || ctx->selected_name().empty()) {
             return {};
@@ -224,7 +224,7 @@ class Translator final
         return ctx->selected_name(0)->getText();
     }
 
-    static auto extractTypeFullText(vhdlParser::Subtype_indicationContext *ctx) -> std::string
+    static auto extractTypeFullText(vhdlParser::Subtype_indicationContext* ctx) -> std::string
     {
         if (ctx == nullptr) {
             return {};
@@ -233,7 +233,7 @@ class Translator final
         return ctx->getText();
     }
 
-    static auto extractMode(vhdlParser::Signal_modeContext *ctx) -> std::string
+    static auto extractMode(vhdlParser::Signal_modeContext* ctx) -> std::string
     {
         if (ctx == nullptr) {
             return {};
@@ -243,16 +243,16 @@ class Translator final
     }
 
     template<typename Node>
-    static auto extractSubtypeInfo(Node &node,
-                                   vhdlParser::Subtype_indicationContext *stype,
-                                   auto &&make_constraint_fn) -> void
+    static auto extractSubtypeInfo(Node& node,
+                                   vhdlParser::Subtype_indicationContext* stype,
+                                   auto&& make_constraint_fn) -> void
     {
         if (stype == nullptr) {
             return;
         }
 
         node.type_name = extractTypeName(stype);
-        if (auto *constr = stype->constraint()) {
+        if (auto* constr = stype->constraint()) {
             node.constraint = make_constraint_fn(*constr);
         }
     }

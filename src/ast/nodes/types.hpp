@@ -52,8 +52,8 @@ struct FileTypeDef final : NodeBase
 };
 
 /// @brief Variant for the *structure* of a type.
-using TypeDefinition
-  = std::variant<EnumerationTypeDef, RecordTypeDef, ArrayTypeDef, AccessTypeDef, FileTypeDef>;
+using TypeDefinition =
+  std::variant<EnumerationTypeDef, RecordTypeDef, ArrayTypeDef, AccessTypeDef, FileTypeDef>;
 
 } // namespace ast
 

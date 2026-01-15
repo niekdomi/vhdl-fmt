@@ -92,7 +92,7 @@ Otherwise if you prefer to use your own environment, the following tools are par
 - If you install `gersemi` and `conan` with a python package manager, e.g., `uv`, the following steps may help:
   ```bash
   uv venv
-  uv pip install conan gersemi==0.19.3
+  uv pip install conan gersemi
   source .venv/bin/activate
   ```
   You may use `active.fish` or whatever shell you use. You can quit the `venv` with `deactivate`

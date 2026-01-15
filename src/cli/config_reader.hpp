@@ -23,10 +23,9 @@ struct ConfigReadError final
 class ConfigReader final
 {
   public:
-    explicit ConfigReader(std::optional<std::filesystem::path> config_file_path) :
-      config_file_path_(std::move(config_file_path))
-    {
-    }
+    explicit ConfigReader(std::optional<std::filesystem::path> config_file_path)
+        : config_file_path_(std::move(config_file_path))
+    {}
 
     [[nodiscard]]
     auto readConfigFile() -> std::expected<common::Config, ConfigReadError>;
@@ -35,31 +34,31 @@ class ConfigReader final
     std::optional<std::filesystem::path> config_file_path_;
 
     [[nodiscard]]
-    static constexpr auto readLineconfig(const YAML::Node &root_node,
-                                         const common::LineConfig &defaults) -> common::LineConfig;
+    static constexpr auto readLineconfig(const YAML::Node& root_node,
+                                         const common::LineConfig& defaults) -> common::LineConfig;
 
     [[nodiscard]]
-    static constexpr auto readIndentationStyle(const YAML::Node &root_node,
-                                               const common::IndentationStyle &defaults)
+    static constexpr auto readIndentationStyle(const YAML::Node& root_node,
+                                               const common::IndentationStyle& defaults)
       -> common::IndentationStyle;
 
     [[nodiscard]]
-    static constexpr auto readEndOfLine(const YAML::Node &root_node,
-                                        const common::EndOfLine &defaults) -> common::EndOfLine;
+    static constexpr auto readEndOfLine(const YAML::Node& root_node,
+                                        const common::EndOfLine& defaults) -> common::EndOfLine;
 
     [[nodiscard]]
-    static constexpr auto readPortMapConfig(const YAML::Node &root_node,
-                                            const common::PortMapConfig &defaults)
+    static constexpr auto readPortMapConfig(const YAML::Node& root_node,
+                                            const common::PortMapConfig& defaults)
       -> common::PortMapConfig;
 
     [[nodiscard]]
-    static constexpr auto readDeclarationConfig(const YAML::Node &root_node,
-                                                const common::DeclarationConfig &defaults)
+    static constexpr auto readDeclarationConfig(const YAML::Node& root_node,
+                                                const common::DeclarationConfig& defaults)
       -> common::DeclarationConfig;
 
     [[nodiscard]]
-    static constexpr auto readCasingConfig(const YAML::Node &root_node,
-                                           const common::CasingConfig &defaults)
+    static constexpr auto readCasingConfig(const YAML::Node& root_node,
+                                           const common::CasingConfig& defaults)
       -> common::CasingConfig;
 };
 

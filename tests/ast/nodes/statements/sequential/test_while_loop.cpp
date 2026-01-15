@@ -9,7 +9,7 @@
 
 TEST_CASE("WhileLoop: Simple while loop", "[statements][while_loop]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
+    const std::string_view file = R"(
         entity Test is end Test;
         architecture RTL of Test is
         begin
@@ -22,21 +22,21 @@ TEST_CASE("WhileLoop: Simple while loop", "[statements][while_loop]")
         end RTL;
     )";
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(file);
+    const auto* arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
 
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
+    const auto* proc = std::get_if<ast::Process>(arch->stmts.data());
     REQUIRE(proc != nullptr);
     REQUIRE_FALSE(proc->body.empty());
 
-    const auto *while_loop = std::get_if<ast::WhileLoop>(proc->body.data());
+    const auto* while_loop = std::get_if<ast::WhileLoop>(proc->body.data());
     REQUIRE(while_loop != nullptr);
 }
 
 TEST_CASE("WhileLoop: While loop with comparison condition", "[statements][while_loop]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
+    const std::string_view file = R"(
         entity Test is end Test;
         architecture RTL of Test is
         begin
@@ -50,21 +50,21 @@ TEST_CASE("WhileLoop: While loop with comparison condition", "[statements][while
         end RTL;
     )";
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(file);
+    const auto* arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
 
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
+    const auto* proc = std::get_if<ast::Process>(arch->stmts.data());
     REQUIRE(proc != nullptr);
     REQUIRE_FALSE(proc->body.empty());
 
-    const auto *while_loop = std::get_if<ast::WhileLoop>(proc->body.data());
+    const auto* while_loop = std::get_if<ast::WhileLoop>(proc->body.data());
     REQUIRE(while_loop != nullptr);
 }
 
 TEST_CASE("WhileLoop: While loop with boolean condition", "[statements][while_loop]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
+    const std::string_view file = R"(
         entity Test is end Test;
         architecture RTL of Test is
         begin
@@ -78,21 +78,21 @@ TEST_CASE("WhileLoop: While loop with boolean condition", "[statements][while_lo
         end RTL;
     )";
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(file);
+    const auto* arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
 
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
+    const auto* proc = std::get_if<ast::Process>(arch->stmts.data());
     REQUIRE(proc != nullptr);
     REQUIRE_FALSE(proc->body.empty());
 
-    const auto *while_loop = std::get_if<ast::WhileLoop>(proc->body.data());
+    const auto* while_loop = std::get_if<ast::WhileLoop>(proc->body.data());
     REQUIRE(while_loop != nullptr);
 }
 
 TEST_CASE("WhileLoop: While loop with logical operators", "[statements][while_loop]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
+    const std::string_view file = R"(
         entity Test is end Test;
         architecture RTL of Test is
         begin
@@ -105,22 +105,22 @@ TEST_CASE("WhileLoop: While loop with logical operators", "[statements][while_lo
         end RTL;
     )";
 
-    const auto design = builder::buildFromString(VHDL_FILE);
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto design = builder::buildFromString(file);
+    const auto* arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
 
-    const auto *proc = std::get_if<ast::Process>(arch->stmts.data());
+    const auto* proc = std::get_if<ast::Process>(arch->stmts.data());
     REQUIRE(proc != nullptr);
     REQUIRE_FALSE(proc->body.empty());
 
-    const auto *while_loop = std::get_if<ast::WhileLoop>(proc->body.data());
+    const auto* while_loop = std::get_if<ast::WhileLoop>(proc->body.data());
     REQUIRE(while_loop != nullptr);
 }
 
 /*
 TEST_CASE("WhileLoop: While loop with multiple statements", "[statements][while_loop]")
 {
-    constexpr std::string_view VHDL_FILE = R"(
+    const std::string_view file = R"(
         entity Test is end Test;
         architecture RTL of Test is
         begin
@@ -136,7 +136,7 @@ TEST_CASE("WhileLoop: While loop with multiple statements", "[statements][while_
         end RTL;
     )";
 
-    auto design = builder::buildFromString(VHDL_FILE);
+    auto design = builder::buildFromString(file);
     auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
     REQUIRE(arch != nullptr);
 

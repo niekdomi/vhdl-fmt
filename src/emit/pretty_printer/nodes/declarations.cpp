@@ -17,11 +17,10 @@ struct AlignmentLevel
     static constexpr int MODE = 1; ///< Column 1: Used for mode (port modes like "in", "out", etc.)
 };
 
-auto PrettyPrinter::operator()(const ast::GenericParam &node, const bool is_last) const -> Doc
+auto PrettyPrinter::operator()(const ast::GenericParam& node, const bool is_last) const -> Doc
 {
-    const std::string names = node.names
-                            | std::views::join_with(std::string_view{ ", " })
-                            | std::ranges::to<std::string>();
+    const std::string names =
+      node.names | std::views::join_with(std::string_view{", "}) | std::ranges::to<std::string>();
 
     Doc result = Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":") & visit(node.subtype);
 
@@ -32,11 +31,10 @@ auto PrettyPrinter::operator()(const ast::GenericParam &node, const bool is_last
     return is_last ? result : result + Doc::text(";");
 }
 
-auto PrettyPrinter::operator()(const ast::Port &node, const bool is_last) const -> Doc
+auto PrettyPrinter::operator()(const ast::Port& node, const bool is_last) const -> Doc
 {
-    const std::string names = node.names
-                            | std::views::join_with(std::string_view{ ", " })
-                            | std::ranges::to<std::string>();
+    const std::string names =
+      node.names | std::views::join_with(std::string_view{", "}) | std::ranges::to<std::string>();
 
     Doc result = Doc::alignText(names, AlignmentLevel::NAME)
                & Doc::text(":")
@@ -50,11 +48,10 @@ auto PrettyPrinter::operator()(const ast::Port &node, const bool is_last) const 
     return is_last ? result : result + Doc::text(";");
 }
 
-auto PrettyPrinter::operator()(const ast::SignalDecl &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::SignalDecl& node) const -> Doc
 {
-    const std::string names = node.names
-                            | std::views::join_with(std::string_view{ ", " })
-                            | std::ranges::to<std::string>();
+    const std::string names =
+      node.names | std::views::join_with(std::string_view{", "}) | std::ranges::to<std::string>();
 
     Doc result = Doc::text("signal") & Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":");
 
@@ -73,14 +70,13 @@ auto PrettyPrinter::operator()(const ast::SignalDecl &node) const -> Doc
     return result + Doc::text(";");
 }
 
-auto PrettyPrinter::operator()(const ast::ConstantDecl &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::ConstantDecl& node) const -> Doc
 {
-    const std::string names = node.names
-                            | std::views::join_with(std::string_view{ ", " })
-                            | std::ranges::to<std::string>();
+    const std::string names =
+      node.names | std::views::join_with(std::string_view{", "}) | std::ranges::to<std::string>();
 
-    Doc result
-      = Doc::text("constant") & Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":");
+    Doc result =
+      Doc::text("constant") & Doc::alignText(names, AlignmentLevel::NAME) & Doc::text(":");
 
     result &= visit(node.subtype);
 
@@ -91,11 +87,10 @@ auto PrettyPrinter::operator()(const ast::ConstantDecl &node) const -> Doc
     return result + Doc::text(";");
 }
 
-auto PrettyPrinter::operator()(const ast::VariableDecl &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::VariableDecl& node) const -> Doc
 {
-    const std::string names = node.names
-                            | std::views::join_with(std::string_view{ ", " })
-                            | std::ranges::to<std::string>();
+    const std::string names =
+      node.names | std::views::join_with(std::string_view{", "}) | std::ranges::to<std::string>();
 
     // "variable x, y : integer"
     Doc result = Doc::text(node.shared ? "shared variable" : "variable")
@@ -110,7 +105,7 @@ auto PrettyPrinter::operator()(const ast::VariableDecl &node) const -> Doc
     return result + Doc::text(";");
 }
 
-auto PrettyPrinter::operator()(const ast::TypeDecl &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::TypeDecl& node) const -> Doc
 {
     Doc result = Doc::text("type") & Doc::text(node.name);
 

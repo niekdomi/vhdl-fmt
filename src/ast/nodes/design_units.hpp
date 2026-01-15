@@ -42,7 +42,7 @@ struct Entity final : NodeBase
     std::vector<Declaration> decls;
     std::vector<ConcurrentStatement> stmts;
     std::optional<std::string> end_label;
-    bool has_end_entity_keyword{ false };
+    bool has_end_entity_keyword{false};
 };
 
 /// @brief Represents a VHDL architecture body.
@@ -54,7 +54,7 @@ struct Architecture : NodeBase
     std::vector<Declaration> decls;
     std::vector<ConcurrentStatement> stmts;
     std::optional<std::string> end_label;
-    bool has_end_architecture_keyword{ false };
+    bool has_end_architecture_keyword{false};
 };
 
 /// @brief Variant type for all design units.

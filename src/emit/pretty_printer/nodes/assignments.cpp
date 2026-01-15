@@ -6,7 +6,7 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::Waveform::Element &node, const bool is_last) const -> Doc
+auto PrettyPrinter::operator()(const ast::Waveform::Element& node, const bool is_last) const -> Doc
 {
     Doc doc = visit(node.value);
 
@@ -17,20 +17,20 @@ auto PrettyPrinter::operator()(const ast::Waveform::Element &node, const bool is
     return is_last ? doc : doc + Doc::text(",");
 }
 
-auto PrettyPrinter::operator()(const ast::Waveform &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::Waveform& node) const -> Doc
 {
     if (node.is_unaffected) {
         return Doc::text("unaffected");
     }
 
-    return joinMap(node.elements, Doc::line(), [&](const auto &elem) {
+    return joinMap(node.elements, Doc::line(), [&](const auto& elem) {
         const bool is_last = (&elem == &node.elements.back());
         return visit(elem, is_last);
     });
 }
 
 auto PrettyPrinter::operator()(
-  const ast::ConditionalConcurrentAssign::ConditionalWaveform &node) const -> Doc
+  const ast::ConditionalConcurrentAssign::ConditionalWaveform& node) const -> Doc
 {
     Doc d = visit(node.waveform);
 
@@ -45,7 +45,7 @@ auto PrettyPrinter::operator()(
 // label: target <= val1 when cond1 else
 //                  val2 when cond2 else
 //                  val3;
-auto PrettyPrinter::operator()(const ast::ConditionalConcurrentAssign &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::ConditionalConcurrentAssign& node) const -> Doc
 {
     Doc result = Doc::empty();
 
@@ -65,7 +65,7 @@ auto PrettyPrinter::operator()(const ast::ConditionalConcurrentAssign &node) con
     return result.isEmpty() ? assignment : result & assignment;
 }
 
-auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign::Selection &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign::Selection& node) const -> Doc
 {
     const Doc val = visit(node.waveform);
     const Doc choices = join(node.choices, Doc::text(" | "));
@@ -77,7 +77,7 @@ auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign::Selection &n
 // label: with selector select
 //          target <= val1 when choice1,
 //                    val2 when choice2;
-auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign& node) const -> Doc
 {
     Doc result = Doc::empty();
 
@@ -102,21 +102,21 @@ auto PrettyPrinter::operator()(const ast::SelectedConcurrentAssign &node) const 
 // Layout:
 // target <= val1,
 //           val2;
-auto PrettyPrinter::operator()(const ast::SignalAssign &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::SignalAssign& node) const -> Doc
 {
     const Doc wave = visit(node.waveform);
 
     return Doc::group(visit(node.target) & Doc::text("<=") & Doc::hang(wave)) + Doc::text(";");
 }
 
-auto PrettyPrinter::operator()(const ast::VariableAssign &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::VariableAssign& node) const -> Doc
 {
     const Doc val = visit(node.value);
 
     return Doc::group(visit(node.target) & Doc::text(":=") & Doc::hang(val)) + Doc::text(";");
 }
 
-auto PrettyPrinter::operator()(const ast::NullStatement & /*node*/) const -> Doc
+auto PrettyPrinter::operator()(const ast::NullStatement& /*node*/) const -> Doc
 {
     return Doc::text("null;");
 }

@@ -1,5 +1,0 @@
----
-InheritParentConfig: true
-
-Checks: >
-  -misc-non-private-member-variables-in-classes

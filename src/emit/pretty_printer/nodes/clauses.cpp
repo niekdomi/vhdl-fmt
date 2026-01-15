@@ -6,7 +6,7 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::GenericClause &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::GenericClause& node) const -> Doc
 {
     if (std::ranges::empty(node.generics)) {
         return Doc::empty();
@@ -15,7 +15,7 @@ auto PrettyPrinter::operator()(const ast::GenericClause &node) const -> Doc
     const Doc opener = Doc::text("generic") & Doc::text("(");
     const Doc closer = Doc::text(");");
 
-    const Doc generics = joinMap(node.generics, Doc::line(), [&](const auto &param) {
+    const Doc generics = joinMap(node.generics, Doc::line(), [&](const auto& param) {
         const bool is_last = &param == &node.generics.back();
         return visit(param, is_last);
     });
@@ -25,7 +25,7 @@ auto PrettyPrinter::operator()(const ast::GenericClause &node) const -> Doc
     return Doc::group(Doc::bracket(opener, result, closer));
 }
 
-auto PrettyPrinter::operator()(const ast::PortClause &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::PortClause& node) const -> Doc
 {
     if (std::ranges::empty(node.ports)) {
         return Doc::empty();
@@ -34,7 +34,7 @@ auto PrettyPrinter::operator()(const ast::PortClause &node) const -> Doc
     const Doc opener = Doc::text("port") & Doc::text("(");
     const Doc closer = Doc::text(");");
 
-    const Doc ports = joinMap(node.ports, Doc::line(), [&](const auto &port) {
+    const Doc ports = joinMap(node.ports, Doc::line(), [&](const auto& port) {
         const bool is_last = (&port == &node.ports.back());
         return visit(port, is_last);
     });

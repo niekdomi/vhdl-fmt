@@ -16,7 +16,7 @@ struct SignalDecl final : NodeBase
     std::vector<std::string> names;
     SubtypeIndication subtype;
     std::optional<Expr> init_expr;
-    bool has_bus_kw{ false };
+    bool has_bus_kw{false};
 };
 
 /// @brief Represents a VHDL variable declaration.
@@ -25,7 +25,7 @@ struct VariableDecl final : NodeBase
     std::vector<std::string> names;
     SubtypeIndication subtype;
     std::optional<Expr> init_expr;
-    bool shared{ false };
+    bool shared{false};
 };
 
 /// @brief Represents a VHDL constant declaration.

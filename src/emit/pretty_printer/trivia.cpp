@@ -15,32 +15,32 @@ namespace {
 /// @brief Predicate to filter out Break trivia if suppressing newlines.
 auto shouldKeep(const bool suppress_newlines)
 {
-    return [suppress_newlines](const ast::Trivia &t) -> bool {
+    return [suppress_newlines](const ast::Trivia& t) -> bool {
         return !(suppress_newlines && std::holds_alternative<ast::Break>(t));
     };
 }
 
 /// @brief Format a standard trivia item (e.g., Leading or Middle of Trailing).
 /// Comments get a trailing hardline; Breaks get their full height.
-auto formatTrivia(const ast::Trivia &t) -> Doc
+auto formatTrivia(const ast::Trivia& t) -> Doc
 {
     return std::visit(
       common::Overload{
-        [](const ast::Comment &c) -> Doc { return Doc::text(c.text) + Doc::hardline(); },
-        [](const ast::Break &p) -> Doc { return Doc::hardlines(p.blank_lines); } },
+        [](const ast::Comment& c) -> Doc { return Doc::text(c.text) + Doc::hardline(); },
+        [](const ast::Break& p) -> Doc { return Doc::hardlines(p.blank_lines); }},
       t);
 }
 
 /// @brief Format specifically for the LAST item in a trailing block.
 /// Comments don't get a trailing hardline
 /// Breaks are reduced by 1 (since the block starts with \n).
-auto formatLastTrailing(const ast::Trivia &t) -> Doc
+auto formatLastTrailing(const ast::Trivia& t) -> Doc
 {
     return std::visit(
-      common::Overload{ [](const ast::Comment &c) -> Doc { return Doc::text(c.text); },
-                        [](const ast::Break &p) -> Doc {
-                            return Doc::hardlines(p.blank_lines > 0 ? p.blank_lines - 1 : 0);
-                        } },
+      common::Overload{[](const ast::Comment& c) -> Doc { return Doc::text(c.text); },
+                       [](const ast::Break& p) -> Doc {
+                           return Doc::hardlines(p.blank_lines > 0 ? p.blank_lines - 1 : 0);
+                       }},
       t);
 }
 
@@ -65,7 +65,7 @@ auto buildTrivia(std::span<const ast::Trivia> trivia,
     auto pending = *it++;
 
     // Process all items except the last one
-    for (const auto &item : std::ranges::subrange(it, view.end())) {
+    for (const auto& item : std::ranges::subrange(it, view.end())) {
         doc += formatTrivia(std::exchange(pending, item));
     }
 
@@ -75,7 +75,7 @@ auto buildTrivia(std::span<const ast::Trivia> trivia,
 
 } // namespace
 
-auto PrettyPrinter::withTrivia(const ast::NodeBase &node, Doc core, const bool suppress) -> Doc
+auto PrettyPrinter::withTrivia(const ast::NodeBase& node, Doc core, const bool suppress) -> Doc
 {
     if (!node.hasTrivia()) {
         return core;
@@ -91,7 +91,7 @@ auto PrettyPrinter::withTrivia(const ast::NodeBase &node, Doc core, const bool s
 
     // 3. Inline Comment
     if (auto comment = node.getInlineComment()) {
-        result += Doc::text(std::string{ " " }.append(*comment)) + Doc::hardlines(0);
+        result += Doc::text(std::string{" "}.append(*comment)) + Doc::hardlines(0);
     }
 
     // 4. Trailing Trivia

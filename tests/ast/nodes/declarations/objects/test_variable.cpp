@@ -7,7 +7,7 @@ TEST_CASE("Declaration: Variable", "[builder][decl][variable]")
 {
     SECTION("Process variable")
     {
-        const auto *decl = decl_utils::parse<ast::VariableDecl>("variable cnt : integer := 0;");
+        const auto* decl = decl_utils::parse<ast::VariableDecl>("variable cnt : integer := 0;");
         REQUIRE(decl != nullptr);
 
         REQUIRE(decl->names.size() == 1);
@@ -18,7 +18,7 @@ TEST_CASE("Declaration: Variable", "[builder][decl][variable]")
 
     SECTION("Shared variable")
     {
-        const auto *decl = decl_utils::parse<ast::VariableDecl>("shared variable mem : memory_t;");
+        const auto* decl = decl_utils::parse<ast::VariableDecl>("shared variable mem : memory_t;");
         REQUIRE(decl != nullptr);
 
         REQUIRE(decl->names[0] == "mem");

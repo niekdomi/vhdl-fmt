@@ -14,7 +14,7 @@ namespace type_utils {
 
 /// Parse a VHDL type declaration string into an AST node.
 /// Returns a pointer to the TypeDecl inside the static AST.
-inline auto parseType(std::string_view type_decl_str) -> const ast::TypeDecl *
+inline auto parseType(std::string_view type_decl_str) -> const ast::TypeDecl*
 {
     const auto vhdl = std::format(R"(
         entity E is end E;
@@ -31,12 +31,12 @@ inline auto parseType(std::string_view type_decl_str) -> const ast::TypeDecl *
     if (design.units.size() < 2) {
         return nullptr;
     }
-    const auto *arch = std::get_if<ast::Architecture>(&design.units[1]);
+    const auto* arch = std::get_if<ast::Architecture>(&design.units[1]);
     if ((arch == nullptr) || arch->decls.empty()) {
         return nullptr;
     }
 
-    const auto *decl_item = arch->decls.data();
+    const auto* decl_item = arch->decls.data();
 
     return std::get_if<ast::TypeDecl>(decl_item);
 }

@@ -1,5 +1,0 @@
----
-InheritParentConfig: true
-
-Checks: >
-  -misc-no-recursion,

@@ -17,27 +17,27 @@ namespace emit {
 enum class Mode : std::uint8_t
 {
     FLAT,
-    BREAK
+    BREAK,
 };
 
 /// Renderer for the pretty printer
 class Renderer final
 {
   public:
-    explicit Renderer(const common::Config &config);
+    explicit Renderer(const common::Config& config);
 
     // Core rendering function
-    auto render(const DocPtr &doc) -> std::string;
+    auto render(const DocPtr& doc) -> std::string;
 
   private:
     // Internal rendering using visitor pattern
-    auto renderDoc(int indent, Mode mode, const DocPtr &doc) -> void;
+    auto renderDoc(int indent, Mode mode, const DocPtr& doc) -> void;
 
     // Check if document fits on current line
-    static auto fits(int width, const DocPtr &doc) -> bool;
+    static auto fits(int width, const DocPtr& doc) -> bool;
 
     // Helper for fits: returns remaining width, or -1 if doesn't fit
-    static auto fitsImpl(int width, const DocPtr &doc) -> int;
+    static auto fitsImpl(int width, const DocPtr& doc) -> int;
 
     // Output helpers
     auto write(std::string_view text) -> void;
@@ -46,8 +46,8 @@ class Renderer final
     // Member variables
     int width_{};
     int indent_size_{};
-    bool align_{ false };
-    int column_{ 0 };
+    bool align_{false};
+    int column_{0};
     std::string output_;
 };
 

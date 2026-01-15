@@ -2,6 +2,7 @@
 
 #include "emit/pretty_printer.hpp"
 #include "emit/pretty_printer/doc.hpp"
+#include "nodes/declarations.hpp"
 
 #include <algorithm>
 #include <optional>
@@ -9,12 +10,12 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::Entity &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::Entity& node) const -> Doc
 {
     std::optional<Doc> result;
 
     // Emit context clauses (library and use) first
-    for (const auto &ctx : node.context) {
+    for (const auto& ctx : node.context) {
         if (!result.has_value()) {
             result = visit(ctx);
         } else {
@@ -40,13 +41,13 @@ auto PrettyPrinter::operator()(const ast::Entity &node) const -> Doc
 
     // Declarations
     *result = std::ranges::fold_left(
-      node.decls, *result, [this](auto acc, const auto &decl) { return acc <<= visit(decl); });
+      node.decls, *result, [this](auto acc, const auto& decl) { return acc <<= visit(decl); });
 
     // Begin section (concurrent statements)
     if (!std::ranges::empty(node.stmts)) {
         *result /= Doc::text("begin");
         *result = std::ranges::fold_left(
-          node.stmts, *result, [this](auto acc, const auto &stmt) { return acc <<= visit(stmt); });
+          node.stmts, *result, [this](auto acc, const auto& stmt) { return acc <<= visit(stmt); });
     }
 
     Doc end_line = Doc::text("end");
@@ -61,12 +62,12 @@ auto PrettyPrinter::operator()(const ast::Entity &node) const -> Doc
     return *result / end_line;
 }
 
-auto PrettyPrinter::operator()(const ast::Architecture &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::Architecture& node) const -> Doc
 {
     std::optional<Doc> result;
 
     // Emit context clauses (library and use) first
-    for (const auto &ctx : node.context) {
+    for (const auto& ctx : node.context) {
         if (!result.has_value()) {
             result = visit(ctx);
         } else {
@@ -89,14 +90,14 @@ auto PrettyPrinter::operator()(const ast::Architecture &node) const -> Doc
 
     // Declarative items (components, constants, signals, etc. - in order)
     *result = std::ranges::fold_left(
-      node.decls, *result, [this](auto acc, const auto &item) { return acc <<= visit(item); });
+      node.decls, *result, [this](auto acc, const auto& item) { return acc <<= visit(item); });
 
     // begin
     *result /= Doc::text("begin");
 
     // Concurrent statements
     *result = std::ranges::fold_left(
-      node.stmts, *result, [this](auto acc, const auto &stmt) { return acc <<= visit(stmt); });
+      node.stmts, *result, [this](auto acc, const auto& stmt) { return acc <<= visit(stmt); });
 
     // end [architecture] [<name>];
     Doc end_line = Doc::text("end");
@@ -111,7 +112,7 @@ auto PrettyPrinter::operator()(const ast::Architecture &node) const -> Doc
     return *result / end_line;
 }
 
-auto PrettyPrinter::operator()(const ast::LibraryClause &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::LibraryClause& node) const -> Doc
 {
     Doc result = Doc::text("library");
 
@@ -126,7 +127,7 @@ auto PrettyPrinter::operator()(const ast::LibraryClause &node) const -> Doc
     return result;
 }
 
-auto PrettyPrinter::operator()(const ast::UseClause &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::UseClause& node) const -> Doc
 {
     Doc result = Doc::text("use");
 
@@ -141,7 +142,7 @@ auto PrettyPrinter::operator()(const ast::UseClause &node) const -> Doc
     return result;
 }
 
-auto PrettyPrinter::operator()(const ast::ComponentDecl &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::ComponentDecl& node) const -> Doc
 {
     Doc result = Doc::text("component") & Doc::text(node.name);
 

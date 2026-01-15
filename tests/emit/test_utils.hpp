@@ -20,13 +20,13 @@ constexpr auto defaultConfig() -> common::Config
     constexpr int TEST_LINE_LENGTH = 80;
 
     return common::Config{
-        .line_config = { .line_length = TEST_LINE_LENGTH, .indent_size = TEST_INDENT_SIZE },
-        .port_map = { .align_signals = false },
+      .line_config = {.line_length = TEST_LINE_LENGTH, .indent_size = TEST_INDENT_SIZE},
+      .port_map = {.align_signals = false},
     };
 }
 
 // Helper to render an AST node with default config
-auto render(const ASTNode auto &node) -> std::string
+auto render(const ASTNode auto& node) -> std::string
 {
     const emit::PrettyPrinter printer{};
     const auto doc = printer.visit(node);
@@ -34,7 +34,7 @@ auto render(const ASTNode auto &node) -> std::string
 }
 
 // Helper to render an AST node with custom config
-auto render(const ASTNode auto &node, const common::Config &config) -> std::string
+auto render(const ASTNode auto& node, const common::Config& config) -> std::string
 {
     const emit::PrettyPrinter printer{};
     const auto doc = printer.visit(node);

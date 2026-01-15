@@ -15,10 +15,10 @@ struct DocImpl;
 using DocPtr = std::shared_ptr<DocImpl>;
 
 template<typename T>
-concept DocNode = requires(const T &node) {
-    { node.fmap(std::declval<DocPtr(const DocPtr &)>()) } -> std::same_as<T>;
+concept DocNode = requires(const T& node) {
+    { node.fmap(std::declval<DocPtr(const DocPtr&)>()) } -> std::same_as<T>;
     {
-        node.fold(std::declval<int>(), std::declval<int(int, const DocPtr &)>())
+        node.fold(std::declval<int>(), std::declval<int(int, const DocPtr&)>())
     } -> std::same_as<int>;
 };
 
@@ -26,13 +26,14 @@ concept DocNode = requires(const T &node) {
 struct Empty
 {
     template<typename Fn>
-    auto fmap(Fn && /* fn */) const -> Empty
+    auto fmap(Fn&& /* fn */) const -> Empty
     {
         return {};
     }
 
     template<typename T, typename Fn>
-    auto fold(T init, Fn && /* fn */) const -> T
+    [[nodiscard]]
+    auto fold(T init, Fn&& /* fn */) const -> T
     {
         return init;
     }
@@ -44,13 +45,14 @@ struct Text
     std::string content;
 
     template<typename Fn>
-    auto fmap(Fn && /* fn */) const -> Text
+    auto fmap(Fn&& /* fn */) const -> Text
     {
-        return { content };
+        return {content};
     }
 
     template<typename T, typename Fn>
-    auto fold(T init, Fn && /* fn */) const -> T
+    [[nodiscard]]
+    auto fold(T init, Fn&& /* fn */) const -> T
     {
         return init;
     }
@@ -60,13 +62,14 @@ struct Text
 struct SoftLine
 {
     template<typename Fn>
-    auto fmap(Fn && /* fn */) const -> SoftLine
+    auto fmap(Fn&& /* fn */) const -> SoftLine
     {
         return {};
     }
 
     template<typename T, typename Fn>
-    auto fold(T init, Fn && /* fn */) const -> T
+    [[nodiscard]]
+    auto fold(T init, Fn&& /* fn */) const -> T
     {
         return init;
     }
@@ -76,13 +79,14 @@ struct SoftLine
 struct HardLine
 {
     template<typename Fn>
-    auto fmap(Fn && /* fn */) const -> HardLine
+    auto fmap(Fn&& /* fn */) const -> HardLine
     {
         return {};
     }
 
     template<typename T, typename Fn>
-    auto fold(T init, Fn && /* fn */) const -> T
+    [[nodiscard]]
+    auto fold(T init, Fn&& /* fn */) const -> T
     {
         return init;
     }
@@ -94,13 +98,14 @@ struct HardLines
     unsigned count{};
 
     template<typename Fn>
-    auto fmap(Fn && /* fn */) const -> HardLines
+    auto fmap(Fn&& /* fn */) const -> HardLines
     {
-        return { count };
+        return {count};
     }
 
     template<typename T, typename Fn>
-    auto fold(T init, Fn && /* fn */) const -> T
+    [[nodiscard]]
+    auto fold(T init, Fn&& /* fn */) const -> T
     {
         return init;
     }
@@ -113,13 +118,14 @@ struct Concat
     DocPtr right;
 
     template<typename Fn>
-    auto fmap(Fn &&fn) const -> Concat
+    auto fmap(Fn&& fn) const -> Concat
     {
-        return { std::forward<Fn>(fn)(left), std::forward<Fn>(fn)(right) };
+        return {std::forward<Fn>(fn)(left), std::forward<Fn>(fn)(right)};
     }
 
     template<typename T, typename Fn>
-    auto fold(T init, Fn &&fn) const -> T
+    [[nodiscard]]
+    auto fold(T init, Fn&& fn) const -> T
     {
         T new_value = std::forward<Fn>(fn)(std::move(init), left);
         return std::forward<Fn>(fn)(std::move(new_value), right);
@@ -132,13 +138,14 @@ struct Nest
     DocPtr doc;
 
     template<typename Fn>
-    auto fmap(Fn &&fn) const -> Nest
+    auto fmap(Fn&& fn) const -> Nest
     {
-        return { std::forward<Fn>(fn)(doc) };
+        return {std::forward<Fn>(fn)(doc)};
     }
 
     template<typename T, typename Fn>
-    auto fold(T init, Fn &&fn) const -> T
+    [[nodiscard]]
+    auto fold(T init, Fn&& fn) const -> T
     {
         return std::forward<Fn>(fn)(std::move(init), doc);
     }
@@ -150,13 +157,14 @@ struct Hang
     DocPtr doc;
 
     template<typename Fn>
-    auto fmap(Fn &&fn) const -> Hang
+    auto fmap(Fn&& fn) const -> Hang
     {
-        return { std::forward<Fn>(fn)(doc) };
+        return {std::forward<Fn>(fn)(doc)};
     }
 
     template<typename T, typename Fn>
-    auto fold(T init, Fn &&fn) const -> T
+    [[nodiscard]]
+    auto fold(T init, Fn&& fn) const -> T
     {
         return std::forward<Fn>(fn)(std::move(init), doc);
     }
@@ -169,13 +177,14 @@ struct Union
     DocPtr broken;
 
     template<typename Fn>
-    auto fmap(Fn &&fn) const -> Union
+    auto fmap(Fn&& fn) const -> Union
     {
-        return { std::forward<Fn>(fn)(flat), std::forward<Fn>(fn)(broken) };
+        return {std::forward<Fn>(fn)(flat), std::forward<Fn>(fn)(broken)};
     }
 
     template<typename T, typename Fn>
-    auto fold(T init, Fn &&fn) const -> T
+    [[nodiscard]]
+    auto fold(T init, Fn&& fn) const -> T
     {
         // Only the broken branch is to be considered
         return std::forward<Fn>(fn)(std::move(init), broken);
@@ -188,16 +197,17 @@ struct AlignText
     int level{};
 
     template<typename Fn>
-    auto fmap(Fn && /* fn */) const -> AlignText
+    auto fmap(Fn&& /* fn */) const -> AlignText
     {
         return {
-            .content = content,
-            .level = level,
+          .content = content,
+          .level = level,
         };
     }
 
     template<typename T, typename Fn>
-    auto fold(T init, Fn && /* fn */) const -> T
+    [[nodiscard]]
+    auto fold(T init, Fn&& /* fn */) const -> T
     {
         // These nodes have no children, so they just return the accumulator.
         return init;
@@ -209,13 +219,14 @@ struct Align
     DocPtr doc;
 
     template<typename Fn>
-    auto fmap(Fn &&fn) const -> Align
+    auto fmap(Fn&& fn) const -> Align
     {
-        return { std::forward<Fn>(fn)(doc) };
+        return {std::forward<Fn>(fn)(doc)};
     }
 
     template<typename T, typename Fn>
-    auto fold(T init, Fn &&fn) const -> T
+    [[nodiscard]]
+    auto fold(T init, Fn&& fn) const -> T
     {
         // Align knows it has one child.
         return std::forward<Fn>(fn)(std::move(init), doc);
@@ -241,30 +252,31 @@ struct DocImpl
 
 /// Recursive document transformer using fmap
 template<typename Fn>
-auto transformImpl(const DocPtr &doc, Fn &&fn) -> DocPtr
+auto transformImpl(const DocPtr& doc, Fn&& fn) -> DocPtr
 {
     return std::visit(
-      [&fn](const DocNode auto &node) -> DocPtr {
-          const auto mapped
-            = node.fmap([&fn](const DocPtr &inner) { return transformImpl(inner, fn); });
+      [&fn](const DocNode auto& node) -> DocPtr {
+          const auto mapped =
+            node.fmap([&fn](const DocPtr& inner) { return transformImpl(inner, fn); });
           return std::forward<Fn>(fn)(mapped);
       },
       doc->value);
 }
 
 template<typename T, typename Fn>
-auto foldImpl(const DocPtr &doc, T init, Fn &&fn) -> T
+auto foldImpl(const DocPtr& doc, T init, Fn&& fn) -> T
 {
     if (!doc) {
         return init;
     }
 
     return std::visit(
-      [&](const DocNode auto &node) -> T {
+      [&](const DocNode auto& node) -> T {
           T new_value = std::forward<Fn>(fn)(std::move(init), node);
 
-          const auto recurse_step
-            = [&fn](T acc, const DocPtr &child) { return foldImpl(child, std::move(acc), fn); };
+          const auto recurse_step = [&fn](T acc, const DocPtr& child) {
+              return foldImpl(child, std::move(acc), fn);
+          };
 
           return node.fold(std::move(new_value), recurse_step);
       },
@@ -285,8 +297,8 @@ auto makeAlignText(std::string_view text, int level) -> DocPtr;
 auto makeAlign(DocPtr doc) -> DocPtr;
 
 // Utility functions
-auto flatten(const DocPtr &doc) -> DocPtr;
-auto resolveAlignment(const DocPtr &doc) -> DocPtr;
+auto flatten(const DocPtr& doc) -> DocPtr;
+auto resolveAlignment(const DocPtr& doc) -> DocPtr;
 
 } // namespace emit
 

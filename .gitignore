@@ -1,11 +1,13 @@
 # ---------------------------
 # Build artifacts
 # ---------------------------
-/build/
+build/
 CMakeCache.txt
 CMakeFiles/
-/.cache/
+.cache/
 CMakeUserPresets.json
+.venv/
+venv/
 
 # Compiled objects and binaries
 *.o
@@ -22,6 +24,7 @@ CMakeUserPresets.json
 # ---------------------------
 .vscode/
 .idea/
+.zed/
 
 # ---------------------------
 # Benchmark output

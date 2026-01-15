@@ -29,7 +29,7 @@ struct Context
 
 /// @brief Creates a parsing context from a file path.
 [[nodiscard]]
-auto createContext(const std::filesystem::path &path) -> Context;
+auto createContext(const std::filesystem::path& path) -> Context;
 
 /// @brief Creates a parsing context from a string.
 [[nodiscard]]
@@ -38,7 +38,7 @@ auto createContext(std::string_view source) -> Context;
 /// @brief Builds the AST from an existing context.
 /// @note This keeps the context alive, allowing access to tokens after build.
 [[nodiscard]]
-auto build(Context &ctx) -> ast::DesignFile;
+auto build(Context& ctx) -> ast::DesignFile;
 
 // ============================================================================
 // High-level API (For standard usage / tests)
@@ -47,7 +47,7 @@ auto build(Context &ctx) -> ast::DesignFile;
 /// @brief Build AST from a file path (self-contained).
 /// @note Creates and destroys the Context internally.
 [[nodiscard]]
-auto buildFromFile(const std::filesystem::path &path) -> ast::DesignFile;
+auto buildFromFile(const std::filesystem::path& path) -> ast::DesignFile;
 
 /// @brief Build AST from a string (self-contained).
 /// @note Creates and destroys the Context internally.

@@ -65,7 +65,7 @@ end Behavioral;
 
     // 2. Pre-calculate CST (for Translation benchmark)
     golden_ctx.parser->setBuildParseTree(true);
-    auto *golden_tree = golden_ctx.parser->design_file();
+    auto* golden_tree = golden_ctx.parser->design_file();
 
     // 3. Pre-calculate AST (for PrettyPrinter benchmark)
     ast::DesignFile golden_ast;
@@ -91,7 +91,7 @@ end Behavioral;
     {
         golden_ctx.tokens->seek(0);
 
-        auto *interpreter = golden_ctx.parser->getInterpreter<antlr4::atn::ParserATNSimulator>();
+        auto* interpreter = golden_ctx.parser->getInterpreter<antlr4::atn::ParserATNSimulator>();
         interpreter->setPredictionMode(antlr4::atn::PredictionMode::SLL);
         golden_ctx.parser->setErrorHandler(std::make_shared<antlr4::BailErrorStrategy>());
 
@@ -125,10 +125,10 @@ end Behavioral;
     // 5. VERIFICATION (Safety Check)
     BENCHMARK("Stage 5: Verification")
     {
-        auto output_ctx = builder::createContext(std::string_view{ formatted_output });
+        auto output_ctx = builder::createContext(std::string_view{formatted_output});
 
-        const auto verify_result
-          = builder::verify::ensureSafety(*golden_ctx.tokens, *output_ctx.tokens);
+        const auto verify_result =
+          builder::verify::ensureSafety(*golden_ctx.tokens, *output_ctx.tokens);
 
         // The sample code has to be correct, so any failure is unexpected
         if (!verify_result) [[unlikely]] {

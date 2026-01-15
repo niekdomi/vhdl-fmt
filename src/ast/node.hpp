@@ -22,7 +22,7 @@ struct Comment
 /// Used to preserve user's intentional grouping while allowing the formatter to normalize spacing.
 struct Break
 {
-    unsigned int blank_lines{ 1 }; ///< Number of visible blank lines
+    unsigned int blank_lines{1}; ///< Number of visible blank lines
 };
 
 /// @brief A variant representing either a comment or a paragraph break to preserve order.
@@ -42,13 +42,19 @@ struct NodeBase
 {
     std::unique_ptr<NodeTrivia> trivia;
 
-    auto addLeading(Trivia t) -> void { getOrCreateTrivia().leading.emplace_back(std::move(t)); }
+    auto addLeading(Trivia t) -> void
+    {
+        getOrCreateTrivia().leading.emplace_back(std::move(t));
+    }
 
-    auto addTrailing(Trivia t) -> void { getOrCreateTrivia().trailing.emplace_back(std::move(t)); }
+    auto addTrailing(Trivia t) -> void
+    {
+        getOrCreateTrivia().trailing.emplace_back(std::move(t));
+    }
 
     auto setInlineComment(std::string text) -> void
     {
-        getOrCreateTrivia().inline_comment = Comment{ std::move(text) };
+        getOrCreateTrivia().inline_comment = Comment{std::move(text)};
     }
 
     /// @brief Returns a view of leading trivia. Returns empty span if no trivia exists.
@@ -90,7 +96,7 @@ struct NodeBase
 
   private:
     // Internal helper to handle the lazy allocation logic
-    auto getOrCreateTrivia() -> NodeTrivia &
+    auto getOrCreateTrivia() -> NodeTrivia&
     {
         if (!trivia) {
             trivia = std::make_unique<NodeTrivia>();
