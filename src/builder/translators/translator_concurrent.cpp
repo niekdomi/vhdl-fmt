@@ -130,15 +130,15 @@ auto Translator::makeProcessDeclarativeItem(vhdlParser::Process_declarative_item
         return makeTypeDecl(*type_ctx);
     }
 
-    if (auto *file_ctx = ctx.file_declaration()) {
-        // TODO(vedivad): Implement makeFileDecl
-        // return makeFileDecl(*file_ctx);
-    }
+    // if (auto *file_ctx = ctx.file_declaration()) {
+    //     // TODO(vedivad): Implement makeFileDecl
+    //     // return makeFileDecl(*file_ctx);
+    // }
 
-    if (auto *alias_ctx = ctx.alias_declaration()) {
-        // TODO(vedivad): Implement makeAliasDecl
-        // return makeAliasDecl(*alias_ctx);
-    }
+    // if (auto *alias_ctx = ctx.alias_declaration()) {
+    //     // TODO(vedivad): Implement makeAliasDecl
+    //     // return makeAliasDecl(*alias_ctx);
+    // }
 
     return {};
 }

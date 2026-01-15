@@ -14,16 +14,25 @@ namespace {
 // Helper functions for test setup
 auto makeGeneric(std::string name, std::string type, std::string def_val) -> ast::GenericParam
 {
-    return ast::GenericParam{ .names = { std::move(name) },
-                              .subtype = ast::SubtypeIndication{ .type_mark = std::move(type) },
-                              .default_expr = ast::TokenExpr{ .text = std::move(def_val) } };
+    return ast::GenericParam{
+        .names = { std::move(name) },
+        .subtype = ast::SubtypeIndication{ .resolution_func = std::nullopt,
+                  .type_mark = std::move(type),
+                  .constraint = std::nullopt },
+        .default_expr = ast::TokenExpr{ .text = std::move(def_val) }
+    };
 }
 
 auto makePort(std::string name, std::string mode, std::string type) -> ast::Port
 {
-    return ast::Port{ .names = { std::move(name) },
-                      .mode = std::move(mode),
-                      .subtype = ast::SubtypeIndication{ .type_mark = std::move(type) } };
+    return ast::Port{
+        .names = { std::move(name) },
+        .mode = std::move(mode),
+        .subtype = ast::SubtypeIndication{ .resolution_func = std::nullopt,
+                  .type_mark = std::move(type),
+                  .constraint = std::nullopt },
+        .default_expr = std::nullopt
+    };
 }
 
 auto makeVectorPort(std::string name, std::string mode, std::string high, std::string low)
@@ -40,8 +49,10 @@ auto makeVectorPort(std::string name, std::string mode, std::string high, std::s
         .names = { std::move(name) },
         .mode = std::move(mode),
         .subtype
-        = ast::SubtypeIndication{ .type_mark = "std_logic_vector",
-                  .constraint = ast::Constraint(std::move(idx_constraint)) }
+        = ast::SubtypeIndication{ .resolution_func = std::nullopt,
+                  .type_mark = "std_logic_vector",
+                  .constraint = ast::Constraint(std::move(idx_constraint)) },
+        .default_expr = std::nullopt
     };
 }
 

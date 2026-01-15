@@ -25,7 +25,12 @@ TEST_CASE("DesignFile Rendering", "[pretty_printer][design_file]")
         SECTION("Entity only")
         {
             file.units.emplace_back(ast::Entity{
+              .context = {},
               .name = "test_entity",
+              .generic_clause = {},
+              .port_clause = {},
+              .decls = {},
+              .stmts = {},
               // Simulate default behavior where end label matches name if not explicitly cleared
               .end_label = "test_entity",
               .has_end_entity_keyword = true });
@@ -38,8 +43,11 @@ TEST_CASE("DesignFile Rendering", "[pretty_printer][design_file]")
 
         SECTION("Architecture only")
         {
-            file.units.emplace_back(ast::Architecture{ .name = "rtl",
+            file.units.emplace_back(ast::Architecture{ .context = {},
+                                                       .name = "rtl",
                                                        .entity_name = "processor",
+                                                       .decls = {},
+                                                       .stmts = {},
                                                        .end_label = "rtl",
                                                        .has_end_architecture_keyword = true });
 
@@ -56,17 +64,31 @@ TEST_CASE("DesignFile Rendering", "[pretty_printer][design_file]")
         SECTION("Entity and corresponding Architecture")
         {
             // 1. Entity
-            ast::Entity entity{ .name = "counter" };
-            entity.port_clause.ports.emplace_back(
-              ast::Port{ .names = { "clk" },
-                         .mode = "in",
-                         .subtype = ast::SubtypeIndication{ .type_mark = "std_logic" } });
+            ast::Entity entity{ .context = {},
+                                .name = "counter",
+                                .generic_clause = {},
+                                .port_clause = {},
+                                .decls = {},
+                                .stmts = {},
+                                .end_label = std::nullopt,
+                                .has_end_entity_keyword = false };
+            entity.port_clause.ports.emplace_back(ast::Port{
+              .names = { "clk" },
+              .mode = "in",
+              .subtype = ast::SubtypeIndication{ .resolution_func = std::nullopt,
+                        .type_mark = "std_logic",
+                        .constraint = std::nullopt },
+              .default_expr = std::nullopt
+            });
             entity.end_label = "counter";
             entity.has_end_entity_keyword = true;
 
             // 2. Architecture
-            ast::Architecture arch{ .name = "rtl",
+            ast::Architecture arch{ .context = {},
+                                    .name = "rtl",
                                     .entity_name = "counter",
+                                    .decls = {},
+                                    .stmts = {},
                                     .end_label = "rtl",
                                     .has_end_architecture_keyword = true };
 
@@ -86,16 +108,31 @@ TEST_CASE("DesignFile Rendering", "[pretty_printer][design_file]")
         SECTION("Multiple independent entities and architectures")
         {
             // Entity 1
-            file.units.emplace_back(ast::Entity{
-              .name = "entity1", .end_label = "entity1", .has_end_entity_keyword = true });
+            file.units.emplace_back(ast::Entity{ .context = {},
+                                                 .name = "entity1",
+                                                 .generic_clause = {},
+                                                 .port_clause = {},
+                                                 .decls = {},
+                                                 .stmts = {},
+                                                 .end_label = "entity1",
+                                                 .has_end_entity_keyword = true });
 
             // Entity 2
-            file.units.emplace_back(ast::Entity{
-              .name = "entity2", .end_label = "entity2", .has_end_entity_keyword = true });
+            file.units.emplace_back(ast::Entity{ .context = {},
+                                                 .name = "entity2",
+                                                 .generic_clause = {},
+                                                 .port_clause = {},
+                                                 .decls = {},
+                                                 .stmts = {},
+                                                 .end_label = "entity2",
+                                                 .has_end_entity_keyword = true });
 
             // Arch for Entity 1
-            file.units.emplace_back(ast::Architecture{ .name = "behavioral",
+            file.units.emplace_back(ast::Architecture{ .context = {},
+                                                       .name = "behavioral",
                                                        .entity_name = "entity1",
+                                                       .decls = {},
+                                                       .stmts = {},
                                                        .end_label = "behavioral",
                                                        .has_end_architecture_keyword = true });
 

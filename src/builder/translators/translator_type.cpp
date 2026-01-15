@@ -15,7 +15,7 @@ auto Translator::makeTypeDecl(vhdlParser::Type_declarationContext &ctx) -> ast::
       .set(&ast::TypeDecl::name, ctx.identifier()->getText())
       .maybe(&ast::TypeDecl::type_def,
              ctx.type_definition(),
-             [this](auto &ctx) { return makeTypeDefinition(ctx); })
+             [this](auto &type_ctx) { return makeTypeDefinition(type_ctx); })
       .build();
 }
 

@@ -198,7 +198,7 @@ TEST_CASE("ArgumentParser with flags set correctly", "[argument_parser]")
     args.insert(args.cend(), flags.cbegin(), flags.cend());
 
     const auto c_args = createArgs(args);
-    const std::span<const char *const> args_span(c_args);
+    const std::span<const char *const> args_span{ c_args };
 
     const cli::ArgumentParser parser{ args_span };
 

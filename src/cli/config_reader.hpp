@@ -32,6 +32,8 @@ class ConfigReader final
     auto readConfigFile() -> std::expected<common::Config, ConfigReadError>;
 
   private:
+    std::optional<std::filesystem::path> config_file_path_;
+
     [[nodiscard]]
     static constexpr auto readLineconfig(const YAML::Node &root_node,
                                          const common::LineConfig &defaults) -> common::LineConfig;
@@ -59,8 +61,6 @@ class ConfigReader final
     static constexpr auto readCasingConfig(const YAML::Node &root_node,
                                            const common::CasingConfig &defaults)
       -> common::CasingConfig;
-
-    std::optional<std::filesystem::path> config_file_path_;
 };
 
 } // namespace cli

@@ -91,7 +91,7 @@ auto Translator::makeSequenceOfStatements(vhdlParser::Sequence_of_statementsCont
     std::vector<ast::SequentialStatement> statements{};
 
     for (auto *stmt : ctx.sequential_statement()) {
-        statements.emplace_back(std::move(makeSequentialStatement(*stmt)));
+        statements.emplace_back(makeSequentialStatement(*stmt));
     }
 
     return statements;

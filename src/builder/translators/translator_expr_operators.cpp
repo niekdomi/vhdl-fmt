@@ -60,7 +60,7 @@ auto Translator::makeSimpleExpr(vhdlParser::Simple_expressionContext &ctx) -> as
         init = makeUnary(ctx, "-", std::move(init));
     }
 
-    for (const auto &[term, op] : std::views::zip(terms | std::views::drop(1), operators)) {
+    for (const auto [term, op] : std::views::zip(terms | std::views::drop(1), operators)) {
         init = makeBinary(ctx, op->getText(), std::move(init), makeTerm(*term));
     }
 

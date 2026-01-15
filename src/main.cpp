@@ -19,7 +19,7 @@ auto main(int argc, char *argv[]) -> int
 
     try {
         const cli::ArgumentParser argparser{
-            std::span<const char *const>{ argv, static_cast<std::size_t>(argc) }
+            std::ranges::subrange{ argv, std::next(argv, argc) }
         };
 
         cli::ConfigReader config_reader{ argparser.getConfigPath() };

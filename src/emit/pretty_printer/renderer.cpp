@@ -167,7 +167,7 @@ void Renderer::write(std::string_view text)
 void Renderer::newline(int indent)
 {
     output_ += '\n';
-    output_.append(indent, ' ');
+    output_.append(static_cast<std::size_t>(indent), ' ');
     column_ = indent;
 }
 

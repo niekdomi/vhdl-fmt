@@ -11,7 +11,9 @@ TEST_CASE("GenericParam Rendering", "[pretty_printer][declarations]")
 {
     ast::GenericParam param{};
     // Default common settings
-    param.subtype = ast::SubtypeIndication{ .type_mark = "integer" };
+    param.subtype = ast::SubtypeIndication{ .resolution_func = std::nullopt,
+                                            .type_mark = "integer",
+                                            .constraint = std::nullopt };
 
     SECTION("Basic Declarations")
     {
@@ -24,7 +26,9 @@ TEST_CASE("GenericParam Rendering", "[pretty_printer][declarations]")
         SECTION("Multiple Names")
         {
             param.names = { "WIDTH", "HEIGHT", "DEPTH" };
-            param.subtype = ast::SubtypeIndication{ .type_mark = "positive" }; // Override type
+            param.subtype = ast::SubtypeIndication{ .resolution_func = std::nullopt,
+                                                    .type_mark = "positive",
+                                                    .constraint = std::nullopt }; // Override type
             REQUIRE(emit::test::render(param) == "WIDTH, HEIGHT, DEPTH : positive");
         }
     }
@@ -41,7 +45,9 @@ TEST_CASE("GenericParam Rendering", "[pretty_printer][declarations]")
         SECTION("Multiple Names with Default")
         {
             param.names = { "A", "B" };
-            param.subtype = ast::SubtypeIndication{ .type_mark = "natural" };
+            param.subtype = ast::SubtypeIndication{ .resolution_func = std::nullopt,
+                                                    .type_mark = "natural",
+                                                    .constraint = std::nullopt };
             param.default_expr = ast::TokenExpr{ .text = "0" };
             REQUIRE(emit::test::render(param) == "A, B : natural := 0");
         }
@@ -53,7 +59,9 @@ TEST_CASE("Port Rendering", "[pretty_printer][declarations]")
     ast::Port port;
     // Default common settings
     port.mode = "in";
-    port.subtype = ast::SubtypeIndication{ .type_mark = "std_logic" };
+    port.subtype = ast::SubtypeIndication{ .resolution_func = std::nullopt,
+                                           .type_mark = "std_logic",
+                                           .constraint = std::nullopt };
 
     SECTION("Basic Declarations")
     {
@@ -67,7 +75,9 @@ TEST_CASE("Port Rendering", "[pretty_printer][declarations]")
         {
             port.names = { "data_in", "data_out" };
             port.mode = "inout";
-            port.subtype = ast::SubtypeIndication{ .type_mark = "std_logic_vector" };
+            port.subtype = ast::SubtypeIndication{ .resolution_func = std::nullopt,
+                                                   .type_mark = "std_logic_vector",
+                                                   .constraint = std::nullopt };
             REQUIRE(emit::test::render(port) == "data_in, data_out : inout std_logic_vector");
         }
     }
@@ -75,7 +85,9 @@ TEST_CASE("Port Rendering", "[pretty_printer][declarations]")
     SECTION("With Constraints")
     {
         port.names = { "data" };
-        port.subtype = ast::SubtypeIndication{ .type_mark = "std_logic_vector" };
+        port.subtype = ast::SubtypeIndication{ .resolution_func = std::nullopt,
+                                               .type_mark = "std_logic_vector",
+                                               .constraint = std::nullopt };
 
         SECTION("Single Range (7 downto 0)")
         {
@@ -106,7 +118,9 @@ TEST_CASE("Port Rendering", "[pretty_printer][declarations]")
         {
             port.names = { "matrix" };
             port.mode = "out";
-            port.subtype = ast::SubtypeIndication{ .type_mark = "matrix_type" };
+            port.subtype = ast::SubtypeIndication{ .resolution_func = std::nullopt,
+                                                   .type_mark = "matrix_type",
+                                                   .constraint = std::nullopt };
 
             // Constraint 1: 7 downto 0
             ast::BinaryExpr range1{ .left

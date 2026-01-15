@@ -15,7 +15,8 @@ namespace {
 // Helper: Creates a signal assignment with a target
 auto makeAssign(std::string target) -> ast::SignalAssign
 {
-    ast::SignalAssign assign{ .target = ast::TokenExpr{ .text = std::move(target) } };
+    ast::SignalAssign assign{ .target = ast::TokenExpr{ .text = std::move(target) },
+                              .waveform = ast::Waveform{} };
     return assign;
 }
 

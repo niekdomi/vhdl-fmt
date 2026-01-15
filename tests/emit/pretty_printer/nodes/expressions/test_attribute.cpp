@@ -11,7 +11,8 @@ TEST_CASE("AttributeExpr Rendering", "[pretty_printer][expressions][attribute]")
     {
         const ast::AttributeExpr attr{ .prefix{ std::make_unique<ast::Expr>(
                                          ast::TokenExpr{ .text = "data" }) },
-                                       .attribute{ "length" } };
+                                       .attribute{ "length" },
+                                       .arg = std::nullopt };
 
         REQUIRE(emit::test::render(attr) == "data'length");
     }
@@ -36,8 +37,11 @@ TEST_CASE("AttributeExpr Rendering", "[pretty_printer][expressions][attribute]")
 
         call.args->children.emplace_back(ast::TokenExpr{ .text{ "i" } });
 
-        const ast::AttributeExpr attr{ .prefix{ std::make_unique<ast::Expr>(std::move(call)) },
-                                       .attribute{ "length" } };
+        const ast::AttributeExpr attr{
+            .prefix{ std::make_unique<ast::Expr>(std::move(call)) },
+            .attribute{ "length" },
+            .arg = std::nullopt,
+        };
 
         REQUIRE(emit::test::render(attr) == "my_array(i)'length");
     }

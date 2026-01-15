@@ -49,7 +49,14 @@ TEST_CASE("UseClause: Multiple use statements in one clause", "[pretty_printer][
 
 TEST_CASE("Entity: With library clause", "[pretty_printer][context][entity]")
 {
-    ast::Entity entity{ .name = "test_entity" };
+    ast::Entity entity{ .context = {},
+                        .name = "test_entity",
+                        .generic_clause = {},
+                        .port_clause = {},
+                        .decls = {},
+                        .stmts = {},
+                        .end_label = std::nullopt,
+                        .has_end_entity_keyword = false };
     entity.context.emplace_back(ast::LibraryClause{ .logical_names = { "ieee" } });
 
     const std::string result = emit::test::render(entity);
@@ -61,15 +68,26 @@ TEST_CASE("Entity: With library clause", "[pretty_printer][context][entity]")
 
 TEST_CASE("Entity: With library and use clauses", "[pretty_printer][context][entity]")
 {
-    ast::Entity entity{ .name = "my_design" };
+    ast::Entity entity{ .context = {},
+                        .name = "my_design",
+                        .generic_clause = {},
+                        .port_clause = {},
+                        .decls = {},
+                        .stmts = {},
+                        .end_label = std::nullopt,
+                        .has_end_entity_keyword = false };
     entity.context.emplace_back(ast::LibraryClause{ .logical_names = { "ieee" } });
     entity.context.emplace_back(ast::UseClause{ .selected_names = { "ieee.std_logic_1164.all" } });
     entity.context.emplace_back(ast::UseClause{ .selected_names = { "ieee.numeric_std.all" } });
 
-    entity.port_clause.ports.emplace_back(
-      ast::Port{ .names = { "clk" },
-                 .mode = "in",
-                 .subtype = ast::SubtypeIndication{ .type_mark = "std_logic" } });
+    entity.port_clause.ports.emplace_back(ast::Port{
+      .names = { "clk" },
+      .mode = "in",
+      .subtype = ast::SubtypeIndication{ .resolution_func = std::nullopt,
+                .type_mark = "std_logic",
+                .constraint = std::nullopt },
+      .default_expr = std::nullopt
+    });
 
     const std::string result = emit::test::render(entity);
     constexpr std::string_view EXPECTED = "library ieee;\n"
@@ -83,7 +101,13 @@ TEST_CASE("Entity: With library and use clauses", "[pretty_printer][context][ent
 
 TEST_CASE("Architecture: With library and use clauses", "[pretty_printer][context][architecture]")
 {
-    ast::Architecture arch{ .name = "rtl", .entity_name = "test_unit" };
+    ast::Architecture arch{ .context = {},
+                            .name = "rtl",
+                            .entity_name = "test_unit",
+                            .decls = {},
+                            .stmts = {},
+                            .end_label = std::nullopt,
+                            .has_end_architecture_keyword = false };
     arch.context.emplace_back(ast::LibraryClause{ .logical_names = { "work" } });
     arch.context.emplace_back(ast::UseClause{ .selected_names = { "work.my_package.all" } });
 

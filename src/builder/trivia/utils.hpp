@@ -19,11 +19,11 @@ static auto isNewline(const antlr4::Token *t) noexcept -> bool
     return (t != nullptr) && (t->getChannel() == vhdlLexer::NEWLINES);
 }
 
-[[nodiscard]]
-static auto isDefault(const antlr4::Token *t) noexcept -> bool
-{
-    return (t != nullptr) && (t->getChannel() == vhdlLexer::DEFAULT_TOKEN_CHANNEL);
-}
+// [[nodiscard]]
+// static auto isDefault(const antlr4::Token *t) noexcept -> bool
+// {
+//     return (t != nullptr) && (t->getChannel() == vhdlLexer::DEFAULT_TOKEN_CHANNEL);
+// }
 
 } // namespace builder
 

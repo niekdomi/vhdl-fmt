@@ -164,9 +164,9 @@ auto resolveAlignment(const DocPtr &doc) -> DocPtr
 
         if constexpr (std::is_same_v<T, AlignText>) {
             // Look up the max width for this text's level
-            const int max_width = max_widths_by_level.at(node.level);
-            const int padding = max_width - static_cast<int>(node.content.length());
-            return makeText(node.content + std::string(padding, ' '));
+            const auto max_width = max_widths_by_level.at(node.level);
+            const auto padding = max_width - static_cast<int>(node.content.length());
+            return makeText(node.content + std::string(static_cast<std::size_t>(padding), ' '));
         } else {
             return std::make_shared<DocImpl>(node);
         }

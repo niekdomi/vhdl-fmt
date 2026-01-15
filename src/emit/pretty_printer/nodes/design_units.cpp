@@ -115,7 +115,7 @@ auto PrettyPrinter::operator()(const ast::LibraryClause &node) const -> Doc
 {
     Doc result = Doc::text("library");
 
-    for (const auto &[idx, name] : std::views::enumerate(node.logical_names)) {
+    for (const auto [idx, name] : std::views::enumerate(node.logical_names)) {
         if (idx > 0) {
             result += Doc::text(",");
         }
@@ -130,7 +130,7 @@ auto PrettyPrinter::operator()(const ast::UseClause &node) const -> Doc
 {
     Doc result = Doc::text("use");
 
-    for (const auto &[idx, name] : std::views::enumerate(node.selected_names)) {
+    for (const auto [idx, name] : std::views::enumerate(node.selected_names)) {
         if (idx > 0) {
             result += Doc::text(",");
         }
