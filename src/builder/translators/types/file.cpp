@@ -4,7 +4,7 @@
 
 namespace builder {
 
-auto Translator::makeFileType(vhdlParser::File_type_definitionContext &ctx) -> ast::FileTypeDef
+auto Translator::makeFileType(vhdlParser::File_type_definitionContext& ctx) -> ast::FileTypeDef
 {
     return build<ast::FileTypeDef>(ctx)
       .set(&ast::FileTypeDef::subtype, makeSubtypeIndication(*ctx.subtype_indication()))

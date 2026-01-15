@@ -1,23 +1,152 @@
 ---
-AlignAfterOpenBracket: Align
+AlignAfterOpenBracket: Align # note with clang-format 22 this option is now 'true' instead of 'Align'
 AlignArrayOfStructures: Left
-AlignEscapedNewlines: Left
+AlignConsecutiveAssignments: None
+AlignConsecutiveBitFields: None
+AlignConsecutiveDeclarations: None
+AlignConsecutiveMacros: None
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+AlignConsecutiveTableGenBreakingDAGArgColons: None
+AlignConsecutiveTableGenCondOperatorColons: None
+AlignConsecutiveTableGenDefinitionColons: None
+AlignEscapedNewlines: Right
 AlignOperands: AlignAfterOperator
-AllowShortLoopsOnASingleLine: true
-AlwaysBreakAfterDefinitionReturnType: None
-BasedOnStyle: Mozilla
-BinPackParameters: false
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 1
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowBreakBeforeNoexceptSpecifier: Never
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortCompoundRequirementOnASingleLine: true
+AllowShortEnumsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: false
+AllowShortNamespacesOnASingleLine: false
+AlwaysBreakBeforeMultilineStrings: false
+BinPackArguments: false
+BinPackLongBracedList: false
+BinPackParameters: OnePerLine
+BitFieldColonSpacing: After
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: true
+  AfterControlStatement: MultiLine
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: false
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: true
+  BeforeCatch: true
+  BeforeElse: false
+  BeforeLambdaBody: false
+  BeforeWhile: true
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+BreakAdjacentStringLiterals: false
 BreakAfterAttributes: Always
-BreakAfterReturnType: None
-BreakBeforeBinaryOperators: true
+# BreakAfterOpenBracketBracedList: true # requires clang-format 22
+# BreakAfterOpenBracketFunction: false # requires clang-format 22
+# BreakAfterOpenBracketIf: false # requires clang-format 22
+# BreakAfterOpenBracketLoop: false # requires clang-format 22
+# BreakAfterOpenBracketSwitch: false # requires clang-format 22
+# BreakAfterReturnType: Automatic
+BreakBeforeBinaryOperators: NonAssignment
+# BreakBeforeCloseBracketBracedList: true # requires clang-format 22
+# BreakBeforeCloseBracketFunction: false # requires clang-format 22
+# BreakBeforeCloseBracketIf: false # requires clang-format 22
+# BreakBeforeCloseBracketLoop: false # requires clang-format 22
+# BreakBeforeCloseBracketSwitch: false # requires clang-format 22
+BreakBeforeConceptDeclarations: Always
+BreakBeforeTemplateCloser: false
+BreakBeforeTernaryOperators: true
 BreakBinaryOperations: OnePerLine
-BreakConstructorInitializers: AfterColon
+BreakConstructorInitializers: BeforeColon
+BreakFunctionDefinitionParameters: false
+BreakInheritanceList: AfterComma
+BreakStringLiterals: false # Buggy? -> bug report?
+BreakTemplateDeclarations: Yes
 ColumnLimit: 100
+CompactNamespaces: false
+# ConstructorInitializerIndentWidth: 4
+ContinuationIndentWidth: 2
+EmptyLineAfterAccessModifier: Never
+EmptyLineBeforeAccessModifier: Always
+EnumTrailingComma: Insert
 FixNamespaceComments: true
 IncludeBlocks: Regroup
+IndentAccessModifiers: false
+IndentCaseBlocks: false
+IndentCaseLabels: true
+IndentExportBlock: false
+IndentExternBlock: NoIndent
+IndentGotoLabels: true
 IndentPPDirectives: BeforeHash
+IndentRequiresClause: true
 IndentWidth: 4
+IndentWrappedFunctionNames: true
+InsertBraces: true
+InsertNewlineAtEOF: true # Has no effect?
+IntegerLiteralSeparator:
+  Binary: 4
+  Decimal: 3
+  Hex: -1
+KeepEmptyLines:
+  AtEndOfFile: true
+  AtStartOfBlock: false
+  AtStartOfFile: false
+LambdaBodyIndentation: Signature
+LineEnding: LF
+MaxEmptyLinesToKeep: 1
+NamespaceIndentation: None
+# NumericLiteralCase: # requires clang-format 22
+#   ExponentLetter: Upper
+#   HexDigit: Upper
+#   Prefix: Lower
+#   Suffix: Upper
+PPIndentWidth: -1
 PackConstructorInitializers: CurrentLine
-PointerAlignment: Right
+PointerAlignment: Left
 QualifierAlignment: Left
+ReferenceAlignment: Left
+ReflowComments: IndentOnly
+RemoveEmptyLinesInUnwrappedLines: true
+RemoveParentheses: MultipleParentheses
+RemoveSemicolon: false # This can't be used because it removes the required semicolon for BENCHMARK
+RequiresClausePosition: OwnLine
+RequiresExpressionIndentation: OuterScope
+SeparateDefinitionBlocks: Always
+ShortNamespaceLines: 0
+SkipMacroDefinitionBody: false
+SortIncludes: true
+SortUsingDeclarations: LexicographicNumeric
+SpaceAfterLogicalNot: false
+SpaceAfterOperatorKeyword: false
+SpaceAfterTemplateKeyword: false
+SpaceAroundPointerQualifiers: After
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCaseColon: false
+SpaceBeforeCpp11BracedList: false
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeParens: ControlStatements
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeSquareBrackets: false
+# SpaceInEmptyBraces: Never
+SpacesBeforeTrailingComments: 1
+SpacesInAngles: Never
+SpacesInContainerLiterals: false
+SpacesInParens: Never
+SpacesInSquareBrackets: false
+Standard: Latest
 TabWidth: 4
+UseTab: Never

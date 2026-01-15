@@ -7,7 +7,7 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::DesignFile &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::DesignFile& node) const -> Doc
 {
     if (std::ranges::empty(node.units)) {
         return Doc::empty();

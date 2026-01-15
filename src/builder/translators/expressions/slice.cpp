@@ -6,13 +6,13 @@
 
 namespace builder {
 
-auto Translator::makeSliceExpr(ast::Expr base, vhdlParser::Slice_name_partContext &ctx) -> ast::Expr
+auto Translator::makeSliceExpr(ast::Expr base, vhdlParser::Slice_name_partContext& ctx) -> ast::Expr
 {
     return build<ast::SliceExpr>(ctx)
       .setBox(&ast::SliceExpr::prefix, std::move(base))
       .maybeBox(&ast::SliceExpr::range,
                 ctx.discrete_range(),
-                [&](auto &dr) { return makeDiscreteRange(dr); })
+                [&](auto& dr) { return makeDiscreteRange(dr); })
       .build();
 }
 

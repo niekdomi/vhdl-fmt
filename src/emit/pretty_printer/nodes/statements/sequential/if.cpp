@@ -6,12 +6,12 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::IfStatement &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::IfStatement& node) const -> Doc
 {
     Doc result = Doc::empty();
 
     // 1. IF / ELSIF
-    for (const auto &[index, branch] : std::views::enumerate(node.branches)) {
+    for (const auto [index, branch] : std::views::enumerate(node.branches)) {
         const Doc keyword = (index == 0) ? Doc::keyword("if") : Doc::keyword("elsif");
 
         // Separator: Newline if not the first branch

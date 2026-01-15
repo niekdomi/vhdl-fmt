@@ -6,13 +6,13 @@
 
 namespace builder {
 
-auto Translator::makeAllocator(vhdlParser::AllocatorContext &ctx) -> ast::UnaryExpr
+auto Translator::makeAllocator(vhdlParser::AllocatorContext& ctx) -> ast::UnaryExpr
 {
     ast::Expr operand{};
 
-    if (auto *qual = ctx.qualified_expression()) {
+    if (auto* qual = ctx.qualified_expression()) {
         operand = makeQualifiedExpr(*qual);
-    } else if (auto *subtype = ctx.subtype_indication()) {
+    } else if (auto* subtype = ctx.subtype_indication()) {
         operand = makeSubtypeIndication(*subtype);
     } else {
         operand = makeToken(ctx);

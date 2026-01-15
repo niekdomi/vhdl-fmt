@@ -11,7 +11,7 @@ TEST_CASE("Declaration: Type Wrapper", "[builder][decl][type]")
 
     SECTION("Incomplete Type Declaration")
     {
-        const auto *decl = parse_decl("type node_t;");
+        const auto* decl = parse_decl("type node_t;");
         REQUIRE(decl != nullptr);
 
         CHECK(decl->name == "node_t");
@@ -22,7 +22,7 @@ TEST_CASE("Declaration: Type Wrapper", "[builder][decl][type]")
     {
         // We aren't testing the Record logic here (that's in types/test_record.cpp)
         // We just want to ensure the TypeDecl correctly wraps it.
-        const auto *decl = parse_decl("type point is record x,y: integer; end record;");
+        const auto* decl = parse_decl("type point is record x,y: integer; end record;");
 
         REQUIRE(decl != nullptr);
         CHECK(decl->name == "point");

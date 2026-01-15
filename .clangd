@@ -8,6 +8,5 @@ CompileFlags:
     - -Ibuild/generated
   Compiler: clang
 
-# The following options should render Doxygen properly, requeries clangd-22, the current release is 20.1.8
-# Documentation:
-#   CommentFormat: Doxygen
+Documentation:
+  CommentFormat: Doxygen

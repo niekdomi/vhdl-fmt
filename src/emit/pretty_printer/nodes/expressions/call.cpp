@@ -4,7 +4,7 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::CallExpr &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::CallExpr& node) const -> Doc
 {
     // GroupExpr already provides parentheses, so just visit directly
     return visit(*node.callee) + visit(*node.args);

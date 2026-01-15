@@ -12,50 +12,51 @@ namespace {
 // Helper to reduce boilerplate for generics and ports
 auto makeGeneric(std::string name, std::string type, std::string def_val) -> ast::GenericParam
 {
-    return ast::GenericParam{ .names = { std::move(name) },
-                              .subtype = ast::SubtypeIndication{ .type_mark = std::move(type) },
-                              .default_expr = ast::TokenExpr{ .text = std::move(def_val) } };
+    return ast::GenericParam{
+      .names = {std::move(name)},
+      .subtype = ast::SubtypeIndication{.type_mark = std::move(type)},
+      .default_expr = ast::TokenExpr{.text = std::move(def_val)},
+    };
 }
 
 auto makePort(std::string name, std::string mode, std::string type) -> ast::Port
 {
-    return ast::Port{ .names = { std::move(name) },
-                      .mode = std::move(mode),
-                      .subtype = ast::SubtypeIndication{ .type_mark = std::move(type) } };
+    return ast::Port{
+      .names = {std::move(name)},
+      .mode = std::move(mode),
+      .subtype = ast::SubtypeIndication{.type_mark = std::move(type)},
+    };
 }
 } // namespace
 
 TEST_CASE("ComponentDecl Rendering", "[pretty_printer][component]")
 {
     // Shared setup
-    ast::ComponentDecl comp{ .name = "my_comp" };
+    ast::ComponentDecl comp{.name = "my_comp"};
 
     SECTION("Minimal (No Generics, No Ports)")
     {
         SECTION("Basic")
         {
             const std::string result = emit::test::render(comp);
-            constexpr std::string_view EXPECTED = "component my_comp\n"
-                                                  "end component;";
-            REQUIRE(result == EXPECTED);
+            const std::string_view expected = "component my_comp\n" "end component;";
+            REQUIRE(result == expected);
         }
 
         SECTION("With 'IS' keyword")
         {
             comp.has_is_keyword = true;
             const std::string result = emit::test::render(comp);
-            constexpr std::string_view EXPECTED = "component my_comp is\n"
-                                                  "end component;";
-            REQUIRE(result == EXPECTED);
+            const std::string_view expected = "component my_comp is\n" "end component;";
+            REQUIRE(result == expected);
         }
 
         SECTION("With End Label")
         {
             comp.end_label = "my_comp";
             const std::string result = emit::test::render(comp);
-            constexpr std::string_view EXPECTED = "component my_comp\n"
-                                                  "end component my_comp;";
-            REQUIRE(result == EXPECTED);
+            const std::string_view expected = "component my_comp\n" "end component my_comp;";
+            REQUIRE(result == expected);
         }
     }
 
@@ -66,10 +67,9 @@ TEST_CASE("ComponentDecl Rendering", "[pretty_printer][component]")
             comp.generic_clause.generics.push_back(makeGeneric("WIDTH", "integer", "8"));
 
             const std::string result = emit::test::render(comp);
-            constexpr std::string_view EXPECTED = "component my_comp\n"
-                                                  "  generic ( WIDTH : integer := 8 );\n"
-                                                  "end component;";
-            REQUIRE(result == EXPECTED);
+            const std::string_view expected =
+              "component my_comp\n" "  generic ( WIDTH : integer := 8 );\n" "end component;";
+            REQUIRE(result == expected);
         }
 
         SECTION("Port Clause Only")
@@ -77,10 +77,9 @@ TEST_CASE("ComponentDecl Rendering", "[pretty_printer][component]")
             comp.port_clause.ports.push_back(makePort("clk", "in", "std_logic"));
 
             const std::string result = emit::test::render(comp);
-            constexpr std::string_view EXPECTED = "component my_comp\n"
-                                                  "  port ( clk : in std_logic );\n"
-                                                  "end component;";
-            REQUIRE(result == EXPECTED);
+            const std::string_view expected =
+              "component my_comp\n" "  port ( clk : in std_logic );\n" "end component;";
+            REQUIRE(result == expected);
         }
 
         SECTION("Both Generics and Ports")
@@ -90,11 +89,9 @@ TEST_CASE("ComponentDecl Rendering", "[pretty_printer][component]")
             comp.port_clause.ports.push_back(makePort("rst", "in", "std_logic"));
 
             const std::string result = emit::test::render(comp);
-            constexpr std::string_view EXPECTED = "component my_comp is\n"
-                                                  "  generic ( N : positive := 16 );\n"
-                                                  "  port ( rst : in std_logic );\n"
-                                                  "end component;";
-            REQUIRE(result == EXPECTED);
+            const std::string_view expected =
+              "component my_comp is\n" "  generic ( N : positive := 16 );\n" "  port ( rst : in std_logic );\n" "end component;";
+            REQUIRE(result == expected);
         }
     }
 }

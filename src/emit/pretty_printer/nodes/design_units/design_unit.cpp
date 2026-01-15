@@ -4,10 +4,10 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::DesignUnit &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::DesignUnit& node) const -> Doc
 {
     Doc context_doc = Doc::empty();
-    for (const auto &ctx : node.context) {
+    for (const auto& ctx : node.context) {
         if (context_doc.isEmpty()) {
             context_doc = visit(ctx);
         } else {

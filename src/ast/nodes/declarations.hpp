@@ -13,20 +13,20 @@
 namespace ast {
 
 /// @brief Represents a VHDL type declaration.
-struct TypeDecl : NodeBase
+struct TypeDecl final : NodeBase
 {
     std::string name;
     std::optional<TypeDefinition> type_def;
 };
 
 /// @brief Represents a VHDL component declaration.
-struct ComponentDecl : NodeBase
+struct ComponentDecl final : NodeBase
 {
     std::string name;
     GenericClause generic_clause;
     PortClause port_clause;
     std::optional<std::string> end_label;
-    bool has_is_keyword{ false };
+    bool has_is_keyword{false};
 };
 
 /// @brief Variant type for all declarations.

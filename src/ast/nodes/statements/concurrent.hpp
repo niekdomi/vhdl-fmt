@@ -15,32 +15,34 @@ namespace ast {
 // Forward declarations
 struct SequentialStatement;
 
-struct ConditionalConcurrentAssign : NodeBase
+struct ConditionalConcurrentAssign final : NodeBase
 {
     Expr target;
 
-    struct ConditionalWaveform : NodeBase
+    struct ConditionalWaveform final : NodeBase
     {
         Waveform waveform;
         std::optional<Expr> condition;
     };
+
     std::vector<ConditionalWaveform> waveforms;
 };
 
-struct SelectedConcurrentAssign : NodeBase
+struct SelectedConcurrentAssign final : NodeBase
 {
     Expr target;
     Expr selector;
 
-    struct Selection : NodeBase
+    struct Selection final : NodeBase
     {
         Waveform waveform;
         std::vector<Expr> choices;
     };
+
     std::vector<Selection> selections;
 };
 
-struct Process : NodeBase
+struct Process final : NodeBase
 {
     std::vector<std::string> sensitivity_list;
     std::vector<Declaration> decls;

@@ -4,21 +4,21 @@
 
 namespace builder {
 
-auto Translator::makeAggregate(vhdlParser::AggregateContext &ctx) -> ast::GroupExpr
+auto Translator::makeAggregate(vhdlParser::AggregateContext& ctx) -> ast::GroupExpr
 {
     return build<ast::GroupExpr>(ctx)
       .collect(&ast::GroupExpr::children,
                ctx.element_association(),
-               [&](auto *elem) { return makeElementAssociation(*elem); })
+               [&](auto* elem) { return makeElementAssociation(*elem); })
       .build();
 }
 
-auto Translator::makeElementAssociation(vhdlParser::Element_associationContext &ctx) -> ast::Expr
+auto Translator::makeElementAssociation(vhdlParser::Element_associationContext& ctx) -> ast::Expr
 {
     // element_association: (choices ARROW)? expression
     // If no choices, this is positional notation - return just the expression
     if (ctx.choices() == nullptr) {
-        if (auto *expr = ctx.expression()) {
+        if (auto* expr = ctx.expression()) {
             return makeExpr(*expr);
         }
         return makeToken(ctx);
@@ -28,13 +28,13 @@ auto Translator::makeElementAssociation(vhdlParser::Element_associationContext &
     return build<ast::BinaryExpr>(ctx)
       .set(&ast::BinaryExpr::op, "=>")
       .maybeBox(
-        &ast::BinaryExpr::left, ctx.choices(), [&](auto &child) { return makeChoices(child); })
+        &ast::BinaryExpr::left, ctx.choices(), [&](auto& child) { return makeChoices(child); })
       .maybeBox(
-        &ast::BinaryExpr::right, ctx.expression(), [&](auto &expr) { return makeExpr(expr); })
+        &ast::BinaryExpr::right, ctx.expression(), [&](auto& expr) { return makeExpr(expr); })
       .build();
 }
 
-auto Translator::makeChoices(vhdlParser::ChoicesContext &ctx) -> ast::Expr
+auto Translator::makeChoices(vhdlParser::ChoicesContext& ctx) -> ast::Expr
 {
     if (ctx.choice().size() == 1) {
         return makeChoice(*ctx.choice(0));
@@ -42,11 +42,11 @@ auto Translator::makeChoices(vhdlParser::ChoicesContext &ctx) -> ast::Expr
 
     return build<ast::GroupExpr>(ctx)
       .collect(
-        &ast::GroupExpr::children, ctx.choice(), [this](auto *child) { return makeChoice(*child); })
+        &ast::GroupExpr::children, ctx.choice(), [this](auto* child) { return makeChoice(*child); })
       .build();
 }
 
-auto Translator::makeChoice(vhdlParser::ChoiceContext &ctx) -> ast::Expr
+auto Translator::makeChoice(vhdlParser::ChoiceContext& ctx) -> ast::Expr
 {
     if (ctx.OTHERS() != nullptr) {
         return makeToken(ctx, "others");
@@ -60,7 +60,7 @@ auto Translator::makeChoice(vhdlParser::ChoiceContext &ctx) -> ast::Expr
         return makeSimpleExpr(*ctx.simple_expression());
     }
 
-    if (auto *dr = ctx.discrete_range()) {
+    if (auto* dr = ctx.discrete_range()) {
         return makeDiscreteRange(*dr);
     }
 

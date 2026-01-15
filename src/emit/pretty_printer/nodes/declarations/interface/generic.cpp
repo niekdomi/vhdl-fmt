@@ -8,16 +8,16 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::GenericClause &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::GenericClause& node) const -> Doc
 {
     if (std::ranges::empty(node.generics)) {
         return Doc::empty();
     }
 
-    const Doc opener = Doc::keyword(("generic")) & Doc::text("(");
+    const Doc opener = Doc::keyword("generic") & Doc::text("(");
     const Doc closer = Doc::text(");");
 
-    const Doc generics = joinMap(node.generics, Doc::line(), [&](const auto &param) {
+    const Doc generics = joinMap(node.generics, Doc::line(), [&](const auto& param) {
         const bool is_last = &param == &node.generics.back();
         return visit(param, is_last);
     });
@@ -27,11 +27,10 @@ auto PrettyPrinter::operator()(const ast::GenericClause &node) const -> Doc
     return Doc::group(Doc::bracket(opener, result, closer));
 }
 
-auto PrettyPrinter::operator()(const ast::GenericParam &node, const bool is_last) const -> Doc
+auto PrettyPrinter::operator()(const ast::GenericParam& node, const bool is_last) const -> Doc
 {
-    const std::string names = node.names
-                            | std::views::join_with(std::string_view{ ", " })
-                            | std::ranges::to<std::string>();
+    const std::string names =
+      node.names | std::views::join_with(std::string_view{", "}) | std::ranges::to<std::string>();
 
     Doc result = Doc::text(names, AlignmentLevel::NAME) & Doc::text(":") & visit(node.subtype);
 

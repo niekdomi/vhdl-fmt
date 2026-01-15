@@ -15,7 +15,7 @@ namespace {
 /// @param port_content The content inside 'port ( ... );'
 /// @return Pointer to the parsed Entity node.
 [[nodiscard]]
-auto parsePorts(std::string_view port_content) -> const ast::Entity *
+auto parsePorts(std::string_view port_content) -> const ast::Entity*
 {
     const auto code = std::format("entity E is port ({}); end E;", port_content);
 
@@ -35,14 +35,14 @@ TEST_CASE("Declaration: Port", "[builder][decl][interface]")
 {
     SECTION("Standard Port")
     {
-        const auto *entity = parsePorts("clk : in std_logic");
+        const auto* entity = parsePorts("clk : in std_logic");
         REQUIRE(entity != nullptr);
 
-        const auto &ports = entity->port_clause.ports;
+        const auto& ports = entity->port_clause.ports;
         REQUIRE(ports.size() == 1);
 
-        const auto &port = ports[0];
-        CHECK(port.names[0] == "clk");
+        const auto& port = ports.at(0);
+        CHECK(port.names.at(0) == "clk");
         CHECK(port.mode == "in");
         CHECK(port.subtype.type_mark == "std_logic");
         CHECK_FALSE(port.default_expr.has_value());
@@ -50,57 +50,57 @@ TEST_CASE("Declaration: Port", "[builder][decl][interface]")
 
     SECTION("Port with Default Value")
     {
-        const auto *entity = parsePorts("bus_sig : inout std_logic := 'Z'");
+        const auto* entity = parsePorts("bus_sig : inout std_logic := 'Z'");
         REQUIRE(entity != nullptr);
 
-        const auto &port = entity->port_clause.ports[0];
-        CHECK(port.names[0] == "bus_sig");
+        const auto& port = entity->port_clause.ports.at(0);
+        CHECK(port.names.at(0) == "bus_sig");
         CHECK(port.mode == "inout");
 
         REQUIRE(port.default_expr.has_value());
-        const auto *def = std::get_if<ast::TokenExpr>(&port.default_expr.value());
+        const auto* def = std::get_if<ast::TokenExpr>(&port.default_expr.value());
         CHECK(def->text == "'Z'");
     }
 
     SECTION("Port with multiple names (comma-separated)")
     {
-        const auto *entity = parsePorts("a, b : in bit");
+        const auto* entity = parsePorts("a, b : in bit");
         REQUIRE(entity != nullptr);
 
-        const auto &ports = entity->port_clause.ports;
+        const auto& ports = entity->port_clause.ports;
         REQUIRE(ports.size() == 1); // One declaration node
 
-        const auto &port = ports[0];
+        const auto& port = ports.at(0);
         REQUIRE(port.names.size() == 2);
-        CHECK(port.names[0] == "a");
-        CHECK(port.names[1] == "b");
+        CHECK(port.names.at(0) == "a");
+        CHECK(port.names.at(1) == "b");
         CHECK(port.mode == "in");
     }
 
     SECTION("Port with subtype constraint")
     {
-        const auto *entity = parsePorts("data : out std_logic_vector(7 downto 0)");
+        const auto* entity = parsePorts("data : out std_logic_vector(7 downto 0)");
         REQUIRE(entity != nullptr);
 
-        const auto &port = entity->port_clause.ports[0];
+        const auto& port = entity->port_clause.ports.at(0);
         CHECK(port.mode == "out");
         CHECK(port.subtype.type_mark == "std_logic_vector");
 
         // Check constraint inside subtype
         REQUIRE(port.subtype.constraint.has_value());
-        const auto *idx = std::get_if<ast::IndexConstraint>(&port.subtype.constraint.value());
+        const auto* idx = std::get_if<ast::IndexConstraint>(&port.subtype.constraint.value());
         REQUIRE(idx != nullptr);
     }
 
     SECTION("Multiple port declarations (semicolon-separated)")
     {
-        const auto *entity = parsePorts("clk : in bit; rst : in bit");
+        const auto* entity = parsePorts("clk : in bit; rst : in bit");
         REQUIRE(entity != nullptr);
 
-        const auto &ports = entity->port_clause.ports;
+        const auto& ports = entity->port_clause.ports;
         REQUIRE(ports.size() == 2);
 
-        CHECK(ports[0].names[0] == "clk");
-        CHECK(ports[1].names[0] == "rst");
+        CHECK(ports.at(0).names.at(0) == "clk");
+        CHECK(ports.at(1).names.at(0) == "rst");
     }
 }

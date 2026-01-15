@@ -4,7 +4,7 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::SliceExpr &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::SliceExpr& node) const -> Doc
 {
     return visit(*node.prefix) + Doc::text("(") + visit(*node.range) + Doc::text(")");
 }

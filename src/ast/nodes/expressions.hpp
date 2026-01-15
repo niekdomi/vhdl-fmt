@@ -49,7 +49,7 @@ using Expr = std::variant<TokenExpr,
 /// @brief Represents a binary expression.
 ///
 /// Example: `a + b`, `x downto 0`, `a and b`
-struct BinaryExpr : NodeBase
+struct BinaryExpr final : NodeBase
 {
     Box<Expr> left;  ///< Left operand (boxed for recursion).
     std::string op;  ///< Binary operator symbol.
@@ -59,7 +59,7 @@ struct BinaryExpr : NodeBase
 /// @brief Represents a function call.
 ///
 /// Example: `rising_edge(clk)`, `resize(data, 16)`
-struct CallExpr : NodeBase
+struct CallExpr final : NodeBase
 {
     Box<Expr> callee;    ///< Function name being called.
     Box<GroupExpr> args; ///< Arguments (always a GroupExpr with parentheses).
@@ -68,7 +68,7 @@ struct CallExpr : NodeBase
 /// @brief Represents array/signal slice notation.
 ///
 /// Example: `data(7 downto 0)`, `mem(i)`
-struct SliceExpr : NodeBase
+struct SliceExpr final : NodeBase
 {
     Box<Expr> prefix; ///< Array/signal being sliced.
     Box<Expr> range;  ///< Index or range expression.
@@ -77,7 +77,7 @@ struct SliceExpr : NodeBase
 /// @brief Represents an aggregate or grouped list of expressions.
 ///
 /// Example: `(others => '0')`
-struct GroupExpr : NodeBase
+struct GroupExpr final : NodeBase
 {
     std::vector<Expr> children; ///< Ordered child expressions.
 };
@@ -85,7 +85,7 @@ struct GroupExpr : NodeBase
 /// @brief Represents explicit parentheses around an expression.
 ///
 /// Example: `(a + b)`
-struct ParenExpr : NodeBase
+struct ParenExpr final : NodeBase
 {
     Box<Expr> inner; ///< Inner expression inside parentheses (boxed for recursion).
 };
@@ -93,7 +93,7 @@ struct ParenExpr : NodeBase
 /// @brief Represents a physical literal with value and unit.
 ///
 /// Example: `10 ns`, `5 us`
-struct PhysicalLiteral : NodeBase
+struct PhysicalLiteral final : NodeBase
 {
     std::string value; ///< Numeric value (e.g., "10").
     std::string unit;  ///< Unit identifier (e.g., "ns").
@@ -102,7 +102,7 @@ struct PhysicalLiteral : NodeBase
 /// @brief Represents a single token expression.
 ///
 /// Example: `WIDTH`, `'1'`, `123`
-struct TokenExpr : NodeBase
+struct TokenExpr final : NodeBase
 {
     std::string text; ///< Literal text of the token.
 };
@@ -110,7 +110,7 @@ struct TokenExpr : NodeBase
 /// @brief Represents a unary expression.
 ///
 /// Example: `-a`, `not ready`, `abs x`
-struct UnaryExpr : NodeBase
+struct UnaryExpr final : NodeBase
 {
     std::string op;  ///< Unary operator symbol.
     Box<Expr> value; ///< Operand expression (boxed for recursion).
@@ -119,7 +119,7 @@ struct UnaryExpr : NodeBase
 /// @brief Represents an attribute reference.
 ///
 /// Example: `data'length`, `clk'event`, `signal_name'stable(5 ns)`
-struct AttributeExpr : NodeBase
+struct AttributeExpr final : NodeBase
 {
     Box<Expr> prefix;             ///< Base expression (signal, type, array, etc.).
     std::string attribute;        ///< Attribute name (e.g., "length", "event", "stable").
@@ -131,7 +131,7 @@ struct AttributeExpr : NodeBase
 /// @brief Represents an index constraint with parentheses.
 ///
 /// Example: `(7 downto 0)`, `(0 to 15, 0 to 7)`
-struct IndexConstraint : NodeBase
+struct IndexConstraint final : NodeBase
 {
     GroupExpr ranges; ///< Parenthesized group of range expressions.
 };
@@ -139,7 +139,7 @@ struct IndexConstraint : NodeBase
 /// @brief Represents a range constraint with RANGE keyword.
 ///
 /// Example: `range 0 to 255`
-struct RangeConstraint : NodeBase
+struct RangeConstraint final : NodeBase
 {
     BinaryExpr range; ///< Single range expression (e.g., "0 to 255" or "7 downto 0").
 };
@@ -152,7 +152,7 @@ using Constraint = std::variant<IndexConstraint, RangeConstraint>;
 /// @brief Represents a subtype indication.
 ///
 /// Example: `std_logic_vector(7 downto 0)`, `resolved std_logic`
-struct SubtypeIndication : NodeBase
+struct SubtypeIndication final : NodeBase
 {
     std::optional<std::string>
       resolution_func;                    ///< Optional resolution function (e.g., "resolved").
@@ -163,7 +163,7 @@ struct SubtypeIndication : NodeBase
 /// @brief Represents a qualified expression (type qualification).
 ///
 /// Example: `std_logic_vector'(x"AB")`, `integer'(42)`
-struct QualifiedExpr : NodeBase
+struct QualifiedExpr final : NodeBase
 {
     SubtypeIndication type_mark; ///< Type qualifier/mark (e.g., "std_logic_vector", "integer").
     Box<GroupExpr> operand;      ///< Expression being qualified (aggregate expression).

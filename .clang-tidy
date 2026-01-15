@@ -5,18 +5,27 @@ FormatStyle: file
 Checks: >
   *,
   -altera-*,
-  -llvmlibc-*,
+  -bugprone-easily-swappable-parameters,
   -fuchsia-default-arguments-calls,
+  -fuchsia-default-arguments-declarations,
   -fuchsia-overloaded-operator,
   -fuchsia-trailing-return,
   -llvm-header-guard,
   -llvm-prefer-static-over-anonymous-namespace,
+  -llvmlibc-*,
+  -misc-no-recursion,
+  -portability-avoid-pragma-once,
   -readability-identifier-length,
 
 CheckOptions:
-  # Linter rule options
+  # ----- Linter rule options -----
   - key: modernize-use-trailing-return-type.TransformLambdas
     value: all_except_auto
+
+  - key: misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic
+    value: true
+
+  # ----- Identifier naming conventions -----
 
   # Types use PascalCase: MyClass
   - key: readability-identifier-naming.ClassCase
@@ -38,7 +47,7 @@ CheckOptions:
   - key: readability-identifier-naming.MethodCase
     value: "camelBack"
 
-  # Constants names use upper case with underscores: const int TIMEOUT_MS = 100
+  # Constants use upper_snake_case: const int TIMEOUT_MS = 100
   - key: readability-identifier-naming.GlobalConstantCase
     value: "UPPER_CASE"
   - key: readability-identifier-naming.ConstexprVariableCase
@@ -50,7 +59,7 @@ CheckOptions:
   - key: readability-identifier-naming.TemplateParameterCase
     value: "CamelCase"
 
-  # All other names use snake case: config_value
+  # All other names use snake_case: config_value
   - key: readability-identifier-naming.StaticConstantCase
     value: "lower_case"
   - key: readability-identifier-naming.ConstantCase
@@ -66,4 +75,6 @@ CheckOptions:
   - key: readability-identifier-naming.PrivateMemberCase
     value: "lower_case"
   - key: "readability-identifier-naming.PrivateMemberSuffix"
+    value: "_"
+  - key: "readability-identifier-naming.ConstantMemberSuffix"
     value: "_"

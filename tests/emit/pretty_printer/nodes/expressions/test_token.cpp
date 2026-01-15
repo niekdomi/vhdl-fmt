@@ -7,19 +7,19 @@ TEST_CASE("TokenExpr Rendering", "[pretty_printer][expressions][token]")
 {
     SECTION("Integer literal")
     {
-        const ast::TokenExpr token{ .text = "42" };
+        const ast::TokenExpr token{.text = "42"};
         REQUIRE(emit::test::render(token) == "42");
     }
 
     SECTION("Bit string literal")
     {
-        const ast::TokenExpr token{ .text = "x\"NICE\"" };
+        const ast::TokenExpr token{.text = "x\"NICE\""};
         REQUIRE(emit::test::render(token) == "x\"NICE\"");
     }
 
     SECTION("Identifier")
     {
-        const ast::TokenExpr token{ .text = "my_signal" };
+        const ast::TokenExpr token{.text = "my_signal"};
         REQUIRE(emit::test::render(token) == "my_signal");
     }
 }

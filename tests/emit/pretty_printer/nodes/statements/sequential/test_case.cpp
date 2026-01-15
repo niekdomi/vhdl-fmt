@@ -27,25 +27,23 @@ TEST_CASE("Case Statement", "[pretty_printer][control_flow][sequential]")
     // Helper to create a dummy statement (x <= '0') wrapped in SequentialStatement
     auto make_stmt = []() -> ast::SequentialStatement {
         return ast::SequentialStatement{
-            .kind = ast::SignalAssign{ .target = ast::TokenExpr{ .text = "x" },
-                                      .waveform = makeWave(ast::TokenExpr{ .text = "'0'" }) }
+          .kind = ast::SignalAssign{.target = ast::TokenExpr{.text = "x"},
+                                    .waveform = makeWave(ast::TokenExpr{.text = "'0'"})}
         };
     };
 
     ast::CaseStatement stmt;
-    stmt.selector = ast::TokenExpr{ .text = "state" };
+    stmt.selector = ast::TokenExpr{.text = "state"};
 
     ast::CaseStatement::WhenClause clause;
-    clause.choices.emplace_back(ast::TokenExpr{ .text = "IDLE" });
-    clause.choices.emplace_back(ast::TokenExpr{ .text = "RESET" });
+    clause.choices.emplace_back(ast::TokenExpr{.text = "IDLE"});
+    clause.choices.emplace_back(ast::TokenExpr{.text = "RESET"});
     clause.body.emplace_back(make_stmt());
 
     stmt.when_clauses.emplace_back(std::move(clause));
 
-    constexpr std::string_view EXPECTED = "case state is\n"
-                                          "  when IDLE | RESET =>\n"
-                                          "    x <= '0';\n"
-                                          "end case;";
+    const std::string_view expected =
+      "case state is\n" "  when IDLE | RESET =>\n" "    x <= '0';\n" "end case;";
 
-    REQUIRE(emit::test::render(stmt) == EXPECTED);
+    REQUIRE(emit::test::render(stmt) == expected);
 }

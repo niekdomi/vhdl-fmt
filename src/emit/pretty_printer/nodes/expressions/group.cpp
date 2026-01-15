@@ -4,7 +4,7 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::GroupExpr &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::GroupExpr& node) const -> Doc
 {
     const Doc result = join(node.children, Doc::text(", "));
     return Doc::text("(") + result + Doc::text(")");

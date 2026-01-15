@@ -6,14 +6,14 @@
 
 namespace builder {
 
-auto Translator::makeContextItem(vhdlParser::Context_itemContext *ctx) -> ast::ContextItem
+auto Translator::makeContextItem(vhdlParser::Context_itemContext* ctx) -> ast::ContextItem
 {
     // A context item is either a library clause or a use clause
-    if (auto *lib_ctx = ctx->library_clause()) {
+    if (auto* lib_ctx = ctx->library_clause()) {
         return makeLibraryClause(*lib_ctx);
     }
 
-    if (auto *use_ctx = ctx->use_clause()) {
+    if (auto* use_ctx = ctx->use_clause()) {
         return makeUseClause(*use_ctx);
     }
 
@@ -21,23 +21,23 @@ auto Translator::makeContextItem(vhdlParser::Context_itemContext *ctx) -> ast::C
     throw std::runtime_error("Unknown context item type");
 }
 
-auto Translator::makeLibraryClause(vhdlParser::Library_clauseContext &ctx) -> ast::LibraryClause
+auto Translator::makeLibraryClause(vhdlParser::Library_clauseContext& ctx) -> ast::LibraryClause
 {
     return build<ast::LibraryClause>(ctx)
       .collectFrom(
         &ast::LibraryClause::logical_names,
         ctx.logical_name_list(),
-        [](auto &list) { return list.logical_name(); },
-        [](auto *name_ctx) { return name_ctx->getText(); })
+        [](auto& list) { return list.logical_name(); },
+        [](auto* name_ctx) { return name_ctx->getText(); })
       .build();
 }
 
-auto Translator::makeUseClause(vhdlParser::Use_clauseContext &ctx) -> ast::UseClause
+auto Translator::makeUseClause(vhdlParser::Use_clauseContext& ctx) -> ast::UseClause
 {
     return build<ast::UseClause>(ctx)
       .collect(&ast::UseClause::selected_names,
                ctx.selected_name(),
-               [](auto *name_ctx) { return name_ctx->getText(); })
+               [](auto* name_ctx) { return name_ctx->getText(); })
       .build();
 }
 

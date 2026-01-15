@@ -4,9 +4,9 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::AccessTypeDef &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::AccessTypeDef& node) const -> Doc
 {
-    return Doc::keyword(("access")) & visit(node.subtype);
+    return Doc::keyword("access") & visit(node.subtype);
 }
 
 } // namespace emit

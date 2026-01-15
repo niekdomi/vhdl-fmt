@@ -21,19 +21,19 @@ struct UseClause;
 using ContextItem = std::variant<LibraryClause, UseClause>;
 
 /// @brief Represents a VHDL LIBRARY clause.
-struct LibraryClause : NodeBase
+struct LibraryClause final : NodeBase
 {
     std::vector<std::string> logical_names;
 };
 
 /// @brief Represents a VHDL USE clause.
-struct UseClause : NodeBase
+struct UseClause final : NodeBase
 {
     std::vector<std::string> selected_names;
 };
 
 /// @brief Represents a VHDL entity declaration.
-struct Entity : NodeBase
+struct Entity final : NodeBase
 {
     std::string name;
     GenericClause generic_clause;
@@ -41,25 +41,25 @@ struct Entity : NodeBase
     std::vector<Declaration> decls;
     std::vector<ConcurrentStatement> stmts;
     std::optional<std::string> end_label;
-    bool has_end_entity_keyword{ false };
+    bool has_end_entity_keyword{false};
 };
 
 /// @brief Represents a VHDL architecture body.
-struct Architecture : NodeBase
+struct Architecture final : NodeBase
 {
     std::string name;
     std::string entity_name;
     std::vector<Declaration> decls;
     std::vector<ConcurrentStatement> stmts;
     std::optional<std::string> end_label;
-    bool has_end_architecture_keyword{ false };
+    bool has_end_architecture_keyword{false};
 };
 
 /// @brief Variant representing the specific unit type
 using LibraryUnit = std::variant<Entity, Architecture>;
 
 /// @brief Struct matching the grammar rule: design_unit : context_clause library_unit
-struct DesignUnit : NodeBase
+struct DesignUnit final : NodeBase
 {
     std::vector<ContextItem> context;
     LibraryUnit unit;

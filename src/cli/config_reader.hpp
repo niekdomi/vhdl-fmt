@@ -23,42 +23,41 @@ struct ConfigReadError final
 class ConfigReader final
 {
   public:
-    explicit ConfigReader(std::optional<std::filesystem::path> config_file_path) :
-      config_file_path_(std::move(config_file_path))
-    {
-    }
+    explicit ConfigReader(std::optional<std::filesystem::path> config_file_path)
+        : config_file_path_(std::move(config_file_path))
+    {}
 
     [[nodiscard]]
     auto readConfigFile() -> std::expected<common::Config, ConfigReadError>;
 
   private:
+    std::optional<std::filesystem::path> config_file_path_;
+
     [[nodiscard]]
-    static auto readLineconfig(const YAML::Node &root_node, const common::LineConfig &defaults)
+    static auto readLineconfig(const YAML::Node& root_node, const common::LineConfig& defaults)
       -> common::LineConfig;
 
     [[nodiscard]]
-    static auto readIndentationStyle(const YAML::Node &root_node,
-                                     const common::IndentationStyle &defaults)
+    static auto readIndentationStyle(const YAML::Node& root_node,
+                                     const common::IndentationStyle& defaults)
       -> common::IndentationStyle;
 
     [[nodiscard]]
-    static auto readEndOfLine(const YAML::Node &root_node, const common::EndOfLine &defaults)
+    static auto readEndOfLine(const YAML::Node& root_node, const common::EndOfLine& defaults)
       -> common::EndOfLine;
 
     [[nodiscard]]
-    static auto readPortMapConfig(const YAML::Node &root_node,
-                                  const common::PortMapConfig &defaults) -> common::PortMapConfig;
+    static auto readPortMapConfig(const YAML::Node& root_node,
+                                  const common::PortMapConfig& defaults) -> common::PortMapConfig;
 
     [[nodiscard]]
-    static auto readDeclarationConfig(const YAML::Node &root_node,
-                                      const common::DeclarationConfig &defaults)
+    static auto readDeclarationConfig(const YAML::Node& root_node,
+                                      const common::DeclarationConfig& defaults)
       -> common::DeclarationConfig;
 
     [[nodiscard]]
-    static auto readCasingConfig(const YAML::Node &root_node, const common::CasingConfig &defaults)
+    static auto readCasingConfig(const YAML::Node& root_node, const common::CasingConfig& defaults)
       -> common::CasingConfig;
-
-    std::optional<std::filesystem::path> config_file_path_;
 };
 
 } // namespace cli

@@ -13,7 +13,7 @@ TEST_CASE("Architecture", "[design_units][architecture]")
 
     SECTION("Header and Footer (Metadata)")
     {
-        const auto *arch = parse_arch(R"(
+        const auto* arch = parse_arch(R"(
             architecture RTL of MyEntity is
             begin
             end architecture RTL;
@@ -29,7 +29,7 @@ TEST_CASE("Architecture", "[design_units][architecture]")
     SECTION("Declarative Part Container")
     {
         // Verify architecture can hold different types of declarations.
-        const auto *arch = parse_arch(R"(
+        const auto* arch = parse_arch(R"(
             architecture Mixed of Test is
                 constant C : integer := 0;
                 signal S : bit;
@@ -40,15 +40,15 @@ TEST_CASE("Architecture", "[design_units][architecture]")
         REQUIRE(arch != nullptr);
         REQUIRE(arch->decls.size() == 3);
 
-        CHECK(std::holds_alternative<ast::ConstantDecl>(arch->decls[0]));
-        CHECK(std::holds_alternative<ast::SignalDecl>(arch->decls[1]));
-        CHECK(std::holds_alternative<ast::ComponentDecl>(arch->decls[2]));
+        CHECK(std::holds_alternative<ast::ConstantDecl>(arch->decls.at(0)));
+        CHECK(std::holds_alternative<ast::SignalDecl>(arch->decls.at(1)));
+        CHECK(std::holds_alternative<ast::ComponentDecl>(arch->decls.at(2)));
     }
 
     SECTION("Statement Part Container")
     {
         // Verify architecture can hold different types of concurrent statements.
-        const auto *arch = parse_arch(R"(
+        const auto* arch = parse_arch(R"(
             architecture Logic of Test is
             begin
                 -- Conditional Assignment
@@ -62,9 +62,9 @@ TEST_CASE("Architecture", "[design_units][architecture]")
         REQUIRE(arch->stmts.size() == 2);
 
         // Check statement 1 (Assignment)
-        CHECK(std::holds_alternative<ast::ConditionalConcurrentAssign>(arch->stmts[0].kind));
+        CHECK(std::holds_alternative<ast::ConditionalConcurrentAssign>(arch->stmts.at(0).kind));
 
         // Check statement 2 (Process)
-        CHECK(std::holds_alternative<ast::Process>(arch->stmts[1].kind));
+        CHECK(std::holds_alternative<ast::Process>(arch->stmts.at(1).kind));
     }
 }

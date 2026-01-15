@@ -10,15 +10,16 @@
 namespace ast {
 
 /// @brief Represents the right-hand side of a signal assignment.
-struct Waveform : NodeBase
+struct Waveform final : NodeBase
 {
-    bool is_unaffected{ false };
+    bool is_unaffected{false};
 
-    struct Element : NodeBase
+    struct Element final : NodeBase
     {
         Expr value;
         std::optional<Expr> after;
     };
+
     std::vector<Element> elements;
 };
 

@@ -40,10 +40,66 @@ option(ENABLE_STATIC_LINKING "Link C++ runtime statically for distribution" OFF)
 if(ENABLE_STATIC_LINKING)
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         message(STATUS "  Static linking: ENABLED (C++ runtime)")
+        # Apply static linking globally
+        add_link_options(
+            -static-libgcc
+            -static-libstdc++
+        )
     else()
         message(WARNING "Static linking is only supported with GCC or Clang")
     endif()
 endif()
+
+# ------------------------------------------------------------------
+# Compiler Flags
+# ------------------------------------------------------------------
+
+# Release optimizations
+add_compile_options(
+    $<$<CONFIG:Release>:-O3>
+    $<$<CONFIG:Release>:-flto=full>
+)
+
+# Release link-time optimizations
+add_link_options($<$<CONFIG:Release>:-flto=full>)
+
+# Warning flags (applies to all targets)
+add_compile_options(
+    # Core
+    -WCL4
+    #
+    -Werror
+    -Wpedantic
+    -Wdeprecated
+    #
+    # Safety
+    -Wnon-virtual-dtor
+    -Wsuggest-override
+    -Wunsafe-buffer-usage
+    -Wexperimental-lifetime-safety
+    -Wconsumed
+    -Wthread-safety
+    -Wformat=2
+    #
+    # Type Safety & Performance
+    -Wconversion
+    -Wcast-align
+    -Wold-style-cast
+    -Wfloat-equal
+    -Wdouble-promotion
+    -Wcast-function-type
+    -Wzero-as-null-pointer-constant
+    #
+    # Logical & Control Flow
+    -Wimplicit-fallthrough
+    -Wshadow-all
+    -Wunreachable-code-aggressive
+    -Wloop-analysis
+    -Wcovered-switch-default
+    #
+    # Cross-Platform
+    -Wpoison-system-directories
+)
 
 # ------------------------------------------------------------------
 # Project Configuration
@@ -120,6 +176,9 @@ set_source_files_properties(
 
 target_include_directories(vhdl_generated SYSTEM PUBLIC ${GENERATED_DIR})
 target_link_libraries(vhdl_generated PUBLIC antlr4_static)
+
+# Disable warnings for generated code
+target_compile_options(vhdl_generated PRIVATE -w)
 
 # ------------------------------------------------------------------
 # Version Header Generation

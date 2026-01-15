@@ -7,7 +7,7 @@ TEST_CASE("TypeDecl: Incomplete", "[builder][type][incomplete]")
 {
     SECTION("Forward declaration")
     {
-        const auto *decl = test_helpers::parseType("type node_t;");
+        const auto* decl = test_helpers::parseType("type node_t;");
         REQUIRE(decl != nullptr);
         REQUIRE(decl->name == "node_t");
 

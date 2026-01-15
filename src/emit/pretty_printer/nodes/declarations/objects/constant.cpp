@@ -8,14 +8,12 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::ConstantDecl &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::ConstantDecl& node) const -> Doc
 {
-    const std::string names = node.names
-                            | std::views::join_with(std::string_view{ ", " })
-                            | std::ranges::to<std::string>();
+    const std::string names =
+      node.names | std::views::join_with(std::string_view{", "}) | std::ranges::to<std::string>();
 
-    Doc result
-      = Doc::keyword(("constant")) & Doc::text(names, AlignmentLevel::NAME) & Doc::text(":");
+    Doc result = Doc::keyword("constant") & Doc::text(names, AlignmentLevel::NAME) & Doc::text(":");
 
     result &= visit(node.subtype);
 

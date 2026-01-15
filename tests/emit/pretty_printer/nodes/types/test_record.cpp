@@ -6,6 +6,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -17,11 +18,11 @@ TEST_CASE("TypeDecl: Record", "[pretty_printer][type][record]")
     SECTION("Simple record (Populated, No Label)")
     {
         ast::RecordElement header{};
-        header.names = { "id" };
+        header.names = {"id"};
         header.subtype.type_mark = "integer";
 
         ast::RecordElement payload{};
-        payload.names = { "data" };
+        payload.names = {"data"};
         payload.subtype.type_mark = "std_logic_vector";
 
         ast::RecordTypeDef record_def{};
@@ -32,12 +33,10 @@ TEST_CASE("TypeDecl: Record", "[pretty_printer][type][record]")
 
         SECTION("Alignment")
         {
-            constexpr auto EXPECTED = "type packet_t is record\n"
-                                      "  id   : integer;\n"
-                                      "  data : std_logic_vector;\n"
-                                      "end record;";
+            const std::string_view expected =
+              "type packet_t is record\n" "  id   : integer;\n" "  data : std_logic_vector;\n" "end record;";
 
-            REQUIRE(emit::test::render(type_decl) == EXPECTED);
+            REQUIRE(emit::test::render(type_decl) == expected);
         }
     }
 
@@ -64,7 +63,7 @@ TEST_CASE("TypeDecl: Record", "[pretty_printer][type][record]")
     SECTION("Populated record (With Label)")
     {
         ast::RecordElement elem{};
-        elem.names = { "val" };
+        elem.names = {"val"};
         elem.subtype.type_mark = "integer";
 
         ast::RecordTypeDef record_def{};
@@ -73,11 +72,10 @@ TEST_CASE("TypeDecl: Record", "[pretty_printer][type][record]")
 
         type_decl.type_def = std::move(record_def);
 
-        constexpr auto EXPECTED = "type packet_t is record\n"
-                                  "  val : integer;\n"
-                                  "end record packet_t;";
+        const std::string_view expected =
+          "type packet_t is record\n" "  val : integer;\n" "end record packet_t;";
 
-        REQUIRE(emit::test::render(type_decl) == EXPECTED);
+        REQUIRE(emit::test::render(type_decl) == expected);
     }
 }
 
@@ -87,7 +85,7 @@ TEST_CASE("RecordElement Rendering", "[pretty_printer][type][record]")
 
     SECTION("Multiple names")
     {
-        elem.names = { "r", "g", "b" };
+        elem.names = {"r", "g", "b"};
         elem.subtype.type_mark = "byte";
 
         REQUIRE(emit::test::render(elem) == "r, g, b : byte;");
@@ -95,16 +93,19 @@ TEST_CASE("RecordElement Rendering", "[pretty_printer][type][record]")
 
     SECTION("Index Constrained element (Parentheses)")
     {
-        elem.names = { "addr" };
+        elem.names = {"addr"};
         elem.subtype.type_mark = "unsigned";
 
         // Constraint: (31 downto 0)
-        auto left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "31" });
-        auto right = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "0" });
+        auto left = std::make_unique<ast::Expr>(ast::TokenExpr{.text = "31"});
+        auto right = std::make_unique<ast::Expr>(ast::TokenExpr{.text = "0"});
 
         ast::IndexConstraint constr{};
-        constr.ranges.children.emplace_back(
-          ast::BinaryExpr{ .left = std::move(left), .op = "downto", .right = std::move(right) });
+        constr.ranges.children.emplace_back(ast::BinaryExpr{
+          .left = std::move(left),
+          .op = "downto",
+          .right = std::move(right),
+        });
         elem.subtype.constraint = ast::Constraint(std::move(constr));
 
         REQUIRE(emit::test::render(elem) == "addr : unsigned(31 downto 0);");
@@ -112,16 +113,19 @@ TEST_CASE("RecordElement Rendering", "[pretty_printer][type][record]")
 
     SECTION("Range Constrained element (Keyword)")
     {
-        elem.names = { "level" };
+        elem.names = {"level"};
         elem.subtype.type_mark = "integer";
 
         // Constraint: range 0 to 255
-        auto left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "0" });
-        auto right = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "255" });
+        auto left = std::make_unique<ast::Expr>(ast::TokenExpr{.text = "0"});
+        auto right = std::make_unique<ast::Expr>(ast::TokenExpr{.text = "255"});
 
         ast::RangeConstraint constr{};
-        constr.range
-          = ast::BinaryExpr{ .left = std::move(left), .op = "to", .right = std::move(right) };
+        constr.range = ast::BinaryExpr{
+          .left = std::move(left),
+          .op = "to",
+          .right = std::move(right),
+        };
         elem.subtype.constraint = ast::Constraint(std::move(constr));
 
         REQUIRE(emit::test::render(elem) == "level : integer range 0 to 255;");

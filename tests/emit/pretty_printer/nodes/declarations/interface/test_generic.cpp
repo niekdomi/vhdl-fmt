@@ -11,29 +11,31 @@ namespace {
 
 auto makeGeneric(std::string name, std::string type, std::string def_val) -> ast::GenericParam
 {
-    return ast::GenericParam{ .names = { std::move(name) },
-                              .subtype = ast::SubtypeIndication{ .type_mark = std::move(type) },
-                              .default_expr = ast::TokenExpr{ .text = std::move(def_val) } };
+    return ast::GenericParam{
+      .names = {std::move(name)},
+      .subtype = ast::SubtypeIndication{.type_mark = std::move(type)},
+      .default_expr = ast::TokenExpr{.text = std::move(def_val)},
+    };
 }
 
 } // namespace
 
 TEST_CASE("GenericParam Rendering", "[pretty_printer][declarations]")
 {
-    ast::GenericParam param{ .subtype{ .type_mark = "integer" } };
+    ast::GenericParam param{.subtype{.type_mark = "integer"}};
 
     SECTION("Basic Declarations")
     {
         SECTION("Single Name")
         {
-            param.names = { "WIDTH" };
+            param.names = {"WIDTH"};
             REQUIRE(emit::test::render(param) == "WIDTH : integer");
         }
 
         SECTION("Multiple Names")
         {
-            param.names = { "WIDTH", "HEIGHT", "DEPTH" };
-            param.subtype = ast::SubtypeIndication{ .type_mark = "positive" }; // Override type
+            param.names = {"WIDTH", "HEIGHT", "DEPTH"};
+            param.subtype = ast::SubtypeIndication{.type_mark = "positive"}; // Override type
             REQUIRE(emit::test::render(param) == "WIDTH, HEIGHT, DEPTH : positive");
         }
     }
@@ -42,16 +44,16 @@ TEST_CASE("GenericParam Rendering", "[pretty_printer][declarations]")
     {
         SECTION("Single Name with Default")
         {
-            param.names = { "WIDTH" };
-            param.default_expr = ast::TokenExpr{ .text = "8" };
+            param.names = {"WIDTH"};
+            param.default_expr = ast::TokenExpr{.text = "8"};
             REQUIRE(emit::test::render(param) == "WIDTH : integer := 8");
         }
 
         SECTION("Multiple Names with Default")
         {
-            param.names = { "A", "B" };
-            param.subtype = ast::SubtypeIndication{ .type_mark = "natural" };
-            param.default_expr = ast::TokenExpr{ .text = "0" };
+            param.names = {"A", "B"};
+            param.subtype = ast::SubtypeIndication{.type_mark = "natural"};
+            param.default_expr = ast::TokenExpr{.text = "0"};
             REQUIRE(emit::test::render(param) == "A, B : natural := 0");
         }
     }

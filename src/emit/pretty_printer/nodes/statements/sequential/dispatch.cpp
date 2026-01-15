@@ -4,7 +4,7 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::SequentialStatement &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::SequentialStatement& node) const -> Doc
 {
     Doc body = visit(node.kind);
 

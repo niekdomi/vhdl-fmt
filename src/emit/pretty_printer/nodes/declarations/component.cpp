@@ -6,12 +6,12 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::ComponentDecl &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::ComponentDecl& node) const -> Doc
 {
-    Doc result = Doc::keyword(("component")) & Doc::text(node.name);
+    Doc result = Doc::keyword("component") & Doc::text(node.name);
 
     if (node.has_is_keyword) {
-        result &= Doc::keyword(("is"));
+        result &= Doc::keyword("is");
     }
 
     if (!std::ranges::empty(node.generic_clause.generics)) {
@@ -22,7 +22,7 @@ auto PrettyPrinter::operator()(const ast::ComponentDecl &node) const -> Doc
         result <<= visit(node.port_clause);
     }
 
-    Doc end_line = Doc::keyword(("end")) & Doc::keyword(("component"));
+    Doc end_line = Doc::keyword("end") & Doc::keyword("component");
     if (node.end_label.has_value()) {
         end_line &= Doc::text(*node.end_label);
     }

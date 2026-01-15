@@ -58,34 +58,34 @@ auto Doc::hardlines(unsigned count) -> Doc
 // Low-Level Combinators (Operators)
 // ========================================================================
 
-auto Doc::operator+(const Doc &other) const -> Doc
+auto Doc::operator+(const Doc& other) const -> Doc
 {
     return Doc(makeConcat(impl_, other.impl_));
 }
 
-auto Doc::operator&(const Doc &other) const -> Doc
+auto Doc::operator&(const Doc& other) const -> Doc
 {
     return *this + Doc::text(" ") + other;
 }
 
-auto Doc::operator/(const Doc &other) const -> Doc
+auto Doc::operator/(const Doc& other) const -> Doc
 {
     return *this + line() + other;
 }
 
-auto Doc::operator|(const Doc &other) const -> Doc
+auto Doc::operator|(const Doc& other) const -> Doc
 {
     return *this + hardline() + other;
 }
 
-auto Doc::operator<<(const Doc &other) const -> Doc
+auto Doc::operator<<(const Doc& other) const -> Doc
 {
     // *this + (line() + other).nest()
     auto nested = Doc(makeNest(makeConcat(line().impl_, other.impl_)));
     return *this + nested;
 }
 
-auto Doc::hardIndent(const Doc &other) const -> Doc
+auto Doc::hardIndent(const Doc& other) const -> Doc
 {
     // *this + (hardline() + other).nest()
     auto nested = Doc(makeNest(makeConcat(hardline().impl_, other.impl_)));
@@ -96,31 +96,31 @@ auto Doc::hardIndent(const Doc &other) const -> Doc
 // Compound Assignment Operators
 // ========================================================================
 
-auto Doc::operator+=(const Doc &other) -> Doc &
+auto Doc::operator+=(const Doc& other) -> Doc&
 {
     *this = *this + other;
     return *this;
 }
 
-auto Doc::operator&=(const Doc &other) -> Doc &
+auto Doc::operator&=(const Doc& other) -> Doc&
 {
     *this = *this & other;
     return *this;
 }
 
-auto Doc::operator/=(const Doc &other) -> Doc &
+auto Doc::operator/=(const Doc& other) -> Doc&
 {
     *this = *this / other;
     return *this;
 }
 
-auto Doc::operator|=(const Doc &other) -> Doc &
+auto Doc::operator|=(const Doc& other) -> Doc&
 {
     *this = *this | other;
     return *this;
 }
 
-auto Doc::operator<<=(const Doc &other) -> Doc &
+auto Doc::operator<<=(const Doc& other) -> Doc&
 {
     *this = *this << other;
     return *this;
@@ -130,22 +130,22 @@ auto Doc::operator<<=(const Doc &other) -> Doc &
 // High-Level Layout Patterns
 // ========================================================================
 
-auto Doc::bracket(const Doc &left, const Doc &inner, const Doc &right) -> Doc
+auto Doc::bracket(const Doc& left, const Doc& inner, const Doc& right) -> Doc
 {
     return (left << inner) / right;
 }
 
-auto Doc::align(const Doc &doc) -> Doc
+auto Doc::align(const Doc& doc) -> Doc
 {
     return Doc(makeAlign(doc.impl_));
 }
 
-auto Doc::group(const Doc &doc) -> Doc
+auto Doc::group(const Doc& doc) -> Doc
 {
     return Doc(makeUnion(flatten(doc.impl_), doc.impl_));
 }
 
-auto Doc::hang(const Doc &doc) -> Doc
+auto Doc::hang(const Doc& doc) -> Doc
 {
     return Doc(makeHang(doc.impl_));
 }

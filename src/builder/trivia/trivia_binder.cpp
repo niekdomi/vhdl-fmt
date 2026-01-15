@@ -16,17 +16,17 @@
 
 namespace builder {
 
-TriviaBinder::TriviaBinder(antlr4::CommonTokenStream &ts) : tokens_(ts), used_(ts.size(), false) {}
+TriviaBinder::TriviaBinder(antlr4::CommonTokenStream& ts) : tokens_(ts), used_(ts.size(), false) {}
 
-auto TriviaBinder::extractTrivia(std::span<antlr4::Token *const> range) -> std::vector<ast::Trivia>
+auto TriviaBinder::extractTrivia(std::span<antlr4::Token* const> range) -> std::vector<ast::Trivia>
 {
     constexpr unsigned BREAK_THRESHOLD = 2; // Minimum newlines to register a Break trivia
 
     std::vector<ast::Trivia> result{};
 
-    unsigned int pending_newlines{ 0 };
+    unsigned int pending_newlines{0};
 
-    for (auto *token : range | std::views::filter([this](auto *t) { return !isUsed(t); })) {
+    for (auto* token : range | std::views::filter([this](auto* t) { return !isUsed(t); })) {
         markAsUsed(token);
 
         if (isNewline(token)) {
@@ -36,22 +36,22 @@ auto TriviaBinder::extractTrivia(std::span<antlr4::Token *const> range) -> std::
 
         if (isComment(token)) {
             if (pending_newlines >= BREAK_THRESHOLD) {
-                result.emplace_back(ast::Break{ .blank_lines = pending_newlines - 1 });
+                result.emplace_back(ast::Break{.blank_lines = pending_newlines - 1});
             }
             pending_newlines = 0;
 
-            result.emplace_back(ast::Comment{ token->getText() });
+            result.emplace_back(ast::Comment{token->getText()});
         }
     }
 
     if (pending_newlines >= BREAK_THRESHOLD) {
-        result.emplace_back(ast::Break{ .blank_lines = pending_newlines - 1 });
+        result.emplace_back(ast::Break{.blank_lines = pending_newlines - 1});
     }
 
     return result;
 }
 
-auto TriviaBinder::findContextEnd(const antlr4::ParserRuleContext &ctx) const -> std::size_t
+auto TriviaBinder::findContextEnd(const antlr4::ParserRuleContext& ctx) const -> std::size_t
 {
     const auto stop = ctx.getStop()->getTokenIndex();
 
@@ -68,7 +68,7 @@ auto TriviaBinder::findContextEnd(const antlr4::ParserRuleContext &ctx) const ->
     return stop;
 }
 
-void TriviaBinder::bind(ast::NodeBase &node, const antlr4::ParserRuleContext &ctx)
+void TriviaBinder::bind(ast::NodeBase& node, const antlr4::ParserRuleContext& ctx)
 {
     const auto start_idx = ctx.getStart()->getTokenIndex();
     const auto stop_idx = findContextEnd(ctx);
@@ -76,8 +76,8 @@ void TriviaBinder::bind(ast::NodeBase &node, const antlr4::ParserRuleContext &ct
     // Extract Inline (Immediate Right of stop)
     std::optional<ast::Comment> inline_comment{};
     if (stop_idx + 1 < tokens_.size()) {
-        if (const auto *token = tokens_.get(stop_idx + 1); isComment(token) && !isUsed(token)) {
-            inline_comment = ast::Comment{ token->getText() };
+        if (const auto* token = tokens_.get(stop_idx + 1); isComment(token) && !isUsed(token)) {
+            inline_comment = ast::Comment{token->getText()};
             markAsUsed(token);
         }
     }
@@ -87,21 +87,22 @@ void TriviaBinder::bind(ast::NodeBase &node, const antlr4::ParserRuleContext &ct
 
     // Commit to Node
     if (!leading.empty() || !trailing.empty() || inline_comment.has_value()) {
-        node.trivia = std::make_unique<ast::NodeTrivia>(
-          ast::NodeTrivia{ .leading = std::move(leading),
-                           .trailing = std::move(trailing),
-                           .inline_comment = std::move(inline_comment) });
+        node.trivia = std::make_unique<ast::NodeTrivia>(ast::NodeTrivia{
+          .leading = std::move(leading),
+          .trailing = std::move(trailing),
+          .inline_comment = std::move(inline_comment),
+        });
     }
 }
 
-auto TriviaBinder::isUsed(const antlr4::Token *token) const -> bool
+auto TriviaBinder::isUsed(const antlr4::Token* token) const -> bool
 {
-    return used_[token->getTokenIndex()];
+    return used_.at(token->getTokenIndex());
 }
 
-auto TriviaBinder::markAsUsed(const antlr4::Token *token) -> void
+auto TriviaBinder::markAsUsed(const antlr4::Token* token) -> void
 {
-    used_[token->getTokenIndex()] = true;
+    used_.at(token->getTokenIndex()) = true;
 }
 
 } // namespace builder

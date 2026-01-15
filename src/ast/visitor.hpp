@@ -17,7 +17,7 @@ class VisitorBase
     /// @brief Visit a concrete node with optional additional arguments.
     template<typename Self, typename T, typename... Args>
         requires std::is_base_of_v<NodeBase, T>
-    auto visit(this const Self &self, const T &node, Args &&...args) -> ReturnType
+    auto visit(this const Self& self, const T& node, Args&&... args) -> ReturnType
     {
         if constexpr (std::is_void_v<ReturnType>) {
             self(node, std::forward<Args>(args)...);
@@ -28,10 +28,10 @@ class VisitorBase
 
     /// @brief Visit a variant node with optional additional arguments.
     template<typename Self, typename... Ts, typename... Args>
-    auto visit(this const Self &self, const std::variant<Ts...> &node, Args &&...args) -> ReturnType
+    auto visit(this const Self& self, const std::variant<Ts...>& node, Args&&... args) -> ReturnType
     {
         return std::visit(
-          [&](const auto &n) -> ReturnType { return self.visit(n, std::forward<Args>(args)...); },
+          [&](const auto& n) -> ReturnType { return self.visit(n, std::forward<Args>(args)...); },
           node);
     }
 };

@@ -8,16 +8,16 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::PortClause &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::PortClause& node) const -> Doc
 {
     if (std::ranges::empty(node.ports)) {
         return Doc::empty();
     }
 
-    const Doc opener = Doc::keyword(("port")) & Doc::text("(");
+    const Doc opener = Doc::keyword("port") & Doc::text("(");
     const Doc closer = Doc::text(");");
 
-    const Doc ports = joinMap(node.ports, Doc::line(), [&](const auto &port) {
+    const Doc ports = joinMap(node.ports, Doc::line(), [&](const auto& port) {
         const bool is_last = (&port == &node.ports.back());
         return visit(port, is_last);
     });
@@ -27,11 +27,10 @@ auto PrettyPrinter::operator()(const ast::PortClause &node) const -> Doc
     return Doc::group(Doc::bracket(opener, result, closer));
 }
 
-auto PrettyPrinter::operator()(const ast::Port &node, const bool is_last) const -> Doc
+auto PrettyPrinter::operator()(const ast::Port& node, const bool is_last) const -> Doc
 {
-    const std::string names = node.names
-                            | std::views::join_with(std::string_view{ ", " })
-                            | std::ranges::to<std::string>();
+    const std::string names =
+      node.names | std::views::join_with(std::string_view{", "}) | std::ranges::to<std::string>();
 
     Doc result = Doc::text(names, AlignmentLevel::NAME)
                & Doc::text(":")

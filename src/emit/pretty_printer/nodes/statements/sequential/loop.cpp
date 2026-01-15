@@ -4,35 +4,35 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::ForLoop &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::ForLoop& node) const -> Doc
 {
-    const Doc head = Doc::keyword(("for"))
+    const Doc head = Doc::keyword("for")
                    & Doc::text(node.iterator)
-                   & Doc::keyword(("in"))
+                   & Doc::keyword("in")
                    & visit(node.range)
-                   & Doc::keyword(("loop"));
+                   & Doc::keyword("loop");
 
     const Doc body = join(node.body, Doc::line());
-    const Doc end = Doc::keyword(("end")) & Doc::keyword(("loop")) + Doc::text(";");
+    const Doc end = Doc::keyword("end") & Doc::keyword("loop") + Doc::text(";");
 
     return Doc::bracket(head, body, end);
 }
 
-auto PrettyPrinter::operator()(const ast::WhileLoop &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::WhileLoop& node) const -> Doc
 {
-    const Doc head = Doc::keyword(("while")) & visit(node.condition) & Doc::keyword(("loop"));
+    const Doc head = Doc::keyword("while") & visit(node.condition) & Doc::keyword("loop");
     const Doc body = join(node.body, Doc::line());
-    const Doc end = Doc::keyword(("end")) & Doc::keyword(("loop")) + Doc::text(";");
+    const Doc end = Doc::keyword("end") & Doc::keyword("loop") + Doc::text(";");
 
     return Doc::bracket(head, body, end);
 }
 
-auto PrettyPrinter::operator()(const ast::Loop &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::Loop& node) const -> Doc
 {
-    const Doc head = Doc::keyword(("loop"));
+    const Doc head = Doc::keyword("loop");
 
     const Doc body = join(node.body, Doc::line());
-    const Doc end = Doc::keyword(("end")) & Doc::keyword(("loop")) + Doc::text(";");
+    const Doc end = Doc::keyword("end") & Doc::keyword("loop") + Doc::text(";");
 
     return Doc::bracket(head, body, end);
 }

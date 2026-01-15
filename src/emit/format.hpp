@@ -13,10 +13,10 @@ namespace emit {
 /// @brief High-level facade to format an AST node into a string.
 template<typename T>
     requires std::is_base_of_v<ast::NodeBase, T>
-auto format(const T &root, const common::Config &config) -> std::string
+auto format(const T& root, const common::Config& config) -> std::string
 {
     const auto doc = PrettyPrinter{}.visit(root);
-    return Renderer{ config }.render(doc);
+    return Renderer{config}.render(doc);
 }
 
 } // namespace emit

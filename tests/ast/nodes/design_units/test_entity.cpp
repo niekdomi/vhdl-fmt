@@ -9,7 +9,7 @@ TEST_CASE("Entity", "[design_units][entity]")
 
     SECTION("Minimal Entity (Structure)")
     {
-        const auto *entity = parse_entity("entity Minimal is end Minimal;");
+        const auto* entity = parse_entity("entity Minimal is end Minimal;");
         REQUIRE(entity != nullptr);
 
         CHECK(entity->name == "Minimal");
@@ -22,7 +22,7 @@ TEST_CASE("Entity", "[design_units][entity]")
 
     SECTION("Entity with 'end entity' keyword")
     {
-        const auto *entity = parse_entity("entity KW_Test is end entity;");
+        const auto* entity = parse_entity("entity KW_Test is end entity;");
         REQUIRE(entity != nullptr);
 
         CHECK(entity->name == "KW_Test");
@@ -33,7 +33,7 @@ TEST_CASE("Entity", "[design_units][entity]")
     SECTION("Entity with Interface Lists (Container Check)")
     {
         // Verify that the entity parser correctly captures the clauses.
-        const auto *entity = parse_entity(R"(
+        const auto* entity = parse_entity(R"(
             entity InterfaceTest is
                 generic (G : integer);
                 port (clk : in bit);
@@ -43,10 +43,10 @@ TEST_CASE("Entity", "[design_units][entity]")
 
         // Verify Generic Clause presence
         REQUIRE(entity->generic_clause.generics.size() == 1);
-        CHECK(entity->generic_clause.generics[0].names[0] == "G");
+        CHECK(entity->generic_clause.generics.at(0).names.at(0) == "G");
 
         // Verify Port Clause presence
         REQUIRE(entity->port_clause.ports.size() == 1);
-        CHECK(entity->port_clause.ports[0].names[0] == "clk");
+        CHECK(entity->port_clause.ports.at(0).names.at(0) == "clk");
     }
 }
