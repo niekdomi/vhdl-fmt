@@ -12,16 +12,20 @@ namespace {
 // Helper to reduce boilerplate for generics and ports
 auto makeGeneric(std::string name, std::string type, std::string def_val) -> ast::GenericParam
 {
-    return ast::GenericParam{.names = {std::move(name)},
-                             .subtype = ast::SubtypeIndication{.type_mark = std::move(type)},
-                             .default_expr = ast::TokenExpr{.text = std::move(def_val)}};
+    return ast::GenericParam{
+      .names = {std::move(name)},
+      .subtype = ast::SubtypeIndication{.type_mark = std::move(type)},
+      .default_expr = ast::TokenExpr{.text = std::move(def_val)},
+    };
 }
 
 auto makePort(std::string name, std::string mode, std::string type) -> ast::Port
 {
-    return ast::Port{.names = {std::move(name)},
-                     .mode = std::move(mode),
-                     .subtype = ast::SubtypeIndication{.type_mark = std::move(type)}};
+    return ast::Port{
+      .names = {std::move(name)},
+      .mode = std::move(mode),
+      .subtype = ast::SubtypeIndication{.type_mark = std::move(type)},
+    };
 }
 } // namespace
 

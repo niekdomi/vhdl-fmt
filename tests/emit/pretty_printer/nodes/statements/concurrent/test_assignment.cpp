@@ -49,11 +49,16 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
         assign.target = token("data_out");
 
         // Waveform 1: '1' when en = '1'
-        assign.waveforms.push_back(
-          {.waveform = makeWave(token("'1'")), .condition = binary("en", "=", "'1'")});
+        assign.waveforms.push_back({
+          .waveform = makeWave(token("'1'")),
+          .condition = binary("en", "=", "'1'"),
+        });
 
         // Waveform 2: '0' (else)
-        assign.waveforms.push_back({.waveform = makeWave(token("'0'")), .condition = std::nullopt});
+        assign.waveforms.push_back({
+          .waveform = makeWave(token("'0'")),
+          .condition = std::nullopt,
+        });
 
         SECTION("Fits on line (Flat)")
         {
@@ -114,9 +119,15 @@ TEST_CASE("Concurrent Assignments", "[pretty_printer][assignments]")
         ast::ConditionalConcurrentAssign assign{};
         assign.target = token("data_out");
 
-        assign.waveforms.push_back(
-          {.waveform = makeWave(token("data_in")), .condition = binary("sel", "=", "'1'")});
-        assign.waveforms.push_back({.waveform = makeWave(token("'0'")), .condition = std::nullopt});
+        assign.waveforms.push_back({
+          .waveform = makeWave(token("data_in")),
+          .condition = binary("sel", "=", "'1'"),
+        });
+
+        assign.waveforms.push_back({
+          .waveform = makeWave(token("'0'")),
+          .condition = std::nullopt,
+        });
 
         // 2. Wrapper
         ast::ConcurrentStatement wrapper{};

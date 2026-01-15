@@ -26,9 +26,11 @@ TEST_CASE("Entity Rendering", "[pretty_printer][design_units][entity]")
 
         SECTION("Generics Only")
         {
-            ast::GenericParam param{.names = {"WIDTH"},
-                                    .subtype = ast::SubtypeIndication{.type_mark = "positive"},
-                                    .default_expr = ast::TokenExpr{.text = "8"}};
+            ast::GenericParam param{
+              .names = {"WIDTH"},
+              .subtype = ast::SubtypeIndication{.type_mark = "positive"},
+              .default_expr = ast::TokenExpr{.text = "8"},
+            };
             entity.generic_clause.generics.emplace_back(std::move(param));
 
             const std::string result = emit::test::render(entity);
@@ -39,14 +41,16 @@ TEST_CASE("Entity Rendering", "[pretty_printer][design_units][entity]")
 
         SECTION("Ports Only")
         {
-            entity.port_clause.ports.emplace_back(
-              ast::Port{.names = {"clk"},
-                        .mode = "in",
-                        .subtype = ast::SubtypeIndication{.type_mark = "std_logic"}});
-            entity.port_clause.ports.emplace_back(
-              ast::Port{.names = {"count"},
-                        .mode = "out",
-                        .subtype = ast::SubtypeIndication{.type_mark = "natural"}});
+            entity.port_clause.ports.emplace_back(ast::Port{
+              .names = {"clk"},
+              .mode = "in",
+              .subtype = ast::SubtypeIndication{.type_mark = "std_logic"},
+            });
+            entity.port_clause.ports.emplace_back(ast::Port{
+              .names = {"count"},
+              .mode = "out",
+              .subtype = ast::SubtypeIndication{.type_mark = "natural"},
+            });
 
             const std::string result = emit::test::render(entity);
             const std::string_view expected =
@@ -57,25 +61,31 @@ TEST_CASE("Entity Rendering", "[pretty_printer][design_units][entity]")
         SECTION("Generics and Ports with Constraints")
         {
             // Generic
-            entity.generic_clause.generics.emplace_back(
-              ast::GenericParam{.names = {"DEPTH"},
-                                .subtype = ast::SubtypeIndication{.type_mark = "positive"},
-                                .default_expr = ast::TokenExpr{.text = "16"}});
+            entity.generic_clause.generics.emplace_back(ast::GenericParam{
+              .names = {"DEPTH"},
+              .subtype = ast::SubtypeIndication{.type_mark = "positive"},
+              .default_expr = ast::TokenExpr{.text = "16"},
+            });
 
             // Port Constraint Construction
             auto left = std::make_unique<ast::Expr>(ast::TokenExpr{.text = "7"});
             auto right = std::make_unique<ast::Expr>(ast::TokenExpr{.text = "0"});
             ast::IndexConstraint idx_constraint;
-            idx_constraint.ranges.children.emplace_back(
-              ast::BinaryExpr{.left = std::move(left), .op = "downto", .right = std::move(right)});
+            idx_constraint.ranges.children.emplace_back(ast::BinaryExpr{
+              .left = std::move(left),
+              .op = "downto",
+              .right = std::move(right),
+            });
 
             // Port
             entity.port_clause.ports.emplace_back(ast::Port{
-              .names = {"data_in"},
+              .names = {"data_in"                      },
               .mode = "in",
               .subtype =
-                ast::SubtypeIndication{.type_mark = "std_logic_vector",
-                        .constraint = ast::Constraint(std::move(idx_constraint))}
+                ast::SubtypeIndication{
+                        .type_mark = "std_logic_vector",
+                        .constraint = ast::Constraint(std::move(idx_constraint)),
+                        },
             });
 
             const std::string result = emit::test::render(entity);
@@ -155,10 +165,11 @@ TEST_CASE("Design Unit with Context Clauses", "[pretty_printer][design_units][co
 
         // Modify the entity inside the variant
         auto& entity = std::get<ast::Entity>(du.unit);
-        entity.port_clause.ports.emplace_back(
-          ast::Port{.names = {"clk"},
-                    .mode = "in",
-                    .subtype = ast::SubtypeIndication{.type_mark = "std_logic"}});
+        entity.port_clause.ports.emplace_back(ast::Port{
+          .names = {"clk"},
+          .mode = "in",
+          .subtype = ast::SubtypeIndication{.type_mark = "std_logic"},
+        });
 
         const std::string result = emit::test::render(du);
         const std::string_view expected =

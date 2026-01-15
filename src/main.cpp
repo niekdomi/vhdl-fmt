@@ -10,9 +10,8 @@
 #include <exception>
 #include <fstream>
 #include <iostream>
-#include <span>
 #include <ranges>
-#include <next>
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -24,7 +23,6 @@ auto main(int argc, char* argv[]) -> int
         const cli::ArgumentParser argparser{
           std::ranges::subrange{argv, std::next(argv, argc)}
         };
-
 
         cli::ConfigReader config_reader{argparser.getConfigPath()};
         const auto config = config_reader.readConfigFile().value();

@@ -12,9 +12,11 @@ namespace {
 
 auto makePort(std::string name, std::string mode, std::string type) -> ast::Port
 {
-    return ast::Port{.names = {std::move(name)},
-                     .mode = std::move(mode),
-                     .subtype = ast::SubtypeIndication{.type_mark = std::move(type)}};
+    return ast::Port{
+      .names = {std::move(name)},
+      .mode = std::move(mode),
+      .subtype = ast::SubtypeIndication{.type_mark = std::move(type)},
+    };
 }
 
 } // namespace
@@ -23,8 +25,10 @@ TEST_CASE("Trivia Rendering", "[pretty_printer][trivia]")
 {
     SECTION("Standard Nodes (Declarations)")
     {
-        ast::GenericParam param{.names = {"WIDTH"},
-                                .subtype = ast::SubtypeIndication{.type_mark = "integer"}};
+        ast::GenericParam param{
+          .names = {"WIDTH"},
+          .subtype = ast::SubtypeIndication{.type_mark = "integer"},
+        };
 
         SECTION("Leading Trivia")
         {
@@ -103,8 +107,10 @@ TEST_CASE("Trivia Rendering", "[pretty_printer][trivia]")
         SECTION("Interleaved Trivia")
         {
             // Test [Comment] -> [Break] -> [Comment] -> [Break(Last)]
-            ast::GenericParam param{.names = {"WIDTH"},
-                                    .subtype = ast::SubtypeIndication{.type_mark = "integer"}};
+            ast::GenericParam param{
+              .names = {"WIDTH"},
+              .subtype = ast::SubtypeIndication{.type_mark = "integer"},
+            };
 
             param.addTrailing(ast::Comment{"-- Step 1"});
             param.addTrailing(ast::Break{});

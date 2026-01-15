@@ -8,8 +8,10 @@ TEST_CASE("UnaryExpr Rendering", "[pretty_printer][expressions][unary]")
 {
     SECTION("Negation")
     {
-        const ast::UnaryExpr unary{.op{"-"},
-                                   .value{std::make_unique<ast::Expr>(ast::TokenExpr{.text{"x"}})}};
+        const ast::UnaryExpr unary{
+          .op{"-"},
+          .value{std::make_unique<ast::Expr>(ast::TokenExpr{.text{"x"}})},
+        };
 
         REQUIRE(emit::test::render(unary) == "-x");
     }
@@ -17,7 +19,9 @@ TEST_CASE("UnaryExpr Rendering", "[pretty_printer][expressions][unary]")
     SECTION("Unary plus")
     {
         const ast::UnaryExpr unary{
-          .op{"+"}, .value{std::make_unique<ast::Expr>(ast::TokenExpr{.text{"42"}})}};
+          .op{"+"},
+          .value{std::make_unique<ast::Expr>(ast::TokenExpr{.text{"42"}})},
+        };
 
         REQUIRE(emit::test::render(unary) == "+42");
     }
@@ -25,7 +29,9 @@ TEST_CASE("UnaryExpr Rendering", "[pretty_printer][expressions][unary]")
     SECTION("Logical not")
     {
         const ast::UnaryExpr unary{
-          .op{"not"}, .value{std::make_unique<ast::Expr>(ast::TokenExpr{.text{"ready"}})}};
+          .op{"not"},
+          .value{std::make_unique<ast::Expr>(ast::TokenExpr{.text{"ready"}})},
+        };
 
         REQUIRE(emit::test::render(unary) == "not ready");
     }

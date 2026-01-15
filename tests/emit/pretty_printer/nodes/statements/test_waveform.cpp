@@ -23,8 +23,10 @@ auto makeAssign(std::string target) -> ast::SignalAssign
 // Helper: Creates a waveform element (value + optional after clause)
 auto makeElem(std::string value, std::string after) -> ast::Waveform::Element
 {
-    ast::Waveform::Element elem{.value = ast::TokenExpr{.text = std::move(value)},
-                                .after = ast::TokenExpr{.text = std::move(after)}};
+    ast::Waveform::Element elem{
+      .value = ast::TokenExpr{.text = std::move(value)},
+      .after = ast::TokenExpr{.text = std::move(after)},
+    };
     return elem;
 }
 

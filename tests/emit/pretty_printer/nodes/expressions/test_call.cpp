@@ -11,7 +11,8 @@ TEST_CASE("CallExpr Rendering", "[pretty_printer][expressions][call]")
     {
         ast::CallExpr call{
           .callee{std::make_unique<ast::Expr>(ast::TokenExpr{.text{"rising_edge"}})},
-          .args{std::make_unique<ast::GroupExpr>()}};
+          .args{std::make_unique<ast::GroupExpr>()},
+        };
 
         call.args->children.emplace_back(ast::TokenExpr{.text{"clk"}});
 
@@ -20,8 +21,10 @@ TEST_CASE("CallExpr Rendering", "[pretty_printer][expressions][call]")
 
     SECTION("Multiple arguments")
     {
-        ast::CallExpr call{.callee{std::make_unique<ast::Expr>(ast::TokenExpr{.text{"resize"}})},
-                           .args{std::make_unique<ast::GroupExpr>()}};
+        ast::CallExpr call{
+          .callee{std::make_unique<ast::Expr>(ast::TokenExpr{.text{"resize"}})},
+          .args{std::make_unique<ast::GroupExpr>()},
+        };
 
         call.args->children.emplace_back(ast::TokenExpr{.text{"data"}});
         call.args->children.emplace_back(ast::TokenExpr{.text{"16"}});
@@ -33,12 +36,15 @@ TEST_CASE("CallExpr Rendering", "[pretty_printer][expressions][call]")
     {
         ast::CallExpr inner{
           .callee{std::make_unique<ast::Expr>(ast::TokenExpr{.text{"get_array"}})},
-          .args{std::make_unique<ast::GroupExpr>()}};
+          .args{std::make_unique<ast::GroupExpr>()},
+        };
 
         inner.args->children.emplace_back(ast::TokenExpr{.text{"i"}});
 
-        ast::CallExpr outer{.callee{std::make_unique<ast::Expr>(std::move(inner))},
-                            .args{std::make_unique<ast::GroupExpr>()}};
+        ast::CallExpr outer{
+          .callee{std::make_unique<ast::Expr>(std::move(inner))},
+          .args{std::make_unique<ast::GroupExpr>()},
+        };
 
         outer.args->children.emplace_back(ast::TokenExpr{.text{"j"}});
 
@@ -47,14 +53,17 @@ TEST_CASE("CallExpr Rendering", "[pretty_printer][expressions][call]")
 
     SECTION("Nested function call as argument")
     {
-        ast::CallExpr inner{.callee{std::make_unique<ast::Expr>(ast::TokenExpr{.text{"unsigned"}})},
-                            .args{std::make_unique<ast::GroupExpr>()}};
+        ast::CallExpr inner{
+          .callee{std::make_unique<ast::Expr>(ast::TokenExpr{.text{"unsigned"}})},
+          .args{std::make_unique<ast::GroupExpr>()},
+        };
 
         inner.args->children.emplace_back(ast::TokenExpr{.text{"sig"}});
 
         ast::CallExpr outer{
           .callee{std::make_unique<ast::Expr>(ast::TokenExpr{.text{"to_integer"}})},
-          .args{std::make_unique<ast::GroupExpr>()}};
+          .args{std::make_unique<ast::GroupExpr>()},
+        };
 
         outer.args->children.emplace_back(std::move(inner));
 

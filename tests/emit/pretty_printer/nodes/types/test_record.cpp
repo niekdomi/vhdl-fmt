@@ -5,8 +5,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <memory>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -101,8 +101,11 @@ TEST_CASE("RecordElement Rendering", "[pretty_printer][type][record]")
         auto right = std::make_unique<ast::Expr>(ast::TokenExpr{.text = "0"});
 
         ast::IndexConstraint constr{};
-        constr.ranges.children.emplace_back(
-          ast::BinaryExpr{.left = std::move(left), .op = "downto", .right = std::move(right)});
+        constr.ranges.children.emplace_back(ast::BinaryExpr{
+          .left = std::move(left),
+          .op = "downto",
+          .right = std::move(right),
+        });
         elem.subtype.constraint = ast::Constraint(std::move(constr));
 
         REQUIRE(emit::test::render(elem) == "addr : unsigned(31 downto 0);");
@@ -118,8 +121,11 @@ TEST_CASE("RecordElement Rendering", "[pretty_printer][type][record]")
         auto right = std::make_unique<ast::Expr>(ast::TokenExpr{.text = "255"});
 
         ast::RangeConstraint constr{};
-        constr.range =
-          ast::BinaryExpr{.left = std::move(left), .op = "to", .right = std::move(right)};
+        constr.range = ast::BinaryExpr{
+          .left = std::move(left),
+          .op = "to",
+          .right = std::move(right),
+        };
         elem.subtype.constraint = ast::Constraint(std::move(constr));
 
         REQUIRE(emit::test::render(elem) == "level : integer range 0 to 255;");

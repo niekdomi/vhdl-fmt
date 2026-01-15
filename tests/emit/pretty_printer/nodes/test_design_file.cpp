@@ -43,7 +43,7 @@ TEST_CASE("DesignFile Rendering", "[pretty_printer][design_file]")
               .unit = ast::Architecture{.name = "rtl",
                                         .entity_name = "processor",
                                         .end_label = "rtl",
-                                        .has_end_architecture_keyword = true}
+                                        .has_end_architecture_keyword = true},
             });
 
             const std::string result = emit::test::render(file);
@@ -59,18 +59,21 @@ TEST_CASE("DesignFile Rendering", "[pretty_printer][design_file]")
         {
             // 1. Entity
             ast::Entity entity{.name = "counter"};
-            entity.port_clause.ports.emplace_back(
-              ast::Port{.names = {"clk"},
-                        .mode = "in",
-                        .subtype = ast::SubtypeIndication{.type_mark = "std_logic"}});
+            entity.port_clause.ports.emplace_back(ast::Port{
+              .names = {"clk"},
+              .mode = "in",
+              .subtype = ast::SubtypeIndication{.type_mark = "std_logic"},
+            });
             entity.end_label = "counter";
             entity.has_end_entity_keyword = true;
 
             // 2. Architecture
-            ast::Architecture arch{.name = "rtl",
-                                   .entity_name = "counter",
-                                   .end_label = "rtl",
-                                   .has_end_architecture_keyword = true};
+            ast::Architecture arch{
+              .name = "rtl",
+              .entity_name = "counter",
+              .end_label = "rtl",
+              .has_end_architecture_keyword = true,
+            };
 
             file.units.emplace_back(ast::DesignUnit{.unit = std::move(entity)});
             file.units.emplace_back(ast::DesignUnit{.unit = std::move(arch)});
@@ -86,21 +89,29 @@ TEST_CASE("DesignFile Rendering", "[pretty_printer][design_file]")
             // Entity 1
             file.units.emplace_back(ast::DesignUnit{
               .unit = ast::Entity{
-                                  .name = "entity1", .end_label = "entity1", .has_end_entity_keyword = true}
+                                  .name = "entity1",
+                                  .end_label = "entity1",
+                                  .has_end_entity_keyword = true,
+                                  }
             });
 
             // Entity 2
             file.units.emplace_back(ast::DesignUnit{
               .unit = ast::Entity{
-                                  .name = "entity2", .end_label = "entity2", .has_end_entity_keyword = true}
+                                  .name = "entity2",
+                                  .end_label = "entity2",
+                                  .has_end_entity_keyword = true,
+                                  }
             });
 
             // Arch for Entity 1
             file.units.emplace_back(ast::DesignUnit{
-              .unit = ast::Architecture{.name = "behavioral",
+              .unit = ast::Architecture{
+                                        .name = "behavioral",
                                         .entity_name = "entity1",
                                         .end_label = "behavioral",
-                                        .has_end_architecture_keyword = true}
+                                        .has_end_architecture_keyword = true,
+                                        }
             });
 
             const std::string result = emit::test::render(file);

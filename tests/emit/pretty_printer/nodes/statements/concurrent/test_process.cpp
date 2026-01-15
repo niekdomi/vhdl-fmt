@@ -44,8 +44,10 @@ TEST_CASE("Process Rendering", "[pretty_printer][process]")
         proc.decls.emplace_back(std::move(constant));
 
         ast::SequentialStatement body_stmt{};
-        body_stmt.kind = ast::VariableAssign{.target = ast::TokenExpr{.text = "counter"},
-                                             .value = ast::TokenExpr{.text = "0"}};
+        body_stmt.kind = ast::VariableAssign{
+          .target = ast::TokenExpr{.text = "counter"},
+          .value = ast::TokenExpr{.text = "0"},
+        };
         proc.body.push_back(std::move(body_stmt));
 
         const std::string_view expected =
@@ -73,8 +75,10 @@ TEST_CASE("Process Rendering", "[pretty_printer][process]")
         ast::Process proc{.sensitivity_list = {"clk"}};
 
         ast::SequentialStatement body_stmt{};
-        body_stmt.kind = ast::VariableAssign{.target = ast::TokenExpr{.text = "state"},
-                                             .value = ast::TokenExpr{.text = "IDLE"}};
+        body_stmt.kind = ast::VariableAssign{
+          .target = ast::TokenExpr{.text = "state"},
+          .value = ast::TokenExpr{.text = "IDLE"},
+        };
         proc.body.push_back(std::move(body_stmt));
 
         ast::ConcurrentStatement wrapper{};
