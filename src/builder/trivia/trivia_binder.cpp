@@ -105,3 +105,4 @@ auto TriviaBinder::markAsUsed(const antlr4::Token* token) -> void
 }
 
 } // namespace builder
+

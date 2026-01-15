@@ -8,22 +8,16 @@
 namespace builder {
 
 [[nodiscard]]
-static auto isComment(const antlr4::Token* t) noexcept -> bool
+inline auto isComment(const antlr4::Token* t) noexcept -> bool
 {
     return (t != nullptr) && (t->getChannel() == vhdlLexer::COMMENTS);
 }
 
 [[nodiscard]]
-static auto isNewline(const antlr4::Token* t) noexcept -> bool
+inline auto isNewline(const antlr4::Token* t) noexcept -> bool
 {
     return (t != nullptr) && (t->getChannel() == vhdlLexer::NEWLINES);
 }
-
-// [[nodiscard]]
-// static auto isDefault(const antlr4::Token *t) noexcept -> bool
-// {
-//     return (t != nullptr) && (t->getChannel() == vhdlLexer::DEFAULT_TOKEN_CHANNEL);
-// }
 
 } // namespace builder
 
