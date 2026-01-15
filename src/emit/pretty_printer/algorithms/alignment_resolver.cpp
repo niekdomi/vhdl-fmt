@@ -99,8 +99,8 @@ auto AlignmentResolver::apply(const DocPtr& doc, std::span<const int> widths) ->
                 const int padding = width - static_cast<int>(node.content.length());
                 if (padding > 0) {
                     auto content = std::make_shared<DocImpl>(T{.content = node.content});
-                    return makeConcat(content,
-                                      makeText(std::string(static_cast<std::size_t>(padding), ' ')));
+                    return makeConcat(
+                      content, makeText(std::string(static_cast<std::size_t>(padding), ' ')));
                 }
             }
 

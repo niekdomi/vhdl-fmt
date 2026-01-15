@@ -3,8 +3,8 @@
 #include "emit/test_utils.hpp"
 
 #include <catch2/catch_test_macros.hpp>
-#include <utility>
 #include <string_view>
+#include <utility>
 
 TEST_CASE("While Loop Rendering", "[pretty_printer][statements][loop]")
 {
