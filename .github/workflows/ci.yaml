@@ -181,7 +181,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Lint Source
     needs: [get-changed-cpp-files, build]
-    timeout-minutes: 25
+    timeout-minutes: 30
 
     container:
       image: ghcr.io/niekdomi/vhdl-fmt/vhdlfmt-ci:latest
@@ -224,7 +224,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Lint Header
     needs: [get-changed-cpp-files, build]
-    timeout-minutes: 25
+    timeout-minutes: 20
 
     container:
       image: ghcr.io/niekdomi/vhdl-fmt/vhdlfmt-ci:latest
@@ -313,3 +313,4 @@ jobs:
         with:
           header: coverage-report
           path: coverage.md
+
