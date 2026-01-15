@@ -4,9 +4,9 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::FileTypeDef &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::FileTypeDef& node) const -> Doc
 {
-    return Doc::keyword(("file")) & Doc::keyword(("of")) & visit(node.subtype);
+    return Doc::keyword("file") & Doc::keyword("of") & visit(node.subtype);
 }
 
 } // namespace emit

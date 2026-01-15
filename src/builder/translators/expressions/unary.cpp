@@ -4,7 +4,7 @@
 
 namespace builder {
 
-auto Translator::makeFactor(vhdlParser::FactorContext &ctx) -> ast::Expr
+auto Translator::makeFactor(vhdlParser::FactorContext& ctx) -> ast::Expr
 {
     if (ctx.DOUBLESTAR() != nullptr) {
         return makeBinary(ctx, "**", makePrimary(*ctx.primary(0)), makePrimary(*ctx.primary(1)));

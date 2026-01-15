@@ -4,9 +4,9 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::TypeDecl &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::TypeDecl& node) const -> Doc
 {
-    Doc result = Doc::keyword(("type")) & Doc::text(node.name);
+    Doc result = Doc::keyword("type") & Doc::text(node.name);
 
     if (!node.type_def.has_value()) {
         // Incomplete type declaration: "type <name>;"
@@ -14,7 +14,7 @@ auto PrettyPrinter::operator()(const ast::TypeDecl &node) const -> Doc
     }
 
     // "is <definition>"
-    result &= Doc::keyword(("is")) & visit(node.type_def.value());
+    result &= Doc::keyword("is") & visit(node.type_def.value());
 
     return result + Doc::text(";");
 }

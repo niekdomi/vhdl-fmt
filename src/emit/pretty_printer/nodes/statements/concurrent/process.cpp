@@ -4,14 +4,14 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::Process &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::Process& node) const -> Doc
 {
-    Doc head = Doc::keyword(("process"));
+    Doc head = Doc::keyword("process");
 
     // Sensitivity list: process(clk, rst)
     if (!node.sensitivity_list.empty()) {
         const Doc list = joinMap(
-          node.sensitivity_list, Doc::text(", "), [](const auto &s) { return Doc::text(s); });
+          node.sensitivity_list, Doc::text(", "), [](const auto& s) { return Doc::text(s); });
 
         head += Doc::text("(") + list + Doc::text(")");
     }
@@ -21,9 +21,9 @@ auto PrettyPrinter::operator()(const ast::Process &node) const -> Doc
         head <<= join(node.decls, Doc::line());
     }
 
-    head /= Doc::keyword(("begin"));
+    head /= Doc::keyword("begin");
 
-    const Doc end = Doc::keyword(("end")) & Doc::keyword(("process")) + Doc::text(";");
+    const Doc end = Doc::keyword("end") & Doc::keyword("process") + Doc::text(";");
 
     if (node.body.empty()) {
         return head / end;

@@ -17,17 +17,17 @@ using emit::test::defaultConfig;
 
 namespace {
 // Helper lambda for counting all nodes in a Doc tree (used in Optimization section)
-constexpr auto NODE_COUNTER = [](int count, const auto & /*node*/) { return count + 1; };
+constexpr auto NODE_COUNTER = [](int count, const auto& /*node*/) { return count + 1; };
 
-auto render(const Doc &doc, const common::Config &config) -> std::string
+auto render(const Doc& doc, const common::Config& config) -> std::string
 {
-    return emit::Renderer{ config }.render(doc);
+    return emit::Renderer{config}.render(doc);
 }
 
-auto render(const Doc &doc) -> std::string
-{
-    return emit::Renderer{ defaultConfig() }.render(doc);
-}
+// auto render(const Doc& doc) -> std::string
+// {
+//     return emit::Renderer{defaultConfig()}.render(doc);
+// }
 
 } // namespace
 
@@ -261,8 +261,8 @@ TEST_CASE("Doc System", "[doc]")
             // "1  " (3 chars)
             // "12 " (3 chars)
             // "123" (3 chars)
-            const Doc doc
-              = Doc::align(Doc::text("1", 1) / Doc::text("12", 1) / Doc::text("123", 1));
+            const Doc doc =
+              Doc::align(Doc::text("1", 1) / Doc::text("12", 1) / Doc::text("123", 1));
             REQUIRE(render(doc, config) == "1  \n12 \n123");
         }
 
@@ -273,9 +273,8 @@ TEST_CASE("Doc System", "[doc]")
 
             const Doc doc = Doc::align(row1 / row2);
 
-            constexpr std::string_view EXPECTED = "col1 : val1\n"
-                                                  "c1   : v1  ";
-            REQUIRE(render(doc, config) == EXPECTED);
+            const std::string_view expected = "col1 : val1\n" "c1   : v1  ";
+            REQUIRE(render(doc, config) == expected);
         }
 
         SECTION("Keyword Alignment Preservation")
@@ -312,7 +311,7 @@ TEST_CASE("Doc System", "[doc]")
             const DocPtr res1 = makeConcat(makeText("a"), makeEmpty());
             REQUIRE(emit::DocWalker::fold(res1, 0, NODE_COUNTER) == 1); // 1 Text node
 
-            const auto *text1 = std::get_if<emit::Text>(&res1->value);
+            const auto* text1 = std::get_if<emit::Text>(&res1->value);
             REQUIRE(text1 != nullptr);
             REQUIRE(text1->content == "a");
 
@@ -332,7 +331,7 @@ TEST_CASE("Doc System", "[doc]")
 
             REQUIRE(emit::DocWalker::fold(res, 0, NODE_COUNTER) == 1);
 
-            const auto *text = std::get_if<emit::Text>(&res->value);
+            const auto* text = std::get_if<emit::Text>(&res->value);
             REQUIRE(text != nullptr);
             REQUIRE(text->content == "ab");
         }
@@ -340,12 +339,12 @@ TEST_CASE("Doc System", "[doc]")
         SECTION("Rule 3: HardLine Merging")
         {
             // (HardLines(2) + HardLine) + HardLines(3) -> HardLines(6)
-            const DocPtr res1
-              = makeConcat(makeConcat(makeHardLines(2), makeHardLine()), makeHardLines(3));
+            const DocPtr res1 =
+              makeConcat(makeConcat(makeHardLines(2), makeHardLine()), makeHardLines(3));
 
             REQUIRE(emit::DocWalker::fold(res1, 0, NODE_COUNTER) == 1);
 
-            const auto *lines1 = std::get_if<emit::HardLines>(&res1->value);
+            const auto* lines1 = std::get_if<emit::HardLines>(&res1->value);
             REQUIRE(lines1 != nullptr);
             REQUIRE(lines1->count == 6);
 
@@ -358,18 +357,18 @@ TEST_CASE("Doc System", "[doc]")
 
         SECTION("Complex Text Chain Folding")
         {
-            constexpr auto PARTS = std::to_array<std::string_view>(
-              { "This", " ", "is", " ", "a", " ", "complex", " ", "merge." });
+            const auto parts = std::to_array<std::string_view>(
+              {"This", " ", "is", " ", "a", " ", "complex", " ", "merge."});
 
-            const DocPtr result
-              = std::ranges::fold_left(PARTS, makeEmpty(), [](auto acc, const auto &str) {
-                    return makeConcat(std::move(acc), makeText(str));
-                });
+            const DocPtr result =
+              std::ranges::fold_left(parts, makeEmpty(), [](auto acc, const auto& str) {
+                  return makeConcat(std::move(acc), makeText(str));
+              });
 
             // The tree should be fully flattened into one Text node
             REQUIRE(emit::DocWalker::fold(result, 0, NODE_COUNTER) == 1);
 
-            const auto *text = std::get_if<emit::Text>(&result->value);
+            const auto* text = std::get_if<emit::Text>(&result->value);
             REQUIRE(text != nullptr);
             REQUIRE(text->content == "This is a complex merge.");
         }
@@ -383,7 +382,7 @@ TEST_CASE("Doc System", "[doc]")
 
             REQUIRE(emit::DocWalker::fold(final_doc, 0, NODE_COUNTER) == 1);
 
-            const auto *text = std::get_if<emit::Text>(&final_doc->value);
+            const auto* text = std::get_if<emit::Text>(&final_doc->value);
             REQUIRE(text != nullptr);
             REQUIRE(text->content == "ABC");
         }

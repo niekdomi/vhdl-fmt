@@ -8,25 +8,25 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::ArrayTypeDef &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::ArrayTypeDef& node) const -> Doc
 {
-    Doc result = Doc::keyword(("array"));
+    Doc result = Doc::keyword("array");
 
     if (!node.indices.empty()) {
-        auto render_index = [&](const auto &idx) {
+        auto render_index = [&](const auto& idx) {
             return std::visit(
-              common::Overload{ [&](const std::string &s) -> Doc {
-                                   return Doc::text(s) & Doc::keyword(("range")) & Doc::text("<>");
+              common::Overload{[&](const std::string& s) -> Doc {
+                                   return Doc::text(s) & Doc::keyword("range") & Doc::text("<>");
                                },
-                                [&](const auto &expr) -> Doc { return visit(expr); } },
+                               [&](const auto& expr) -> Doc { return visit(expr); }},
               idx);
         };
 
-        result
-          += Doc::text("(") + joinMap(node.indices, Doc::text(", "), render_index) + Doc::text(")");
+        result +=
+          Doc::text("(") + joinMap(node.indices, Doc::text(", "), render_index) + Doc::text(")");
     }
 
-    result &= Doc::keyword(("of")) & visit(node.subtype);
+    result &= Doc::keyword("of") & visit(node.subtype);
 
     return result;
 }

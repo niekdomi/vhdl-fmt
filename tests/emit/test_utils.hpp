@@ -21,18 +21,18 @@ constexpr auto defaultConfig() -> common::Config
     constexpr int TEST_LINE_LENGTH = 80;
 
     return common::Config{
-        .line_config = { .line_length = TEST_LINE_LENGTH, .indent_size = TEST_INDENT_SIZE }
+      .line_config = {.line_length = TEST_LINE_LENGTH, .indent_size = TEST_INDENT_SIZE}
     };
 }
 
 // Helper to render an AST node with default config
-auto render(const ASTNode auto &node) -> std::string
+auto render(const ASTNode auto& node) -> std::string
 {
     return emit::format(node, defaultConfig());
 }
 
 // Helper to render an AST node with custom config
-auto render(const ASTNode auto &node, const common::Config &config) -> std::string
+auto render(const ASTNode auto& node, const common::Config& config) -> std::string
 {
     return emit::format(node, config);
 }

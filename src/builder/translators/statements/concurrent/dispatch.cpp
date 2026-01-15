@@ -6,19 +6,19 @@
 
 namespace builder {
 
-auto Translator::makeConcurrentStatement(vhdlParser::Architecture_statementContext &ctx)
+auto Translator::makeConcurrentStatement(vhdlParser::Architecture_statementContext& ctx)
   -> ast::ConcurrentStatement
 {
     // TODO(vedivad): Investigate whether to bind trivia here or in the kind
     return build<ast::ConcurrentStatement>(ctx)
       .maybe(&ast::ConcurrentStatement::label,
              ctx.label_colon(),
-             [](auto &lc) { return lc.identifier()->getText(); })
+             [](auto& lc) { return lc.identifier()->getText(); })
       // If no label yet, check if the KIND provides one (e.g. Process)
-      .apply([&](auto &stmt) {
+      .apply([&](auto& stmt) {
           if (!stmt.label.has_value()) {
-              if (auto *proc = ctx.process_statement()) {
-                  if (auto *pl = proc->label_colon()) {
+              if (auto* proc = ctx.process_statement()) {
+                  if (auto* pl = proc->label_colon()) {
                       stmt.label = pl->identifier()->getText();
                   }
               }
@@ -28,14 +28,14 @@ auto Translator::makeConcurrentStatement(vhdlParser::Architecture_statementConte
       .build();
 }
 
-auto Translator::makeConcurrentStatementKind(vhdlParser::Architecture_statementContext &ctx)
+auto Translator::makeConcurrentStatementKind(vhdlParser::Architecture_statementContext& ctx)
   -> ast::ConcurrentStmtKind
 {
-    if (auto *proc = ctx.process_statement()) {
+    if (auto* proc = ctx.process_statement()) {
         return makeProcess(*proc);
     }
 
-    if (auto *assign = ctx.concurrent_signal_assignment_statement()) {
+    if (auto* assign = ctx.concurrent_signal_assignment_statement()) {
         return makeConcurrentAssignBody(*assign);
     }
 

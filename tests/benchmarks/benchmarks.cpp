@@ -19,7 +19,7 @@
 
 TEST_CASE("Toolchain Performance Breakdown", "[benchmark]")
 {
-    constexpr std::string_view STRESS_TEST_VHDL = R"(
+    const std::string_view file = R"(
 entity benchmark_entity is
     generic (
         WIDTH : integer := 32
@@ -63,15 +63,15 @@ end Behavioral;
     // ==============================================================================
 
     // 1. Create a "Golden" Context for reuse
-    auto golden_ctx = builder::createContext(STRESS_TEST_VHDL);
+    auto golden_ctx = builder::createContext(file);
 
     // 2. Pre-calculate CST (for Translation benchmark)
     golden_ctx.parser->setBuildParseTree(true);
-    auto *golden_tree = golden_ctx.parser->design_file();
+    auto* golden_tree = golden_ctx.parser->design_file();
 
     // 3. Pre-calculate AST (for PrettyPrinter benchmark)
-    ast::DesignFile golden_ast
-      = builder::Translator{ *golden_ctx.tokens }.buildDesignFile(golden_tree);
+    ast::DesignFile golden_ast =
+      builder::Translator{*golden_ctx.tokens}.buildDesignFile(golden_tree);
 
     // 4. Pre-calculate Doc (for Rendering benchmark)
     const auto pre_calculated_doc = emit::PrettyPrinter{}.visit(golden_ast);
@@ -88,7 +88,7 @@ end Behavioral;
     {
         golden_ctx.tokens->seek(0);
 
-        auto *interpreter = golden_ctx.parser->getInterpreter<antlr4::atn::ParserATNSimulator>();
+        auto* interpreter = golden_ctx.parser->getInterpreter<antlr4::atn::ParserATNSimulator>();
         interpreter->setPredictionMode(antlr4::atn::PredictionMode::SLL);
         golden_ctx.parser->setErrorHandler(std::make_shared<antlr4::BailErrorStrategy>());
 
@@ -100,7 +100,7 @@ end Behavioral;
     {
         golden_ctx.tokens->seek(0);
 
-        auto *interpreter = golden_ctx.parser->getInterpreter<antlr4::atn::ParserATNSimulator>();
+        auto* interpreter = golden_ctx.parser->getInterpreter<antlr4::atn::ParserATNSimulator>();
         interpreter->setPredictionMode(antlr4::atn::PredictionMode::LL);
         golden_ctx.parser->setErrorHandler(std::make_shared<antlr4::BailErrorStrategy>());
 
@@ -110,7 +110,7 @@ end Behavioral;
     // 2. AST TRANSLATION
     BENCHMARK("Stage 2.0: AST Translation")
     {
-        return builder::Translator{ *golden_ctx.tokens }.buildDesignFile(golden_tree);
+        return builder::Translator{*golden_ctx.tokens}.buildDesignFile(golden_tree);
     };
 
     // 3. PRETTY PRINTING (Doc Generation)
@@ -122,16 +122,16 @@ end Behavioral;
     // 4. RENDERING
     BENCHMARK("Stage 4.0: Rendering to String")
     {
-        return emit::Renderer{ default_config }.render(pre_calculated_doc);
+        return emit::Renderer{default_config}.render(pre_calculated_doc);
     };
 
     // 5. VERIFICATION (Safety Check)
     BENCHMARK("Stage 5.0: Verification")
     {
-        auto output_ctx = builder::createContext(std::string_view{ formatted_output });
+        auto output_ctx = builder::createContext(std::string_view{formatted_output});
 
-        const auto verify_result
-          = builder::verify::ensureSafety(*golden_ctx.tokens, *output_ctx.tokens);
+        const auto verify_result =
+          builder::verify::ensureSafety(*golden_ctx.tokens, *output_ctx.tokens);
 
         // The sample code has to be correct, so any failure is unexpected
         if (!verify_result) [[unlikely]] {

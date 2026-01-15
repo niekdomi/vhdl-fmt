@@ -20,13 +20,13 @@ struct Empty
 struct Text
 {
     std::string content;
-    int level{ -1 };
+    int level{-1};
 };
 
 struct Keyword
 {
     std::string content;
-    int level{ -1 };
+    int level{-1};
 };
 
 /// Line break (space when flattened, newline when broken)
@@ -99,8 +99,8 @@ auto makeAlignText(DocPtr doc) -> DocPtr;
 auto makeAlign(DocPtr doc) -> DocPtr;
 
 // Utility functions
-auto flatten(const DocPtr &doc) -> DocPtr;
-auto resolveAlignment(const DocPtr &doc) -> DocPtr;
+auto flatten(const DocPtr& doc) -> DocPtr;
+auto resolveAlignment(const DocPtr& doc) -> DocPtr;
 
 } // namespace emit
 

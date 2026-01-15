@@ -4,7 +4,7 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::PhysicalLiteral &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::PhysicalLiteral& node) const -> Doc
 {
     return Doc::text(node.value) & Doc::text(node.unit);
 }

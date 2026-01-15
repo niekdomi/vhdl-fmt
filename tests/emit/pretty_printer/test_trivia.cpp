@@ -12,9 +12,9 @@ namespace {
 
 auto makePort(std::string name, std::string mode, std::string type) -> ast::Port
 {
-    return ast::Port{ .names = { std::move(name) },
-                      .mode = std::move(mode),
-                      .subtype = ast::SubtypeIndication{ .type_mark = std::move(type) } };
+    return ast::Port{.names = {std::move(name)},
+                     .mode = std::move(mode),
+                     .subtype = ast::SubtypeIndication{.type_mark = std::move(type)}};
 }
 
 } // namespace
@@ -23,18 +23,18 @@ TEST_CASE("Trivia Rendering", "[pretty_printer][trivia]")
 {
     SECTION("Standard Nodes (Declarations)")
     {
-        ast::GenericParam param{ .names = { "WIDTH" },
-                                 .subtype = ast::SubtypeIndication{ .type_mark = "integer" } };
+        ast::GenericParam param{.names = {"WIDTH"},
+                                .subtype = ast::SubtypeIndication{.type_mark = "integer"}};
 
         SECTION("Leading Trivia")
         {
-            param.addLeading(ast::Comment{ "-- lead" });
+            param.addLeading(ast::Comment{"-- lead"});
             REQUIRE(emit::test::render(param) == "-- lead\nWIDTH : integer");
         }
 
         SECTION("Leading Whitespace (Normalize)")
         {
-            param.addLeading(ast::Break{ .blank_lines = 2 });
+            param.addLeading(ast::Break{.blank_lines = 2});
             REQUIRE(emit::test::render(param) == "\nWIDTH : integer");
         }
 
@@ -42,14 +42,14 @@ TEST_CASE("Trivia Rendering", "[pretty_printer][trivia]")
         {
             SECTION("Trailing Comment")
             {
-                param.addTrailing(ast::Comment{ "-- trail" });
+                param.addTrailing(ast::Comment{"-- trail"});
                 REQUIRE(emit::test::render(param) == "WIDTH : integer\n-- trail");
             }
 
             SECTION("Trailing Break (Normalize)")
             {
                 // Last break becomes empty to allow list separators to handle the newline
-                param.addTrailing(ast::Break{ .blank_lines = 2 });
+                param.addTrailing(ast::Break{.blank_lines = 2});
                 REQUIRE(emit::test::render(param) == "WIDTH : integer\n");
             }
         }
@@ -63,11 +63,10 @@ TEST_CASE("Trivia Rendering", "[pretty_printer][trivia]")
         SECTION("Inline + Trailing Combination")
         {
             param.setInlineComment("-- inline");
-            param.addTrailing(ast::Comment{ "-- trailing" });
+            param.addTrailing(ast::Comment{"-- trailing"});
 
-            constexpr std::string_view EXPECTED = "WIDTH : integer -- inline\n"
-                                                  "-- trailing";
-            REQUIRE(emit::test::render(param) == EXPECTED);
+            const std::string_view expected = "WIDTH : integer -- inline\n" "-- trailing";
+            REQUIRE(emit::test::render(param) == expected);
         }
 
         SECTION("Inline + Trailing Break")
@@ -87,62 +86,56 @@ TEST_CASE("Trivia Rendering", "[pretty_printer][trivia]")
             ast::PortClause clause{};
 
             ast::Port p1 = makePort("clk", "in", "bit");
-            p1.addTrailing(ast::Break{ 1 }); // User blank line
+            p1.addTrailing(ast::Break{1}); // User blank line
 
             ast::Port p2 = makePort("rst", "in", "bit");
 
             clause.ports.push_back(std::move(p1));
             clause.ports.push_back(std::move(p2));
 
-            constexpr std::string_view EXPECTED
-              = "port (\n"
-                "  clk : in bit;\n" // Separator provided by Break normalization
-                "  \n"
-                "  rst : in bit\n"
-                ");";
+            const std::string_view expected =
+              "port (\n" "  clk : in bit;\n" // Separator provided by Break normalization
+              "  \n" "  rst : in bit\n" ");";
 
-            REQUIRE(emit::test::render(clause) == EXPECTED);
+            REQUIRE(emit::test::render(clause) == expected);
         }
 
         SECTION("Interleaved Trivia")
         {
             // Test [Comment] -> [Break] -> [Comment] -> [Break(Last)]
-            ast::GenericParam param{ .names = { "WIDTH" },
-                                     .subtype = ast::SubtypeIndication{ .type_mark = "integer" } };
+            ast::GenericParam param{.names = {"WIDTH"},
+                                    .subtype = ast::SubtypeIndication{.type_mark = "integer"}};
 
-            param.addTrailing(ast::Comment{ "-- Step 1" });
+            param.addTrailing(ast::Comment{"-- Step 1"});
             param.addTrailing(ast::Break{});
-            param.addTrailing(ast::Comment{ "-- Step 2" });
+            param.addTrailing(ast::Comment{"-- Step 2"});
             param.addTrailing(ast::Break{});
 
-            constexpr std::string_view EXPECTED = "WIDTH : integer\n"
-                                                  "-- Step 1\n"
-                                                  "\n"
-                                                  "-- Step 2\n";
+            const std::string_view expected = "WIDTH : integer\n" "-- Step 1\n" "\n" "-- Step 2\n";
 
-            REQUIRE(emit::test::render(param) == EXPECTED);
+            REQUIRE(emit::test::render(param) == expected);
         }
     }
 
     SECTION("Expression Nodes (Newline Suppression)")
     {
-        ast::TokenExpr expr{ .text = "A" };
+        ast::TokenExpr expr{.text = "A"};
 
         SECTION("Leading Breaks Suppressed")
         {
-            expr.addLeading(ast::Break{ .blank_lines = 2 });
+            expr.addLeading(ast::Break{.blank_lines = 2});
             REQUIRE(emit::test::render(expr) == "A");
         }
 
         SECTION("Leading Comments Preserved")
         {
-            expr.addLeading(ast::Comment{ "-- note" });
+            expr.addLeading(ast::Comment{"-- note"});
             REQUIRE(emit::test::render(expr) == "-- note\nA");
         }
 
         SECTION("Trailing Breaks Suppressed")
         {
-            expr.addTrailing(ast::Break{ .blank_lines = 1 });
+            expr.addTrailing(ast::Break{.blank_lines = 1});
             REQUIRE(emit::test::render(expr) == "A");
         }
     }

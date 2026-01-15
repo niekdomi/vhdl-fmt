@@ -7,7 +7,7 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::SubtypeIndication &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::SubtypeIndication& node) const -> Doc
 {
     Doc result = Doc::empty();
 
@@ -23,8 +23,8 @@ auto PrettyPrinter::operator()(const ast::SubtypeIndication &node) const -> Doc
     if (node.constraint) {
         result += std::visit(
           common::Overload{
-            [this](const ast::IndexConstraint &idx) -> Doc { return visit(idx); },
-            [this](const ast::RangeConstraint &rc) -> Doc { return Doc::text(" ") + visit(rc); },
+            [this](const ast::IndexConstraint& idx) -> Doc { return visit(idx); },
+            [this](const ast::RangeConstraint& rc) -> Doc { return Doc::text(" ") + visit(rc); },
           },
           node.constraint.value());
     }

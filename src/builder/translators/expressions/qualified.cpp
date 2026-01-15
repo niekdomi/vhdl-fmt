@@ -7,17 +7,17 @@
 
 namespace builder {
 
-auto Translator::makeQualifiedExpr(vhdlParser::Qualified_expressionContext &ctx)
+auto Translator::makeQualifiedExpr(vhdlParser::Qualified_expressionContext& ctx)
   -> ast::QualifiedExpr
 {
     ast::GroupExpr operand{};
 
-    if (auto *agg = ctx.aggregate()) {
+    if (auto* agg = ctx.aggregate()) {
         operand = makeAggregate(*agg);
     }
 
     // If missing, return nothing.
-    auto *subtype = ctx.subtype_indication();
+    auto* subtype = ctx.subtype_indication();
     if (subtype == nullptr) {
         throw std::runtime_error("Qualified expression must have a subtype indication");
     }

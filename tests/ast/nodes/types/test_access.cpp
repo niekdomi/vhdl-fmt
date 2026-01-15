@@ -9,21 +9,21 @@ TEST_CASE("TypeDecl: Access", "[builder][type][access]")
 {
     SECTION("Access type definition")
     {
-        const auto *decl = test_helpers::parseType("type ptr_t is access integer;");
+        const auto* decl = test_helpers::parseType("type ptr_t is access integer;");
         REQUIRE(decl != nullptr);
         REQUIRE(decl->name == "ptr_t");
 
-        const auto *def = std::get_if<ast::AccessTypeDef>(&decl->type_def.value());
+        const auto* def = std::get_if<ast::AccessTypeDef>(&decl->type_def.value());
         REQUIRE(def != nullptr);
         REQUIRE(def->subtype.type_mark == "integer");
     }
 
     SECTION("Access to complex subtype")
     {
-        const auto *decl = test_helpers::parseType("type string_ptr is access string;");
+        const auto* decl = test_helpers::parseType("type string_ptr is access string;");
         REQUIRE(decl != nullptr);
 
-        const auto *def = std::get_if<ast::AccessTypeDef>(&decl->type_def.value());
+        const auto* def = std::get_if<ast::AccessTypeDef>(&decl->type_def.value());
         REQUIRE(def != nullptr);
         REQUIRE(def->subtype.type_mark == "string");
     }

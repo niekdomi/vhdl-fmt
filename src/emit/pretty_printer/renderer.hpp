@@ -18,43 +18,43 @@ namespace emit {
 enum class Mode : std::uint8_t
 {
     FLAT,
-    BREAK
+    BREAK,
 };
 
 /// Renderer for the pretty printer
 class Renderer final
 {
   public:
-    explicit Renderer(const common::Config &config) : config_{ config } {}
+    explicit Renderer(const common::Config& config) : config_{config} {}
 
     ~Renderer() = default;
 
-    Renderer(const Renderer &) = delete;
-    auto operator=(const Renderer &) -> Renderer & = delete;
-    Renderer(Renderer &&) = delete;
-    auto operator=(Renderer &&) -> Renderer & = delete;
+    Renderer(const Renderer&) = delete;
+    auto operator=(const Renderer&) -> Renderer& = delete;
+    Renderer(Renderer&&) = delete;
+    auto operator=(Renderer&&) -> Renderer& = delete;
 
     // Core rendering function
-    auto render(const Doc &doc) -> std::string;
+    auto render(const Doc& doc) -> std::string;
 
   private:
     // Internal rendering using visitor pattern
-    void renderDoc(int indent, Mode mode, const DocPtr &doc);
+    auto renderDoc(int indent, Mode mode, const DocPtr& doc) -> void;
 
     // Check if document fits on current line
-    static auto fits(int width, const DocPtr &doc) -> bool;
+    static auto fits(int width, const DocPtr& doc) -> bool;
 
     // Helper for fits: returns remaining width, or -1 if doesn't fit
-    static auto fitsImpl(int width, const DocPtr &doc) -> int;
+    static auto fitsImpl(int width, const DocPtr& doc) -> int;
 
     // Output helpers
-    void write(std::string_view text);
-    void newline(int indent);
+    auto write(std::string_view text) -> void;
+    auto newline(int indent) -> void;
 
     // Member variables
-    int column_{ 0 };
+    int column_{0};
     std::string output_;
-    const common::Config &config_;
+    const common::Config& config_;
 };
 
 } // namespace emit

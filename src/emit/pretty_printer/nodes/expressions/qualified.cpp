@@ -4,7 +4,7 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::QualifiedExpr &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::QualifiedExpr& node) const -> Doc
 {
     return visit(node.type_mark) + Doc::text("'") + visit(*node.operand);
 }

@@ -12,7 +12,7 @@ namespace ast {
 ///
 /// Example: `entity my_entity is end entity; architecture rtl of my_entity is begin end
 /// architecture;`
-struct DesignFile : NodeBase
+struct DesignFile final : NodeBase
 {
     std::vector<DesignUnit> units; ///< List of design units in the file.
 };

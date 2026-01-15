@@ -67,9 +67,11 @@ add_link_options($<$<CONFIG:Release>:-flto=full>)
 add_compile_options(
     # Core
     -WCL4
+    #
     -Werror
     -Wpedantic
     -Wdeprecated
+    #
     # Safety
     -Wnon-virtual-dtor
     -Wsuggest-override
@@ -78,6 +80,7 @@ add_compile_options(
     -Wconsumed
     -Wthread-safety
     -Wformat=2
+    #
     # Type Safety & Performance
     -Wconversion
     -Wcast-align
@@ -86,12 +89,14 @@ add_compile_options(
     -Wdouble-promotion
     -Wcast-function-type
     -Wzero-as-null-pointer-constant
+    #
     # Logical & Control Flow
     -Wimplicit-fallthrough
     -Wshadow-all
     -Wunreachable-code-aggressive
     -Wloop-analysis
     -Wcovered-switch-default
+    #
     # Cross-Platform
     -Wpoison-system-directories
 )

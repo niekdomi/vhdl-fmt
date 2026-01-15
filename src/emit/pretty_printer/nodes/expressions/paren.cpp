@@ -4,7 +4,7 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::ParenExpr &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::ParenExpr& node) const -> Doc
 {
     return Doc::text("(") + visit(*node.inner) + Doc::text(")");
 }

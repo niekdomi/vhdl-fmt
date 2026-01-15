@@ -4,9 +4,9 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::NullStatement & /*node*/) const -> Doc
+auto PrettyPrinter::operator()(const ast::NullStatement& /*node*/) const -> Doc
 {
-    return Doc::keyword(("null")) + Doc::text(";");
+    return Doc::keyword("null") + Doc::text(";");
 }
 
 } // namespace emit

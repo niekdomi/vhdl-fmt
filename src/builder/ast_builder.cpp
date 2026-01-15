@@ -32,7 +32,7 @@ namespace builder {
 namespace {
 
 // Internal helper to wire up the ANTLR pipeline
-void initializeContext(Context &ctx, std::unique_ptr<antlr4::ANTLRInputStream> input)
+auto initializeContext(Context& ctx, std::unique_ptr<antlr4::ANTLRInputStream> input) -> void
 {
     ctx.input = std::move(input);
     ctx.lexer = std::make_unique<vhdlLexer>(ctx.input.get());
@@ -49,12 +49,12 @@ void initializeContext(Context &ctx, std::unique_ptr<antlr4::ANTLRInputStream> i
 class ThrowingErrorListener final : public antlr4::BaseErrorListener
 {
   public:
-    void syntaxError(antlr4::Recognizer * /*recognizer*/,
-                     antlr4::Token * /*offendingSymbol*/,
+    auto syntaxError(antlr4::Recognizer* /*recognizer*/,
+                     antlr4::Token* /*offendingSymbol*/,
                      const std::size_t line,
                      const std::size_t char_position_in_line,
-                     const std::string &msg,
-                     std::exception_ptr /*e*/) override
+                     const std::string& msg,
+                     std::exception_ptr /*e*/) -> void override
     {
         throw std::runtime_error(
           std::format("Parser error at line {}:{} - {}", line, char_position_in_line, msg));
@@ -65,7 +65,7 @@ class ThrowingErrorListener final : public antlr4::BaseErrorListener
 
 // --- Fine-grained Implementation ---
 
-auto createContext(const std::filesystem::path &path) -> Context
+auto createContext(const std::filesystem::path& path) -> Context
 {
     std::ifstream file(path);
     if (!file) {
@@ -86,20 +86,21 @@ auto createContext(std::string_view source) -> Context
     return ctx;
 }
 
-auto build(Context &ctx) -> ast::DesignFile
+auto build(Context& ctx) -> ast::DesignFile
 {
-    auto *interpreter = ctx.parser->getInterpreter<antlr4::atn::ParserATNSimulator>();
+    auto* interpreter = ctx.parser->getInterpreter<antlr4::atn::ParserATNSimulator>();
 
     // 1. Try SLL
     interpreter->setPredictionMode(antlr4::atn::PredictionMode::SLL);
     ctx.parser->setErrorHandler(std::make_shared<antlr4::BailErrorStrategy>());
     ctx.parser->removeErrorListeners();
 
-    vhdlParser::Design_fileContext *tree = nullptr;
+    vhdlParser::Design_fileContext* tree = nullptr;
 
     try {
         tree = ctx.parser->design_file();
-    } catch (const antlr4::ParseCancellationException &) {
+    }
+    catch (const antlr4::ParseCancellationException&) {
         common::Logger::instance().trace(
           "SLL parsing failed (ambiguity). Falling back to LL mode.");
 
@@ -123,12 +124,12 @@ auto build(Context &ctx) -> ast::DesignFile
         throw std::runtime_error("Parser returned null tree.");
     }
 
-    return Translator{ *ctx.tokens }.buildDesignFile(tree);
+    return Translator{*ctx.tokens}.buildDesignFile(tree);
 }
 
 // --- High-level Wrapper Implementation ---
 
-auto buildFromFile(const std::filesystem::path &path) -> ast::DesignFile
+auto buildFromFile(const std::filesystem::path& path) -> ast::DesignFile
 {
     auto ctx = createContext(path);
     return build(ctx);

@@ -8,22 +8,21 @@
 
 namespace emit {
 
-auto PrettyPrinter::operator()(const ast::RecordElement &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::RecordElement& node) const -> Doc
 {
-    const std::string names = node.names
-                            | std::views::join_with(std::string_view{ ", " })
-                            | std::ranges::to<std::string>();
+    const std::string names =
+      node.names | std::views::join_with(std::string_view{", "}) | std::ranges::to<std::string>();
 
-    const Doc result
-      = Doc::text(names, AlignmentLevel::NAME) & Doc::text(":") & visit(node.subtype);
+    const Doc result =
+      Doc::text(names, AlignmentLevel::NAME) & Doc::text(":") & visit(node.subtype);
 
     return result + Doc::text(";");
 }
 
-auto PrettyPrinter::operator()(const ast::RecordTypeDef &node) const -> Doc
+auto PrettyPrinter::operator()(const ast::RecordTypeDef& node) const -> Doc
 {
-    const Doc head = Doc::keyword(("record"));
-    Doc end = Doc::keyword(("end")) & Doc::keyword(("record"));
+    const Doc head = Doc::keyword("record");
+    Doc end = Doc::keyword("end") & Doc::keyword("record");
 
     if (node.end_label) {
         end &= Doc::text(*node.end_label);

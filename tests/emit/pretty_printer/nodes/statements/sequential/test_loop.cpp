@@ -16,8 +16,8 @@ TEST_CASE("Infinite Loop Rendering", "[pretty_printer][statements][loop]")
 
     SECTION("Simple Loop (Unlabeled)")
     {
-        constexpr std::string_view EXPECTED = "loop\n  null;\nend loop;";
-        REQUIRE(emit::test::render(loop_kind) == EXPECTED);
+        const std::string_view expected = "loop\n  null;\nend loop;";
+        REQUIRE(emit::test::render(loop_kind) == expected);
     }
 
     SECTION("Labeled Loop (Wrapper)")
@@ -26,7 +26,7 @@ TEST_CASE("Infinite Loop Rendering", "[pretty_printer][statements][loop]")
         wrapper.label = "main_loop";
         wrapper.kind = std::move(loop_kind);
 
-        constexpr std::string_view EXPECTED = "main_loop: loop\n  null;\nend loop;";
-        REQUIRE(emit::test::render(wrapper) == EXPECTED);
+        const std::string_view expected = "main_loop: loop\n  null;\nend loop;";
+        REQUIRE(emit::test::render(wrapper) == expected);
     }
 }

@@ -8,17 +8,17 @@
 namespace builder {
 
 auto Translator::makeCallExpr(ast::Expr base,
-                              vhdlParser::Function_call_or_indexed_name_partContext &ctx)
+                              vhdlParser::Function_call_or_indexed_name_partContext& ctx)
   -> ast::Expr
 {
-    auto *param_part = ctx.actual_parameter_part();
-    auto *assoc_list = (param_part != nullptr) ? param_part->association_list() : nullptr;
+    auto* param_part = ctx.actual_parameter_part();
+    auto* assoc_list = (param_part != nullptr) ? param_part->association_list() : nullptr;
 
     ast::GroupExpr group{};
 
     if (assoc_list != nullptr) {
         group.children = assoc_list->association_element()
-                       | std::views::transform([&](auto *elem) { return makeCallArgument(*elem); })
+                       | std::views::transform([&](auto* elem) { return makeCallArgument(*elem); })
                        | std::ranges::to<decltype(group.children)>();
     }
 
@@ -28,16 +28,16 @@ auto Translator::makeCallExpr(ast::Expr base,
       .build();
 }
 
-auto Translator::makeCallArgument(vhdlParser::Association_elementContext &ctx) -> ast::Expr
+auto Translator::makeCallArgument(vhdlParser::Association_elementContext& ctx) -> ast::Expr
 {
-    auto *actual = ctx.actual_part();
+    auto* actual = ctx.actual_part();
     if (actual == nullptr) {
         return makeToken(ctx);
     }
 
     // Resolve the inner content of the actual part
     ast::Expr content = [&]() -> ast::Expr {
-        auto *designator = actual->actual_designator();
+        auto* designator = actual->actual_designator();
 
         // If designator is missing, fallback immediately
         if (designator == nullptr) {
@@ -45,7 +45,7 @@ auto Translator::makeCallArgument(vhdlParser::Association_elementContext &ctx) -
         }
 
         // Check for expression
-        if (auto *expr = designator->expression()) {
+        if (auto* expr = designator->expression()) {
             return makeExpr(*expr);
         }
 
@@ -54,7 +54,7 @@ auto Translator::makeCallArgument(vhdlParser::Association_elementContext &ctx) -
     }();
 
     // 2. Check for function call / type conversion syntax: name(actual_designator)
-    if (auto *name_ctx = actual->name()) {
+    if (auto* name_ctx = actual->name()) {
         ast::GroupExpr args{};
         args.children.emplace_back(std::move(content));
 

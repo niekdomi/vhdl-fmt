@@ -7,6 +7,6 @@
 TEST_CASE("Null Statement", "[pretty_printer][control_flow][sequential]")
 {
     const ast::NullStatement stmt;
-    constexpr std::string_view EXPECTED = "null;";
-    REQUIRE(emit::test::render(stmt) == EXPECTED);
+    const std::string_view expected = "null;";
+    REQUIRE(emit::test::render(stmt) == expected);
 }

@@ -9,11 +9,11 @@ TEST_CASE("TypeDecl: File", "[builder][type][file]")
 {
     SECTION("File type definition")
     {
-        const auto *decl = test_helpers::parseType("type log_file_t is file of character;");
+        const auto* decl = test_helpers::parseType("type log_file_t is file of character;");
         REQUIRE(decl != nullptr);
         REQUIRE(decl->name == "log_file_t");
 
-        const auto *def = std::get_if<ast::FileTypeDef>(&decl->type_def.value());
+        const auto* def = std::get_if<ast::FileTypeDef>(&decl->type_def.value());
         REQUIRE(def != nullptr);
         REQUIRE(def->subtype.type_mark == "character");
     }

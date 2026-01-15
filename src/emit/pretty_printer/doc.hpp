@@ -63,43 +63,43 @@ class Doc final
     // ========================================================================
 
     /// @brief Concatenates two documents directly. (a + b)
-    auto operator+(const Doc &other) const -> Doc;
+    auto operator+(const Doc& other) const -> Doc;
 
     /// @brief Concatenates two documents with a space. (a & b)
     /// @note Equivalent to `a + Doc::text(" ") + b`.
-    auto operator&(const Doc &other) const -> Doc;
+    auto operator&(const Doc& other) const -> Doc;
 
     /// @brief Concatenates two documents with a soft line. (a / b)
     /// @note Equivalent to `a + Doc::line() + b`.
-    auto operator/(const Doc &other) const -> Doc;
+    auto operator/(const Doc& other) const -> Doc;
 
     /// @brief Concatenates two documents with a hard line. (a | b)
     /// @note Equivalent to `a + Doc::hardline() + b`.
-    auto operator|(const Doc &other) const -> Doc;
+    auto operator|(const Doc& other) const -> Doc;
 
     /// @brief Nests the right-hand document after a soft line. (a << b)
     /// @note Equivalent to `a + (Doc::line() + b).nest()`.
-    auto operator<<(const Doc &other) const -> Doc;
+    auto operator<<(const Doc& other) const -> Doc;
 
     /// @brief Nests the right-hand document after a hard line.
     /// @note Equivalent to `a + (Doc::hardline() + b).nest()`.
     [[nodiscard]]
-    auto hardIndent(const Doc &other) const -> Doc;
+    auto hardIndent(const Doc& other) const -> Doc;
 
     // ========================================================================
     // Compound Assignment Operators
     // ========================================================================
 
     /// @brief Direct concatenation assignment.
-    auto operator+=(const Doc &other) -> Doc &;
+    auto operator+=(const Doc& other) -> Doc&;
     /// @brief Space concatenation assignment.
-    auto operator&=(const Doc &other) -> Doc &;
+    auto operator&=(const Doc& other) -> Doc&;
     /// @brief Softline concatenation assignment.
-    auto operator/=(const Doc &other) -> Doc &;
+    auto operator/=(const Doc& other) -> Doc&;
     /// @brief Hardline concatenation assignment.
-    auto operator|=(const Doc &other) -> Doc &;
+    auto operator|=(const Doc& other) -> Doc&;
     /// @brief Softline + indent assignment.
-    auto operator<<=(const Doc &other) -> Doc &;
+    auto operator<<=(const Doc& other) -> Doc&;
 
     // ========================================================================
     // High-Level Layout Patterns
@@ -110,25 +110,25 @@ class Doc final
     /// @return A `Union` node representing a choice between the "flat"
     ///         version of this Doc and the "broken" (original) version.
     [[nodiscard]]
-    static auto group(const Doc &doc) -> Doc;
+    static auto group(const Doc& doc) -> Doc;
 
     /// @brief A common "bracket" pattern: (left, inner, right).
     /// @note This is equivalent to `(left << inner) / right`.
     [[nodiscard]]
-    static auto bracket(const Doc &left, const Doc &inner, const Doc &right) -> Doc;
+    static auto bracket(const Doc& left, const Doc& inner, const Doc& right) -> Doc;
 
     /// @brief Defines a scope for alignment.
     /// @param doc The document sub-tree containing `Doc::alignText` texts.
     /// @return A new `Doc` node that instructs the renderer to process
     ///         alignment for the `doc` sub-tree.
     [[nodiscard]]
-    static auto align(const Doc &doc) -> Doc;
+    static auto align(const Doc& doc) -> Doc;
 
     /// @brief Sets the indentation level of the document to the current column.
     /// @param doc The document to hang.
     /// @return A `Hang` node.
     [[nodiscard]]
-    static auto hang(const Doc &doc) -> Doc;
+    static auto hang(const Doc& doc) -> Doc;
 
     // ========================================================================
     // Utility

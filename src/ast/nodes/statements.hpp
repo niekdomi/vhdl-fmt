@@ -12,10 +12,10 @@
 namespace ast {
 
 // Concurrent Statements
-using ConcurrentStmtKind
-  = std::variant<ConditionalConcurrentAssign, SelectedConcurrentAssign, Process>;
+using ConcurrentStmtKind =
+  std::variant<ConditionalConcurrentAssign, SelectedConcurrentAssign, Process>;
 
-struct ConcurrentStatement : NodeBase
+struct ConcurrentStatement final : NodeBase
 {
     std::optional<std::string> label; ///< Optional label (e.g. "label: entity...")
     ConcurrentStmtKind kind;          ///< The actual statement logic
@@ -31,9 +31,9 @@ using SequentialStmtKind = std::variant<VariableAssign,
                                         Loop,
                                         NullStatement>;
 
-struct SequentialStatement : NodeBase
+struct SequentialStatement final : NodeBase
 {
-    std::optional<std::string> label; ///< Optional label (e.g. "label: while...")
+    std::optional<std::string> label; ///< Optional label (e.g. "label: entity...")
     SequentialStmtKind kind;          ///< The actual statement logic
 };
 

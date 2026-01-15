@@ -4,7 +4,7 @@
 
 namespace builder {
 
-auto Translator::makeAccessType(vhdlParser::Access_type_definitionContext &ctx)
+auto Translator::makeAccessType(vhdlParser::Access_type_definitionContext& ctx)
   -> ast::AccessTypeDef
 {
     return build<ast::AccessTypeDef>(ctx)

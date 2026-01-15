@@ -6,9 +6,11 @@
 
 TEST_CASE("Constant Declaration Rendering", "[pretty_printer][declarations][objects]")
 {
-    ast::ConstantDecl cst{ .names = { "WIDTH" },
-                           .subtype = ast::SubtypeIndication{ .type_mark = "integer" },
-                           .init_expr = ast::TokenExpr{ .text = "8" } };
+    ast::ConstantDecl cst{
+      .names = {"WIDTH"},
+      .subtype = ast::SubtypeIndication{.type_mark = "integer"},
+      .init_expr = ast::TokenExpr{.text = "8"},
+    };
 
     SECTION("Basic Constant")
     {
@@ -17,7 +19,7 @@ TEST_CASE("Constant Declaration Rendering", "[pretty_printer][declarations][obje
 
     SECTION("Multiple Constants")
     {
-        cst.names = { "MIN", "MAX" };
+        cst.names = {"MIN", "MAX"};
         REQUIRE(emit::test::render(cst) == "constant MIN, MAX : integer := 8;");
     }
 }

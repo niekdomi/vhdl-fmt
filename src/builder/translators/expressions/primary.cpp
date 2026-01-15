@@ -4,7 +4,7 @@
 
 namespace builder {
 
-auto Translator::makePrimary(vhdlParser::PrimaryContext &ctx) -> ast::Expr
+auto Translator::makePrimary(vhdlParser::PrimaryContext& ctx) -> ast::Expr
 {
     if (ctx.expression() != nullptr) {
         return build<ast::ParenExpr>(ctx)
@@ -16,33 +16,33 @@ auto Translator::makePrimary(vhdlParser::PrimaryContext &ctx) -> ast::Expr
         return makeAggregate(*ctx.aggregate());
     }
 
-    if (auto *name_ctx = ctx.name()) {
+    if (auto* name_ctx = ctx.name()) {
         return makeName(*name_ctx);
     }
 
-    if (auto *lit = ctx.literal()) {
+    if (auto* lit = ctx.literal()) {
         return makeLiteral(*lit);
     }
 
-    if (auto *qual = ctx.qualified_expression()) {
+    if (auto* qual = ctx.qualified_expression()) {
         return makeQualifiedExpr(*qual);
     }
 
-    if (auto *alloc = ctx.allocator()) {
+    if (auto* alloc = ctx.allocator()) {
         return makeAllocator(*alloc);
     }
 
     return makeToken(ctx);
 }
 
-auto Translator::makeLiteral(vhdlParser::LiteralContext &ctx) -> ast::Expr
+auto Translator::makeLiteral(vhdlParser::LiteralContext& ctx) -> ast::Expr
 {
-    auto *num = ctx.numeric_literal();
+    auto* num = ctx.numeric_literal();
     if (num == nullptr) {
         return makeToken(ctx);
     }
 
-    auto *phys = num->physical_literal();
+    auto* phys = num->physical_literal();
     if (phys == nullptr) {
         return makeToken(ctx);
     }

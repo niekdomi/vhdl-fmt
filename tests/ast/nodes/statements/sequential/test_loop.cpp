@@ -15,16 +15,16 @@ TEST_CASE("Loop", "[statements][loop]")
 
     SECTION("Simple infinite loop")
     {
-        const auto *loop = parse_loop_body("loop null; end loop;");
+        const auto* loop = parse_loop_body("loop null; end loop;");
         REQUIRE(loop != nullptr);
 
         REQUIRE(loop->body.size() == 1);
-        CHECK(std::holds_alternative<ast::NullStatement>(loop->body[0].kind));
+        CHECK(std::holds_alternative<ast::NullStatement>(loop->body.at(0).kind));
     }
 
     SECTION("Infinite loop with multiple statements")
     {
-        constexpr std::string_view CODE = R"(
+        const std::string_view code = R"(
             loop
                 data_out <= data_in;
                 count := count + 1;
@@ -32,22 +32,21 @@ TEST_CASE("Loop", "[statements][loop]")
             end loop;
         )";
 
-        const auto *loop = parse_loop_body(CODE);
+        const auto* loop = parse_loop_body(code);
         REQUIRE(loop != nullptr);
         CHECK(loop->body.size() == 3);
     }
 
     SECTION("Labeled infinite loop")
     {
-        constexpr std::string_view CODE = "process begin "
-                                          "  main_loop: loop count := count + 1; end loop; "
-                                          "end process;";
+        const std::string_view code =
+          "process begin " "  main_loop: loop count := count + 1; end loop; " "end process;";
 
-        const auto *proc = test_helpers::parseConcurrentStmt<ast::Process>(CODE);
+        const auto* proc = test_helpers::parseConcurrentStmt<ast::Process>(code);
         REQUIRE(proc != nullptr);
         REQUIRE(proc->body.size() == 1);
 
-        const auto &wrapper = proc->body[0];
+        const auto& wrapper = proc->body.at(0);
 
         // 1. Verify Label on Wrapper
         REQUIRE(wrapper.label.has_value());
@@ -59,29 +58,27 @@ TEST_CASE("Loop", "[statements][loop]")
 
     SECTION("Labeled loop with end label")
     {
-        constexpr std::string_view LOOP_CODE = "my_loop: loop\n"
-                                               "    x := x + 1;\n"
-                                               "    null;\n"
-                                               "end loop my_loop;";
+        const std::string_view loop_code =
+          "my_loop: loop\n" "    x := x + 1;\n" "    null;\n" "end loop my_loop;";
 
-        const std::string proc_code = "process begin " + std::string(LOOP_CODE) + " end process;";
+        const std::string proc_code = "process begin " + std::string(loop_code) + " end process;";
 
-        const auto *proc = test_helpers::parseConcurrentStmt<ast::Process>(proc_code);
+        const auto* proc = test_helpers::parseConcurrentStmt<ast::Process>(proc_code);
         REQUIRE(proc != nullptr);
         REQUIRE(proc->body.size() == 1);
 
-        const auto &wrapper = proc->body[0];
+        const auto& wrapper = proc->body.at(0);
 
         // 1. Verify Label
         REQUIRE(wrapper.label.has_value());
         CHECK(wrapper.label.value() == "my_loop");
 
         // 2. Verify Body Structure
-        const auto *loop = std::get_if<ast::Loop>(&wrapper.kind);
+        const auto* loop = std::get_if<ast::Loop>(&wrapper.kind);
         REQUIRE(loop != nullptr);
         REQUIRE(loop->body.size() == 2);
 
-        CHECK(std::holds_alternative<ast::VariableAssign>(loop->body[0].kind));
-        CHECK(std::holds_alternative<ast::NullStatement>(loop->body[1].kind));
+        CHECK(std::holds_alternative<ast::VariableAssign>(loop->body.at(0).kind));
+        CHECK(std::holds_alternative<ast::NullStatement>(loop->body.at(1).kind));
     }
 }
