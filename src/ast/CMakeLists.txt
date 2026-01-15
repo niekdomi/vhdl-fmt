@@ -6,12 +6,12 @@ target_sources(
     ast
     INTERFACE
         FILE_SET HEADERS
-            FILES
-                node.hpp
-                visitor.hpp
-                nodes/declarations.hpp
-                nodes/design_file.hpp
-                nodes/design_units.hpp
-                nodes/expressions.hpp
-                nodes/statements.hpp
+        FILES
+            node.hpp
+            visitor.hpp
+            nodes/declarations.hpp
+            nodes/design_file.hpp
+            nodes/design_units.hpp
+            nodes/expressions.hpp
+            nodes/statements.hpp
 )

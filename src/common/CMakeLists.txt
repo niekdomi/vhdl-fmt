@@ -11,7 +11,7 @@ target_sources(
     common
     INTERFACE
         FILE_SET HEADERS
-            FILES config.hpp logger.hpp
+        FILES config.hpp logger.hpp
 )
 
 target_link_libraries(
