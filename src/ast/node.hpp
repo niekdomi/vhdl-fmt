@@ -42,11 +42,11 @@ struct NodeBase
 {
     std::unique_ptr<NodeTrivia> trivia;
 
-    void addLeading(Trivia t) { getOrCreateTrivia().leading.emplace_back(std::move(t)); }
+    auto addLeading(Trivia t) -> void { getOrCreateTrivia().leading.emplace_back(std::move(t)); }
 
-    void addTrailing(Trivia t) { getOrCreateTrivia().trailing.emplace_back(std::move(t)); }
+    auto addTrailing(Trivia t) -> void { getOrCreateTrivia().trailing.emplace_back(std::move(t)); }
 
-    void setInlineComment(std::string text)
+    auto setInlineComment(std::string text) -> void
     {
         getOrCreateTrivia().inline_comment = Comment{ std::move(text) };
     }

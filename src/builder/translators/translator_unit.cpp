@@ -14,7 +14,7 @@ namespace builder {
 
 // ---------------------- Top-level ----------------------
 
-void Translator::buildDesignFile(ast::DesignFile &dest, vhdlParser::Design_fileContext *ctx)
+auto Translator::buildDesignFile(ast::DesignFile &dest, vhdlParser::Design_fileContext *ctx) -> void
 {
     for (auto *unit_ctx : ctx->design_unit()) {
         auto *lib_unit = unit_ctx->library_unit();

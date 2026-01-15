@@ -12,13 +12,13 @@ namespace ast {
 struct ConcurrentStatement;
 struct SequentialStatement;
 
-struct ConcurrentStatement
+struct ConcurrentStatement final
   : std::variant<ConditionalConcurrentAssign, SelectedConcurrentAssign, Process>
 {
     using variant::variant; // Inherit constructors
 };
 
-struct SequentialStatement
+struct SequentialStatement final
   : std::variant<VariableAssign,
                  SignalAssign,
                  IfStatement,

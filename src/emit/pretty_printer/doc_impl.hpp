@@ -190,7 +190,10 @@ struct AlignText
     template<typename Fn>
     auto fmap(Fn && /* fn */) const -> AlignText
     {
-        return { .content = content, .level = level };
+        return {
+            .content = content,
+            .level = level,
+        };
     }
 
     template<typename T, typename Fn>

@@ -32,7 +32,7 @@ class Translator final
     explicit Translator(antlr4::CommonTokenStream &tokens) : trivia_(tokens) {}
 
     /// @brief Build the entire design file by walking the CST
-    void buildDesignFile(ast::DesignFile &dest, vhdlParser::Design_fileContext *ctx);
+    auto buildDesignFile(ast::DesignFile &dest, vhdlParser::Design_fileContext *ctx) -> void;
 
     ~Translator() = default;
 
@@ -243,9 +243,9 @@ class Translator final
     }
 
     template<typename Node>
-    static void extractSubtypeInfo(Node &node,
+    static auto extractSubtypeInfo(Node &node,
                                    vhdlParser::Subtype_indicationContext *stype,
-                                   auto &&make_constraint_fn)
+                                   auto &&make_constraint_fn) -> void
     {
         if (stype == nullptr) {
             return;

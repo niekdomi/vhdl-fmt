@@ -11,7 +11,7 @@
 namespace ast {
 
 /// @brief Represents a VHDL signal declaration.
-struct SignalDecl : NodeBase
+struct SignalDecl final : NodeBase
 {
     std::vector<std::string> names;
     SubtypeIndication subtype;
@@ -20,7 +20,7 @@ struct SignalDecl : NodeBase
 };
 
 /// @brief Represents a VHDL variable declaration.
-struct VariableDecl : NodeBase
+struct VariableDecl final : NodeBase
 {
     std::vector<std::string> names;
     SubtypeIndication subtype;
@@ -29,7 +29,7 @@ struct VariableDecl : NodeBase
 };
 
 /// @brief Represents a VHDL constant declaration.
-struct ConstantDecl : NodeBase
+struct ConstantDecl final : NodeBase
 {
     std::vector<std::string> names;
     SubtypeIndication subtype;

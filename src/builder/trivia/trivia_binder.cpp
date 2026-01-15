@@ -37,16 +37,22 @@ auto TriviaBinder::extractTrivia(std::span<antlr4::Token *const> range) -> std::
 
         if (isComment(token)) {
             if (pending_newlines >= BREAK_BREAKOFF) {
-                result.emplace_back(ast::Break{ .blank_lines = pending_newlines - 1 });
+                result.emplace_back(ast::Break{
+                  .blank_lines = pending_newlines - 1,
+                });
             }
             pending_newlines = 0;
 
-            result.emplace_back(ast::Comment{ token->getText() });
+            result.emplace_back(ast::Comment{
+              token->getText(),
+            });
         }
     }
 
     if (pending_newlines >= BREAK_BREAKOFF) {
-        result.emplace_back(ast::Break{ .blank_lines = pending_newlines - 1 });
+        result.emplace_back(ast::Break{
+          .blank_lines = pending_newlines - 1,
+        });
     }
 
     return result;
@@ -69,7 +75,7 @@ auto TriviaBinder::findContextEnd(const antlr4::ParserRuleContext &ctx) const ->
     return stop;
 }
 
-void TriviaBinder::bind(ast::NodeBase &node, const antlr4::ParserRuleContext &ctx)
+auto TriviaBinder::bind(ast::NodeBase &node, const antlr4::ParserRuleContext &ctx) -> void
 {
     const auto start_idx = ctx.getStart()->getTokenIndex();
     const auto stop_idx = findContextEnd(ctx);
@@ -88,10 +94,11 @@ void TriviaBinder::bind(ast::NodeBase &node, const antlr4::ParserRuleContext &ct
 
     // Commit to Node
     if (!leading.empty() || !trailing.empty() || inline_comment.has_value()) {
-        node.trivia = std::make_unique<ast::NodeTrivia>(
-          ast::NodeTrivia{ .leading = std::move(leading),
-                           .trailing = std::move(trailing),
-                           .inline_comment = std::move(inline_comment) });
+        node.trivia = std::make_unique<ast::NodeTrivia>(ast::NodeTrivia{
+          .leading = std::move(leading),
+          .trailing = std::move(trailing),
+          .inline_comment = std::move(inline_comment),
+        });
     }
 }
 

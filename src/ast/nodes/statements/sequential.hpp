@@ -14,19 +14,19 @@ namespace ast {
 // Forward declarations
 struct SequentialStatement;
 
-struct SignalAssign : NodeBase
+struct SignalAssign final : NodeBase
 {
     Expr target;
     Waveform waveform;
 };
 
-struct VariableAssign : NodeBase
+struct VariableAssign final : NodeBase
 {
     Expr target;
     Expr value;
 };
 
-struct IfStatement : NodeBase
+struct IfStatement final : NodeBase
 {
     struct Branch
     {
@@ -39,9 +39,9 @@ struct IfStatement : NodeBase
     std::optional<Branch> else_branch;
 };
 
-struct CaseStatement : NodeBase
+struct CaseStatement final : NodeBase
 {
-    struct WhenClause : NodeBase
+    struct WhenClause final : NodeBase
     {
         std::vector<Expr> choices;
         std::vector<SequentialStatement> body;
@@ -51,19 +51,19 @@ struct CaseStatement : NodeBase
     std::vector<WhenClause> when_clauses;
 };
 
-struct Loop : NodeBase
+struct Loop final : NodeBase
 {
     std::optional<std::string> label;
     std::vector<SequentialStatement> body;
 };
 
-struct WhileLoop : NodeBase
+struct WhileLoop final : NodeBase
 {
     Expr condition;
     std::vector<SequentialStatement> body;
 };
 
-struct ForLoop : NodeBase
+struct ForLoop final : NodeBase
 {
     std::string iterator;
     Expr range;
@@ -71,7 +71,7 @@ struct ForLoop : NodeBase
 };
 
 /// @brief Represents a NULL statement.
-struct NullStatement : NodeBase
+struct NullStatement final : NodeBase
 {};
 
 } // namespace ast

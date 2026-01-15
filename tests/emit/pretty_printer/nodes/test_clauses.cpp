@@ -18,8 +18,8 @@ auto makeGeneric(std::string name, std::string type, std::string def_val) -> ast
         .names = { std::move(name) },
         .subtype = ast::SubtypeIndication{ .resolution_func = std::nullopt,
                   .type_mark = std::move(type),
-                  .constraint = std::nullopt },
-        .default_expr = ast::TokenExpr{ .text = std::move(def_val) }
+                  .constraint = std::nullopt, },
+        .default_expr = ast::TokenExpr{ .text = std::move(def_val), }
     };
 }
 
@@ -30,20 +30,27 @@ auto makePort(std::string name, std::string mode, std::string type) -> ast::Port
         .mode = std::move(mode),
         .subtype = ast::SubtypeIndication{ .resolution_func = std::nullopt,
                   .type_mark = std::move(type),
-                  .constraint = std::nullopt },
-        .default_expr = std::nullopt
+                  .constraint = std::nullopt, },
+        .default_expr = std::nullopt,
     };
 }
 
 auto makeVectorPort(std::string name, std::string mode, std::string high, std::string low)
   -> ast::Port
 {
-    auto left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = std::move(high) });
-    auto right = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = std::move(low) });
+    auto left = std::make_unique<ast::Expr>(ast::TokenExpr{
+      .text = std::move(high),
+    });
+    auto right = std::make_unique<ast::Expr>(ast::TokenExpr{
+      .text = std::move(low),
+    });
 
     ast::IndexConstraint idx_constraint;
-    idx_constraint.ranges.children.emplace_back(
-      ast::BinaryExpr{ .left = std::move(left), .op = "downto", .right = std::move(right) });
+    idx_constraint.ranges.children.emplace_back(ast::BinaryExpr{
+      .left = std::move(left),
+      .op = "downto",
+      .right = std::move(right),
+    });
 
     return ast::Port{
         .names = { std::move(name) },
@@ -51,7 +58,7 @@ auto makeVectorPort(std::string name, std::string mode, std::string high, std::s
         .subtype
         = ast::SubtypeIndication{ .resolution_func = std::nullopt,
                   .type_mark = "std_logic_vector",
-                  .constraint = ast::Constraint(std::move(idx_constraint)) },
+                  .constraint = ast::Constraint(std::move(idx_constraint)), },
         .default_expr = std::nullopt
     };
 }
@@ -102,19 +109,35 @@ TEST_CASE("PortClause Rendering", "[pretty_printer][clauses][port]")
     {
         ast::Port port = makePort("reset", "in", "std_logic");
 
-        port.addLeading(ast::Comment{ .text = "-- port leading" });
-        port.addLeading(ast::Break{ .blank_lines = 1 });
+        port.addLeading(ast::Comment{
+          .text = "-- port leading",
+        });
+        port.addLeading(ast::Break{
+          .blank_lines = 1,
+        });
         port.setInlineComment("-- port inline");
-        port.addTrailing(ast::Break{ .blank_lines = 1 });
-        port.addTrailing(ast::Comment{ .text = "-- port trailing" });
+        port.addTrailing(ast::Break{
+          .blank_lines = 1,
+        });
+        port.addTrailing(ast::Comment{
+          .text = "-- port trailing",
+        });
 
         clause.ports.push_back(std::move(port));
 
-        clause.addLeading(ast::Comment{ .text = "-- Port clause starts here" });
-        clause.addLeading(ast::Break{ .blank_lines = 1 });
+        clause.addLeading(ast::Comment{
+          .text = "-- Port clause starts here",
+        });
+        clause.addLeading(ast::Break{
+          .blank_lines = 1,
+        });
         clause.setInlineComment("-- Inline comment for port clause");
-        clause.addTrailing(ast::Break{ .blank_lines = 1 });
-        clause.addTrailing(ast::Comment{ .text = "-- End of port clause" });
+        clause.addTrailing(ast::Break{
+          .blank_lines = 1,
+        });
+        clause.addTrailing(ast::Comment{
+          .text = "-- End of port clause",
+        });
 
         constexpr std::string_view EXPECTED = "-- Port clause starts here\n"
                                               "\n"

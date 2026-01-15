@@ -83,27 +83,40 @@ auto makeConcat(DocPtr left, DocPtr right) -> DocPtr
     }
 
     // === Fallback: Actually create the Concat node ===
-    return std::make_shared<DocImpl>(Concat{ .left = std::move(left), .right = std::move(right) });
+    return std::make_shared<DocImpl>(Concat{
+      .left = std::move(left),
+      .right = std::move(right),
+    });
 }
 
 auto makeNest(DocPtr doc) -> DocPtr
 {
-    return std::make_shared<DocImpl>(Nest{ .doc = std::move(doc) });
+    return std::make_shared<DocImpl>(Nest{
+      .doc = std::move(doc),
+    });
 }
 
 auto makeHang(DocPtr doc) -> DocPtr
 {
-    return std::make_shared<DocImpl>(Hang{ .doc = std::move(doc) });
+    return std::make_shared<DocImpl>(Hang{
+      .doc = std::move(doc),
+    });
 }
 
 auto makeUnion(DocPtr flat, DocPtr broken) -> DocPtr
 {
-    return std::make_shared<DocImpl>(Union{ .flat = std::move(flat), .broken = std::move(broken) });
+    return std::make_shared<DocImpl>(Union{
+      .flat = std::move(flat),
+      .broken = std::move(broken),
+    });
 }
 
 auto makeAlignText(std::string_view text, int level) -> DocPtr
 {
-    return std::make_shared<DocImpl>(AlignText{ .content = std::string(text), .level = level });
+    return std::make_shared<DocImpl>(AlignText{
+      .content = std::string(text),
+      .level = level,
+    });
 }
 
 auto makeAlign(DocPtr doc) -> DocPtr

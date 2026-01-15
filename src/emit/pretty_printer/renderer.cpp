@@ -27,7 +27,7 @@ auto Renderer::render(const DocPtr &doc) -> std::string
     return std::move(output_);
 }
 
-void Renderer::renderDoc(int indent, Mode mode, const DocPtr &doc)
+auto Renderer::renderDoc(int indent, Mode mode, const DocPtr &doc) -> void
 {
     if (!doc) {
         return;
@@ -158,13 +158,13 @@ auto Renderer::fitsImpl(int width, const DocPtr &doc) -> int
 }
 
 // Output helpers
-void Renderer::write(std::string_view text)
+auto Renderer::write(std::string_view text) -> void
 {
     output_ += text;
     column_ += static_cast<int>(text.length());
 }
 
-void Renderer::newline(int indent)
+auto Renderer::newline(int indent) -> void
 {
     output_ += '\n';
     output_.append(static_cast<std::size_t>(indent), ' ');

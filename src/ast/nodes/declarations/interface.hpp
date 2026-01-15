@@ -11,7 +11,7 @@
 namespace ast {
 
 /// @brief Represents a generic parameter inside a GENERIC clause.
-struct GenericParam : NodeBase
+struct GenericParam final : NodeBase
 {
     std::vector<std::string> names;
     SubtypeIndication subtype;
@@ -19,7 +19,7 @@ struct GenericParam : NodeBase
 };
 
 /// @brief Represents a port entry inside a PORT clause.
-struct Port : NodeBase
+struct Port final : NodeBase
 {
     std::vector<std::string> names;
     std::string mode;
@@ -28,13 +28,13 @@ struct Port : NodeBase
 };
 
 /// @brief Represents a VHDL GENERIC clause.
-struct GenericClause : NodeBase
+struct GenericClause final : NodeBase
 {
     std::vector<GenericParam> generics;
 };
 
 /// @brief Represents a VHDL PORT clause.
-struct PortClause : NodeBase
+struct PortClause final : NodeBase
 {
     std::vector<Port> ports;
 };

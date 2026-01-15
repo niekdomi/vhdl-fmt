@@ -33,11 +33,11 @@ TEST_CASE("GroupExpr Rendering", "[pretty_printer][expressions][group]")
 
     SECTION("Others association")
     {
-        ast::BinaryExpr assoc{ .left
-                               = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "others" }),
-                               .op = "=>",
-                               .right
-                               = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "'0'" }) };
+        ast::BinaryExpr assoc{
+            .left = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "others" }),
+            .op = "=>",
+            .right = std::make_unique<ast::Expr>(ast::TokenExpr{ .text = "'0'" }),
+        };
 
         ast::GroupExpr group{};
         group.children.emplace_back(std::move(assoc));

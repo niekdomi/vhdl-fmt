@@ -32,7 +32,7 @@ namespace builder {
 namespace {
 
 // Internal helper to wire up the ANTLR pipeline
-void initializeContext(Context &ctx, std::unique_ptr<antlr4::ANTLRInputStream> input)
+auto initializeContext(Context &ctx, std::unique_ptr<antlr4::ANTLRInputStream> input) -> void
 {
     ctx.input = std::move(input);
     ctx.lexer = std::make_unique<vhdlLexer>(ctx.input.get());
@@ -49,12 +49,12 @@ void initializeContext(Context &ctx, std::unique_ptr<antlr4::ANTLRInputStream> i
 class ThrowingErrorListener final : public antlr4::BaseErrorListener
 {
   public:
-    void syntaxError(antlr4::Recognizer * /*recognizer*/,
+    auto syntaxError(antlr4::Recognizer * /*recognizer*/,
                      antlr4::Token * /*offendingSymbol*/,
                      const std::size_t line,
                      const std::size_t char_position_in_line,
                      const std::string &msg,
-                     std::exception_ptr /*e*/) override
+                     std::exception_ptr /*e*/) -> void override
     {
         throw std::runtime_error(
           std::format("Parser error at line {}:{} - {}", line, char_position_in_line, msg));

@@ -17,17 +17,19 @@ TEST_CASE("ParenExpr Rendering", "[pretty_printer][expressions][paren]")
 
     SECTION("Precedence override")
     {
-        ast::BinaryExpr add{ .left{ std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "a" } }) },
-                             .op{ "+" },
-                             .right{
-                               std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "b" } }) } };
+        ast::BinaryExpr add{
+            .left{ std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "a" } }) },
+            .op{ "+" },
+            .right{ std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "b" } }) },
+        };
 
         ast::ParenExpr paren{ .inner{ std::make_unique<ast::Expr>(std::move(add)) } };
 
-        const ast::BinaryExpr mult{ .left{ std::make_unique<ast::Expr>(std::move(paren)) },
-                                    .op{ "*" },
-                                    .right{ std::make_unique<ast::Expr>(
-                                      ast::TokenExpr{ .text{ "c" } }) } };
+        const ast::BinaryExpr mult{
+            .left{ std::make_unique<ast::Expr>(std::move(paren)) },
+            .op{ "*" },
+            .right{ std::make_unique<ast::Expr>(ast::TokenExpr{ .text{ "c" } }) },
+        };
 
         REQUIRE(emit::test::render(mult) == "(a + b) * c");
     }

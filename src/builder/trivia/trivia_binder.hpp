@@ -28,7 +28,7 @@ class TriviaBinder final
     auto operator=(TriviaBinder &&) -> TriviaBinder & = delete;
 
     /// @brief Binds collected trivia to the specified AST node.
-    void bind(ast::NodeBase &node, const antlr4::ParserRuleContext &ctx);
+    auto bind(ast::NodeBase &node, const antlr4::ParserRuleContext &ctx) -> void;
 
   private:
     antlr4::CommonTokenStream &tokens_;

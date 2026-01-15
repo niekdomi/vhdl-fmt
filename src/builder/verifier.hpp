@@ -97,33 +97,35 @@ inline auto ensureSafety(antlr4::CommonTokenStream &original, antlr4::CommonToke
     auto *t_fmt = *it_fmt;
 
     if (t_orig->getType() != t_fmt->getType()) {
-        return std::unexpected(
-          VerificationError{ .message = std::format("Token Type Mismatch!\n"
-                                                    "  Original:  '{}' (Type: {}, Line: {})\n"
-                                                    "  Formatted: '{}' (Type: {}, Line: {})",
-                                                    t_orig->getText(),
-                                                    t_orig->getType(),
-                                                    t_orig->getLine(),
-                                                    t_fmt->getText(),
-                                                    t_fmt->getType(),
-                                                    t_fmt->getLine()),
-                             .expected = t_orig,
-                             .actual = t_fmt,
-                             .kind = VerificationError::Kind::TYPE_MISMATCH });
+        return std::unexpected(VerificationError{
+          .message = std::format("Token Type Mismatch!\n"
+                                 "  Original:  '{}' (Type: {}, Line: {})\n"
+                                 "  Formatted: '{}' (Type: {}, Line: {})",
+                                 t_orig->getText(),
+                                 t_orig->getType(),
+                                 t_orig->getLine(),
+                                 t_fmt->getText(),
+                                 t_fmt->getType(),
+                                 t_fmt->getLine()),
+          .expected = t_orig,
+          .actual = t_fmt,
+          .kind = VerificationError::Kind::TYPE_MISMATCH,
+        });
     }
 
     // Must be a text mismatch if types were equal
-    return std::unexpected(
-      VerificationError{ .message = std::format("Token Text Mismatch!\n"
-                                                "  Original:  '{}' (Line: {})\n"
-                                                "  Formatted: '{}' (Line: {})",
-                                                t_orig->getText(),
-                                                t_orig->getLine(),
-                                                t_fmt->getText(),
-                                                t_fmt->getLine()),
-                         .expected = t_orig,
-                         .actual = t_fmt,
-                         .kind = VerificationError::Kind::TEXT_MISMATCH });
+    return std::unexpected(VerificationError{
+      .message = std::format("Token Text Mismatch!\n"
+                             "  Original:  '{}' (Line: {})\n"
+                             "  Formatted: '{}' (Line: {})",
+                             t_orig->getText(),
+                             t_orig->getLine(),
+                             t_fmt->getText(),
+                             t_fmt->getLine()),
+      .expected = t_orig,
+      .actual = t_fmt,
+      .kind = VerificationError::Kind::TEXT_MISMATCH,
+    });
 }
 
 } // namespace builder::verify

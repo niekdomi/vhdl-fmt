@@ -31,7 +31,7 @@ class Renderer final
 
   private:
     // Internal rendering using visitor pattern
-    void renderDoc(int indent, Mode mode, const DocPtr &doc);
+    auto renderDoc(int indent, Mode mode, const DocPtr &doc) -> void;
 
     // Check if document fits on current line
     static auto fits(int width, const DocPtr &doc) -> bool;
@@ -40,8 +40,8 @@ class Renderer final
     static auto fitsImpl(int width, const DocPtr &doc) -> int;
 
     // Output helpers
-    void write(std::string_view text);
-    void newline(int indent);
+    auto write(std::string_view text) -> void;
+    auto newline(int indent) -> void;
 
     // Member variables
     int width_{};

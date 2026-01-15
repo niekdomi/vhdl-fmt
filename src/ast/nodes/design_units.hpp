@@ -21,19 +21,19 @@ struct UseClause;
 using ContextItem = std::variant<LibraryClause, UseClause>;
 
 /// @brief Represents a VHDL LIBRARY clause.
-struct LibraryClause : NodeBase
+struct LibraryClause final : NodeBase
 {
     std::vector<std::string> logical_names;
 };
 
 /// @brief Represents a VHDL USE clause.
-struct UseClause : NodeBase
+struct UseClause final : NodeBase
 {
     std::vector<std::string> selected_names;
 };
 
 /// @brief Represents a VHDL entity declaration.
-struct Entity : NodeBase
+struct Entity final : NodeBase
 {
     std::vector<ContextItem> context;
     std::string name;
