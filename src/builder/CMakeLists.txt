@@ -17,6 +17,8 @@ add_library(
     translators/design_units/design_file.cpp
     translators/design_units/entity.cpp
     translators/design_units/architecture.cpp
+    translators/design_units/package.cpp
+    translators/design_units/package_body.cpp
     translators/design_units/context.cpp
     #
     # Types

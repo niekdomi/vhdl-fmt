@@ -55,8 +55,26 @@ struct Architecture final : NodeBase
     bool has_end_architecture_keyword{false};
 };
 
+/// @brief Represents a VHDL package declaration.
+struct Package final : NodeBase
+{
+    std::string name;
+    std::vector<Declaration> decls;
+    std::optional<std::string> end_label;
+    bool has_end_package_keyword{false};
+};
+
+/// @brief Represents a VHDL package body.
+struct PackageBody final : NodeBase
+{
+    std::string name;
+    std::vector<Declaration> decls;
+    std::optional<std::string> end_label;
+    bool has_end_package_body_keyword{false};
+};
+
 /// @brief Variant representing the specific unit type
-using LibraryUnit = std::variant<Entity, Architecture>;
+using LibraryUnit = std::variant<Entity, Architecture, Package, PackageBody>;
 
 /// @brief Struct matching the grammar rule: design_unit : context_clause library_unit
 struct DesignUnit final : NodeBase

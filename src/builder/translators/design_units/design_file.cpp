@@ -43,8 +43,10 @@ auto Translator::makeLibraryUnit(vhdlParser::Library_unitContext& ctx) -> ast::L
         if (auto* ent = primary->entity_declaration()) {
             return makeEntity(*ent);
         }
+        if (auto* pkg = primary->package_declaration()) {
+            return makePackage(*pkg);
+        }
         // TODO(vedivad): Configuration
-        // TODO(vedivad): Package Declaration
     }
 
     // Secondary Unit (Architecture, Package Body)
@@ -52,7 +54,9 @@ auto Translator::makeLibraryUnit(vhdlParser::Library_unitContext& ctx) -> ast::L
         if (auto* arch = secondary->architecture_body()) {
             return makeArchitecture(*arch);
         }
-        // TODO(vedivad): Package Body
+        if (auto* pkg_body = secondary->package_body()) {
+            return makePackageBody(*pkg_body);
+        }
     }
 
     // The parser context exists but matches a node type we don't handle yet
