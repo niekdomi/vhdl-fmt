@@ -40,7 +40,8 @@ auto Translator::makeConcurrentStatementKind(vhdlParser::Architecture_statementC
     }
 
     // TODO(vedivad): Block, Generate, Component Instantiation
-    throw std::runtime_error("Unknown concurrent statement kind");
+    throw std::runtime_error(
+      std::format("Unknown concurrent statement kind: {}", ctx.getText().substr(0, 200)));
 }
 
 } // namespace builder

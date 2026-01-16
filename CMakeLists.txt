@@ -108,18 +108,28 @@ add_compile_options(
 message(STATUS "Project: ${PROJECT_NAME}")
 message(STATUS "  Version:  ${PROJECT_VERSION}")
 message(STATUS "  Build:    ${CMAKE_BUILD_TYPE}")
+message(STATUS "  Standard: C++${CMAKE_CXX_STANDARD}")
 message(
     STATUS
     "  Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}"
 )
-message(STATUS "  Standard: C++${CMAKE_CXX_STANDARD}")
 
 # Enable ccache for faster rebuilds if available
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
-    message(STATUS "  ccache:   ${CCACHE_PROGRAM}")
+    message(STATUS "  Cache:    ccache (${CCACHE_PROGRAM})")
     set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
 endif()
+
+
+find_program(MOLD_LINKER mold)
+if(MOLD_LINKER)
+    message(STATUS "  Linker:   mold (${MOLD_LINKER})")
+    add_link_options(-fuse-ld=mold)
+else()
+    message(STATUS "  Linker:   default")
+endif()
+
 
 find_package(antlr4-runtime CONFIG REQUIRED)
 find_package(argparse REQUIRED)

@@ -16,6 +16,24 @@
 #include <string>
 #include <string_view>
 
+namespace {
+auto get_peak_memory_mb() -> double
+{
+    std::ifstream status("/proc/self/status");
+    std::string line;
+    while (std::getline(status, line)) {
+        if (line.starts_with("VmHWM:")) {
+            // VmHWM is peak RSS in kB
+            std::istringstream iss(line.substr(6));
+            std::size_t kb = 0;
+            iss >> kb;
+            return static_cast<double>(kb) / 1024.0; // Convert to MB
+        }
+    }
+    return 0.0;
+}
+} // namespace
+
 auto main(int argc, char* argv[]) -> int
 {
     auto& logger = common::Logger::instance();
@@ -26,21 +44,44 @@ auto main(int argc, char* argv[]) -> int
         };
 
         cli::ConfigReader config_reader{argparser.getConfigPath()};
+        const auto mem_before_config_reader = get_peak_memory_mb();
         const auto config = config_reader.readConfigFile().value();
+        const auto mem_after_config_reader = get_peak_memory_mb();
 
         // 1. Create Context (keeps tokens alive)
+        const auto mem_before_create_context = get_peak_memory_mb();
         auto ctx_orig = builder::createContext(argparser.getInputPath());
+        const auto mem_after_create_context = get_peak_memory_mb();
 
         // 2. Build AST
+        const auto mem_before_build_ast = get_peak_memory_mb();
         const auto root = builder::build(ctx_orig);
+        const auto mem_after_build_ast = get_peak_memory_mb();
 
         // 3. Format
+        const auto mem_before_format = get_peak_memory_mb();
         const std::string formatted_code = emit::format(root, config);
+        const auto mem_after_format = get_peak_memory_mb();
 
         // 4. Verify Safety
+        const auto mem_before_verifier = get_peak_memory_mb();
         const auto ctx_fmt = builder::createContext(std::string_view{formatted_code});
+        const auto mem_after_verifier = get_peak_memory_mb();
 
         const auto result = builder::verify::ensureSafety(*ctx_orig.tokens, *ctx_fmt.tokens);
+
+        std::cout << "Memory usage (MB):\n";
+        std::cout
+          << "  ConfigReader: "
+          << (mem_after_config_reader - mem_before_config_reader)
+          << "\n";
+        std::cout
+          << "  CreateContext: "
+          << (mem_after_create_context - mem_before_create_context)
+          << "\n";
+        std::cout << "  Build AST: " << (mem_after_build_ast - mem_before_build_ast) << "\n";
+        std::cout << "  Format: " << (mem_after_format - mem_before_format) << "\n";
+        std::cout << "  Verify: " << (mem_after_verifier - mem_before_verifier) << "\n";
 
         if (!result) {
             logger.critical("Formatter corrupted the code semantics.");
@@ -55,7 +96,7 @@ auto main(int argc, char* argv[]) -> int
             std::ofstream out_file(argparser.getInputPath());
             out_file << formatted_code;
         } else {
-            std::cout << formatted_code;
+            // std::cout << formatted_code;
         }
     }
     catch (const std::exception& e) {

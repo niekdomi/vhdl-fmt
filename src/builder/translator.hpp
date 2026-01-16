@@ -48,7 +48,7 @@ class Translator final
     [[nodiscard]] auto makeArchitectureDeclarativeItem(vhdlParser::Block_declarative_itemContext& ctx) -> ast::Declaration;
     [[nodiscard]] auto makeDesignUnit(vhdlParser::Design_unitContext* ctx) -> ast::DesignUnit;
     [[nodiscard]] auto makeEntity(vhdlParser::Entity_declarationContext& ctx) -> ast::Entity;
-    [[nodiscard]] auto makeLibraryUnit(vhdlParser::Library_unitContext* ctx) -> ast::LibraryUnit;
+    [[nodiscard]] auto makeLibraryUnit(vhdlParser::Library_unitContext& ctx) -> ast::LibraryUnit;
 
     // Clauses
     [[nodiscard]] auto makeGenericClause(vhdlParser::Generic_clauseContext& ctx) -> ast::GenericClause;

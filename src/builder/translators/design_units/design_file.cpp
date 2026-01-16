@@ -32,14 +32,14 @@ auto Translator::makeDesignUnit(vhdlParser::Design_unitContext* ctx) -> ast::Des
         ctx->context_clause(),
         [](auto& cc) { return cc.context_item(); },
         [this](auto* item) { return makeContextItem(item); })
-      .set(&ast::DesignUnit::unit, makeLibraryUnit(lib_unit_ctx))
+      .set(&ast::DesignUnit::unit, makeLibraryUnit(*lib_unit_ctx))
       .build();
 }
 
-auto Translator::makeLibraryUnit(vhdlParser::Library_unitContext* ctx) -> ast::LibraryUnit
+auto Translator::makeLibraryUnit(vhdlParser::Library_unitContext& ctx) -> ast::LibraryUnit
 {
     // Primary Unit (Entity, Configuration, Package Decl)
-    if (auto* primary = ctx->primary_unit()) {
+    if (auto* primary = ctx.primary_unit()) {
         if (auto* ent = primary->entity_declaration()) {
             return makeEntity(*ent);
         }
@@ -48,7 +48,7 @@ auto Translator::makeLibraryUnit(vhdlParser::Library_unitContext* ctx) -> ast::L
     }
 
     // Secondary Unit (Architecture, Package Body)
-    if (auto* secondary = ctx->secondary_unit()) {
+    if (auto* secondary = ctx.secondary_unit()) {
         if (auto* arch = secondary->architecture_body()) {
             return makeArchitecture(*arch);
         }
@@ -56,7 +56,8 @@ auto Translator::makeLibraryUnit(vhdlParser::Library_unitContext* ctx) -> ast::L
     }
 
     // The parser context exists but matches a node type we don't handle yet
-    throw std::runtime_error("Unknown or unimplemented library unit type");
+    throw std::runtime_error(
+      std::format("Unknown or unimplemented library unit type: {}", ctx.getText().substr(0, 200)));
 }
 
 } // namespace builder
