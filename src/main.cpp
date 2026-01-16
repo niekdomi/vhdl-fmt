@@ -17,7 +17,7 @@
 #include <string_view>
 
 namespace {
-auto get_peak_memory_mb() -> double
+auto getPeakMemoryMb() -> double
 {
     std::ifstream status("/proc/self/status");
     std::string line;
@@ -44,29 +44,29 @@ auto main(int argc, char* argv[]) -> int
         };
 
         cli::ConfigReader config_reader{argparser.getConfigPath()};
-        const auto mem_before_config_reader = get_peak_memory_mb();
+        const auto mem_before_config_reader = getPeakMemoryMb();
         const auto config = config_reader.readConfigFile().value();
-        const auto mem_after_config_reader = get_peak_memory_mb();
+        const auto mem_after_config_reader = getPeakMemoryMb();
 
         // 1. Create Context (keeps tokens alive)
-        const auto mem_before_create_context = get_peak_memory_mb();
+        const auto mem_before_create_context = getPeakMemoryMb();
         auto ctx_orig = builder::createContext(argparser.getInputPath());
-        const auto mem_after_create_context = get_peak_memory_mb();
+        const auto mem_after_create_context = getPeakMemoryMb();
 
         // 2. Build AST
-        const auto mem_before_build_ast = get_peak_memory_mb();
+        const auto mem_before_build_ast = getPeakMemoryMb();
         const auto root = builder::build(ctx_orig);
-        const auto mem_after_build_ast = get_peak_memory_mb();
+        const auto mem_after_build_ast = getPeakMemoryMb();
 
         // 3. Format
-        const auto mem_before_format = get_peak_memory_mb();
+        const auto mem_before_format = getPeakMemoryMb();
         const std::string formatted_code = emit::format(root, config);
-        const auto mem_after_format = get_peak_memory_mb();
+        const auto mem_after_format = getPeakMemoryMb();
 
         // 4. Verify Safety
-        const auto mem_before_verifier = get_peak_memory_mb();
+        const auto mem_before_verifier = getPeakMemoryMb();
         const auto ctx_fmt = builder::createContext(std::string_view{formatted_code});
-        const auto mem_after_verifier = get_peak_memory_mb();
+        const auto mem_after_verifier = getPeakMemoryMb();
 
         const auto result = builder::verify::ensureSafety(*ctx_orig.tokens, *ctx_fmt.tokens);
 
