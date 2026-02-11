@@ -2,6 +2,7 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
+#include <format>
 #include <stdexcept>
 
 namespace builder {

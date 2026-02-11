@@ -4,6 +4,7 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
+#include <format>
 #include <stdexcept>
 
 namespace builder {
@@ -61,6 +62,7 @@ auto Translator::makeLibraryUnit(vhdlParser::Library_unitContext& ctx) -> ast::L
 
     // The parser context exists but matches a node type we don't handle yet
     throw std::runtime_error(
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
       std::format("Unknown or unimplemented library unit type: {}", ctx.getText().substr(0, 200)));
 }
 
