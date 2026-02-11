@@ -41,6 +41,7 @@ auto Translator::makeConcurrentStatementKind(vhdlParser::Architecture_statementC
 
     // TODO(vedivad): Block, Generate, Component Instantiation
     throw std::runtime_error(
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
       std::format("Unknown concurrent statement kind: {}", ctx.getText().substr(0, 200)));
 }
 
