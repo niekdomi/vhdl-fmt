@@ -42,30 +42,23 @@ concept IsExpression = std::is_same_v<T, ast::TokenExpr>
 class PrettyPrinter final : public ast::VisitorBase<Doc>
 {
   private:
+    // clang-format off
     // Node visitors
     auto operator()(const ast::Architecture& node) const -> Doc;
+    auto operator()(const ast::ComponentDecl& node) const -> Doc;
     auto operator()(const ast::DesignFile& node) const -> Doc;
     auto operator()(const ast::DesignUnit& node) const -> Doc;
     auto operator()(const ast::Entity& node) const -> Doc;
     auto operator()(const ast::GenericClause& node) const -> Doc;
-    auto operator()(const ast::PortClause& node) const -> Doc;
-
-    auto operator()(const ast::GenericParam& node) const -> Doc
-    {
-        return (*this)(node, true);
-    }
-
+    auto operator()(const ast::GenericParam& node) const -> Doc { return (*this)(node, true); }
     auto operator()(const ast::GenericParam& node, bool is_last) const -> Doc;
-
-    auto operator()(const ast::Port& node) const -> Doc
-    {
-        return (*this)(node, true);
-    }
-
-    auto operator()(const ast::Port& node, bool is_last) const -> Doc;
     auto operator()(const ast::LibraryClause& node) const -> Doc;
+    auto operator()(const ast::Package& node) const -> Doc;
+    auto operator()(const ast::PackageBody& node) const -> Doc;
+    auto operator()(const ast::Port& node) const -> Doc { return (*this)(node, true); }
+    auto operator()(const ast::Port& node, bool is_last) const -> Doc;
+    auto operator()(const ast::PortClause& node) const -> Doc;
     auto operator()(const ast::UseClause& node) const -> Doc;
-    auto operator()(const ast::ComponentDecl& node) const -> Doc;
 
     // Declarations
     auto operator()(const ast::ConstantDecl& node) const -> Doc;
@@ -78,8 +71,8 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     auto operator()(const ast::ArrayTypeDef& node) const -> Doc;
     auto operator()(const ast::EnumerationTypeDef& node) const -> Doc;
     auto operator()(const ast::FileTypeDef& node) const -> Doc;
-    auto operator()(const ast::RecordTypeDef& node) const -> Doc;
     auto operator()(const ast::RecordElement& node) const -> Doc;
+    auto operator()(const ast::RecordTypeDef& node) const -> Doc;
 
     // Expressions
     auto operator()(const ast::AttributeExpr& node) const -> Doc;
@@ -90,9 +83,9 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     auto operator()(const ast::PhysicalLiteral& node) const -> Doc;
     auto operator()(const ast::QualifiedExpr& node) const -> Doc;
     auto operator()(const ast::SliceExpr& node) const -> Doc;
+    auto operator()(const ast::SubtypeIndication& node) const -> Doc;
     auto operator()(const ast::TokenExpr& node) const -> Doc;
     auto operator()(const ast::UnaryExpr& node) const -> Doc;
-    auto operator()(const ast::SubtypeIndication& node) const -> Doc;
 
     // Constraints
     auto operator()(const ast::IndexConstraint& node) const -> Doc;
@@ -104,11 +97,7 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     auto operator()(const ast::Process& node) const -> Doc;
     auto operator()(const ast::Waveform& node) const -> Doc;
     auto operator()(const ast::Waveform::Element& node, bool is_last) const -> Doc;
-
-    auto operator()(const ast::Waveform::Element& node) const -> Doc
-    {
-        return (*this)(node, true);
-    }
+    auto operator()(const ast::Waveform::Element& node) const -> Doc { return (*this)(node, true); }
 
     auto operator()(const ast::ConditionalConcurrentAssign& node) const -> Doc;
     auto operator()(const ast::ConditionalConcurrentAssign::ConditionalWaveform& node) const -> Doc;
@@ -120,10 +109,11 @@ class PrettyPrinter final : public ast::VisitorBase<Doc>
     auto operator()(const ast::ForLoop& node) const -> Doc;
     auto operator()(const ast::IfStatement& node) const -> Doc;
     auto operator()(const ast::Loop& node) const -> Doc;
+    auto operator()(const ast::NullStatement& node) const -> Doc;
     auto operator()(const ast::SignalAssign& node) const -> Doc;
     auto operator()(const ast::VariableAssign& node) const -> Doc;
     auto operator()(const ast::WhileLoop& node) const -> Doc;
-    auto operator()(const ast::NullStatement& node) const -> Doc;
+    // clang-format on
 
     /// @brief Wraps the core doc with trivia for the given node.
     template<typename T>

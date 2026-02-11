@@ -4,6 +4,7 @@
 #include "builder/translator.hpp"
 #include "vhdlParser.h"
 
+#include <format>
 #include <stdexcept>
 
 namespace builder {
@@ -32,31 +33,37 @@ auto Translator::makeDesignUnit(vhdlParser::Design_unitContext* ctx) -> ast::Des
         ctx->context_clause(),
         [](auto& cc) { return cc.context_item(); },
         [this](auto* item) { return makeContextItem(item); })
-      .set(&ast::DesignUnit::unit, makeLibraryUnit(lib_unit_ctx))
+      .set(&ast::DesignUnit::unit, makeLibraryUnit(*lib_unit_ctx))
       .build();
 }
 
-auto Translator::makeLibraryUnit(vhdlParser::Library_unitContext* ctx) -> ast::LibraryUnit
+auto Translator::makeLibraryUnit(vhdlParser::Library_unitContext& ctx) -> ast::LibraryUnit
 {
     // Primary Unit (Entity, Configuration, Package Decl)
-    if (auto* primary = ctx->primary_unit()) {
+    if (auto* primary = ctx.primary_unit()) {
         if (auto* ent = primary->entity_declaration()) {
             return makeEntity(*ent);
         }
+        if (auto* pkg = primary->package_declaration()) {
+            return makePackage(*pkg);
+        }
         // TODO(vedivad): Configuration
-        // TODO(vedivad): Package Declaration
     }
 
     // Secondary Unit (Architecture, Package Body)
-    if (auto* secondary = ctx->secondary_unit()) {
+    if (auto* secondary = ctx.secondary_unit()) {
         if (auto* arch = secondary->architecture_body()) {
             return makeArchitecture(*arch);
         }
-        // TODO(vedivad): Package Body
+        if (auto* pkg_body = secondary->package_body()) {
+            return makePackageBody(*pkg_body);
+        }
     }
 
     // The parser context exists but matches a node type we don't handle yet
-    throw std::runtime_error("Unknown or unimplemented library unit type");
+    throw std::runtime_error(
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
+      std::format("Unknown or unimplemented library unit type: {}", ctx.getText().substr(0, 200)));
 }
 
 } // namespace builder

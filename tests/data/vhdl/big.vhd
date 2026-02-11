@@ -664,29 +664,29 @@ begin
 
   -- Convert: Float to [unsigned] Integer (FCVT.S.W) ----------------------------------------
   -- -------------------------------------------------------------------------------------------
-  neorv32_cpu_cp_fpu_f2i_inst: neorv32_cpu_cp_fpu_f2i
-  generic map (
-    -- FPU-specific options --
-    FPU_SUBNORMAL_SUPPORT => FPU_SUBNORMAL_SUPPORT -- Implemented sub-normal support, default false
-  )
-  port map (
-    -- control --
-    clk_i      => clk_i,                          -- global clock, rising edge
-    rstn_i     => rstn_i,                         -- global reset, low-active, async
-    start_i    => fu_conv_f2i.start,              -- trigger operation
-    abort_i    => ctrl_i.cpu_trap,                -- abort current operation
-    rmode_i    => fpu_operands.frm,               -- rounding mode
-    funct_i    => ctrl_i.ir_funct12(0),           -- 0=signed, 1=unsigned
-    -- input --
-    sign_i     => fpu_operands.rs1(31),           -- sign
-    exponent_i => fpu_operands.rs1(30 downto 23), -- exponent
-    mantissa_i => fpu_operands.rs1(22 downto 0),  -- mantissa
-    class_i    => fpu_operands.rs1_class,         -- operand class
-    -- output --
-    result_o   => fu_conv_f2i.result,             -- integer result
-    flags_o    => fu_conv_f2i.flags,              -- exception flags
-    done_o     => fu_conv_f2i.done                -- operation done
-  );
+  -- neorv32_cpu_cp_fpu_f2i_inst: neorv32_cpu_cp_fpu_f2i
+  -- generic map (
+  --   -- FPU-specific options --
+  --   FPU_SUBNORMAL_SUPPORT => FPU_SUBNORMAL_SUPPORT -- Implemented sub-normal support, default false
+  -- )
+  -- port map (
+  --   -- control --
+  --   clk_i      => clk_i,                          -- global clock, rising edge
+  --   rstn_i     => rstn_i,                         -- global reset, low-active, async
+  --   start_i    => fu_conv_f2i.start,              -- trigger operation
+  --   abort_i    => ctrl_i.cpu_trap,                -- abort current operation
+  --   rmode_i    => fpu_operands.frm,               -- rounding mode
+  --   funct_i    => ctrl_i.ir_funct12(0),           -- 0=signed, 1=unsigned
+  --   -- input --
+  --   sign_i     => fpu_operands.rs1(31),           -- sign
+  --   exponent_i => fpu_operands.rs1(30 downto 23), -- exponent
+  --   mantissa_i => fpu_operands.rs1(22 downto 0),  -- mantissa
+  --   class_i    => fpu_operands.rs1_class,         -- operand class
+  --   -- output --
+  --   result_o   => fu_conv_f2i.result,             -- integer result
+  --   flags_o    => fu_conv_f2i.flags,              -- exception flags
+  --   done_o     => fu_conv_f2i.done                -- operation done
+  -- );
 
 
   -- Sign-Injection (FSGNJ) -----------------------------------------------------------------
@@ -808,24 +808,24 @@ begin
   end process multiplier_core;
 
   -- integer multiplier (unsigned only) --
-  multiplier_core_inst: entity neorv32.neorv32_prim_mul
-  generic map (
-    DWIDTH => 24
-  )
-  port map (
-    -- global control --
-    clk_i    => clk_i,
-    rstn_i   => rstn_i,
-    -- data path --
-    en_i     => multiplier.start,
-    opa_i    => multiplier.opa,
-    opa_sn_i => '0',
-    opb_i    => multiplier.opb,
-    opb_sn_i => '0',
-    res_o    => multiplier.product
-  );
-  multiplier.opa <= '1' & fpu_operands.rs1(22 downto 0); -- append hidden one to mantissa
-  multiplier.opb <= '1' & fpu_operands.rs2(22 downto 0); -- append hidden one to mantissa
+  -- multiplier_core_inst: entity neorv32.neorv32_prim_mul
+  -- generic map (
+  --   DWIDTH => 24
+  -- )
+  -- port map (
+  --   -- global control --
+  --   clk_i    => clk_i,
+  --   rstn_i   => rstn_i,
+  --   -- data path --
+  --   en_i     => multiplier.start,
+  --   opa_i    => multiplier.opa,
+  --   opa_sn_i => '0',
+  --   opb_i    => multiplier.opb,
+  --   opb_sn_i => '0',
+  --   res_o    => multiplier.product
+  -- );
+  -- multiplier.opa <= '1' & fpu_operands.rs1(22 downto 0); -- append hidden one to mantissa
+  -- multiplier.opb <= '1' & fpu_operands.rs2(22 downto 0); -- append hidden one to mantissa
 
   -- exponent sum --
   multiplier.exp_sum <= std_ulogic_vector(unsigned('0' & fpu_operands.rs1(30 downto 23)) + unsigned('0' & fpu_operands.rs2(30 downto 23)));
@@ -1430,30 +1430,30 @@ begin
 
   -- Normalizer & Rounding Unit -------------------------------------------------------------
   -- -------------------------------------------------------------------------------------------
-  neorv32_cpu_cp_fpu_normalizer_inst: neorv32_cpu_cp_fpu_normalizer
-  generic map (
-    FPU_SUBNORMAL_SUPPORT => FPU_SUBNORMAL_SUPPORT -- implemented sub-normal support, default false
-  )
-  port map (
-    -- control --
-    clk_i      => clk_i,                -- global clock, rising edge
-    rstn_i     => rstn_i,               -- global reset, low-active, async
-    start_i    => normalizer.start,     -- trigger operation
-    abort_i    => ctrl_i.cpu_trap,      -- abort current operation
-    rmode_i    => fpu_operands.frm,     -- rounding mode
-    funct_i    => normalizer.mode,      -- operation mode
-    -- input --
-    sign_i     => normalizer.sign,      -- sign
-    exponent_i => normalizer.xexp,      -- extended exponent
-    mantissa_i => normalizer.xmantissa, -- extended mantissa
-    integer_i  => fu_conv_i2f.result,   -- integer input
-    class_i    => normalizer.class,     -- input number class
-    flags_i    => normalizer.flags_in,  -- exception flags input
-    -- output --
-    result_o   => normalizer.result,    -- result (float or int)
-    flags_o    => normalizer.flags_out, -- exception flags
-    done_o     => normalizer.done       -- operation done
-  );
+  -- neorv32_cpu_cp_fpu_normalizer_inst: neorv32_cpu_cp_fpu_normalizer
+  -- generic map (
+  --   FPU_SUBNORMAL_SUPPORT => FPU_SUBNORMAL_SUPPORT -- implemented sub-normal support, default false
+  -- )
+  -- port map (
+  --   -- control --
+  --   clk_i      => clk_i,                -- global clock, rising edge
+  --   rstn_i     => rstn_i,               -- global reset, low-active, async
+  --   start_i    => normalizer.start,     -- trigger operation
+  --   abort_i    => ctrl_i.cpu_trap,      -- abort current operation
+  --   rmode_i    => fpu_operands.frm,     -- rounding mode
+  --   funct_i    => normalizer.mode,      -- operation mode
+  --   -- input --
+  --   sign_i     => normalizer.sign,      -- sign
+  --   exponent_i => normalizer.xexp,      -- extended exponent
+  --   mantissa_i => normalizer.xmantissa, -- extended mantissa
+  --   integer_i  => fu_conv_i2f.result,   -- integer input
+  --   class_i    => normalizer.class,     -- input number class
+  --   flags_i    => normalizer.flags_in,  -- exception flags input
+  --   -- output --
+  --   result_o   => normalizer.result,    -- result (float or int)
+  --   flags_o    => normalizer.flags_out, -- exception flags
+  --   done_o     => normalizer.done       -- operation done
+  -- );
 
 
 -- ****************************************************************************************************************************

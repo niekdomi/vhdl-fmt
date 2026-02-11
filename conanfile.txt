@@ -2,7 +2,6 @@
 antlr4-cppruntime/4.13.2
 argparse/3.2
 catch2/3.11.0
-fmt/12.0.0
 spdlog/1.16.0
 yaml-cpp/0.8.0
 
