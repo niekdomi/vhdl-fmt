@@ -16,6 +16,8 @@ add_executable(
     pretty_printer/nodes/design_units/test_entity.cpp
     pretty_printer/nodes/design_units/test_architecture.cpp
     pretty_printer/nodes/design_units/test_context.cpp
+    pretty_printer/nodes/design_units/test_package.cpp
+    pretty_printer/nodes/design_units/test_package_body.cpp
     #
     # Statements
     pretty_printer/nodes/statements/test_waveform.cpp
