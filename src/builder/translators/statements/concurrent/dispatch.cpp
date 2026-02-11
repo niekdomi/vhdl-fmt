@@ -18,9 +18,17 @@ auto Translator::makeConcurrentStatement(vhdlParser::Architecture_statementConte
       // If no label yet, check if the KIND provides one (e.g. Process)
       .apply([&](auto& stmt) {
           if (!stmt.label.has_value()) {
+              // Component has optional label
               if (auto* proc = ctx.process_statement()) {
                   if (auto* pl = proc->label_colon()) {
                       stmt.label = pl->identifier()->getText();
+                  }
+              }
+
+              // Component instantiation has required label
+              if (auto* inst = ctx.component_instantiation_statement()) {
+                  if (auto* il = inst->label_colon()) {
+                      stmt.label = il->identifier()->getText();
                   }
               }
           }
@@ -40,7 +48,11 @@ auto Translator::makeConcurrentStatementKind(vhdlParser::Architecture_statementC
         return makeConcurrentAssignBody(*assign);
     }
 
-    // TODO(vedivad): Block, Generate, Component Instantiation
+    if (auto* inst = ctx.component_instantiation_statement()) {
+        return makeComponentInstantiation(*inst);
+    }
+
+    // TODO(vedivad): Block, Generate
     throw std::runtime_error(
       // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
       std::format("Unknown concurrent statement kind: {}", ctx.getText().substr(0, 200)));

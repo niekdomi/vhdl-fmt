@@ -44,9 +44,19 @@ struct SelectedConcurrentAssign final : NodeBase
 
 struct Process final : NodeBase
 {
+    std::optional<std::string> label;
     std::vector<std::string> sensitivity_list;
     std::vector<Declaration> decls;
     std::vector<SequentialStatement> body;
+};
+
+struct ComponentInstantiation final : NodeBase
+{
+    std::string entity_name;
+    std::optional<std::string> architecture;
+    bool is_entity{false};
+    std::vector<Expr> generic_map;
+    std::vector<Expr> port_map;
 };
 
 } // namespace ast

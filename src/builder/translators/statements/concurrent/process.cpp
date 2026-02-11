@@ -7,7 +7,17 @@ namespace builder {
 
 auto Translator::makeProcess(vhdlParser::Process_statementContext& ctx) -> ast::Process
 {
+    // Extract the label
+    std::optional<std::string> label;
+    if (auto* lc = ctx.label_colon()) {
+        label = lc->identifier()->getText();
+    } else if (ctx.identifier() != nullptr) {
+        // Apparently its valid in VHDL to define an end label without a start label.
+        label = ctx.identifier()->getText();
+    }
+
     return build<ast::Process>(ctx)
+      .set(&ast::Process::label, std::move(label))
       .collectFrom(
         &ast::Process::sensitivity_list,
         ctx.sensitivity_list(),

@@ -64,6 +64,17 @@ auto Translator::makeCallArgument(vhdlParser::Association_elementContext& ctx) -
           .build();
     }
 
+    // 3. Check if there's a formal_part (e.g., "clk_i => clk_i")
+    if (auto* formal = ctx.formal_part()) {
+        ast::Expr formal_expr = makeToken(*formal->identifier());
+
+        return build<ast::BinaryExpr>(ctx)
+          .setBox(&ast::BinaryExpr::left, std::move(formal_expr))
+          .set(&ast::BinaryExpr::op, "=>")
+          .setBox(&ast::BinaryExpr::right, std::move(content))
+          .build();
+    }
+
     return content;
 }
 

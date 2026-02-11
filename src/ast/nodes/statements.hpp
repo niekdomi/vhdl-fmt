@@ -12,8 +12,8 @@
 namespace ast {
 
 // Concurrent Statements
-using ConcurrentStmtKind =
-  std::variant<ConditionalConcurrentAssign, SelectedConcurrentAssign, Process>;
+using ConcurrentStmtKind = std::
+  variant<ConditionalConcurrentAssign, SelectedConcurrentAssign, Process, ComponentInstantiation>;
 
 struct ConcurrentStatement final : NodeBase
 {

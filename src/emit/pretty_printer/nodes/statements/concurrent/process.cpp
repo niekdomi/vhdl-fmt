@@ -23,7 +23,13 @@ auto PrettyPrinter::operator()(const ast::Process& node) const -> Doc
 
     head /= Doc::keyword("begin");
 
-    const Doc end = Doc::keyword("end") & Doc::keyword("process") + Doc::text(";");
+    Doc end = Doc::keyword("end") & Doc::keyword("process");
+
+    if (node.label) {
+        end = end & Doc::text(*node.label);
+    }
+
+    end += Doc::text(";");
 
     if (node.body.empty()) {
         return head / end;

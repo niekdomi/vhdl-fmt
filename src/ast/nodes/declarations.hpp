@@ -4,6 +4,7 @@
 #include "ast/node.hpp"
 #include "nodes/declarations/interface.hpp"
 #include "nodes/declarations/objects.hpp"
+#include "nodes/declarations/subprogram.hpp"
 #include "nodes/types.hpp"
 
 #include <optional>
@@ -30,7 +31,13 @@ struct ComponentDecl final : NodeBase
 };
 
 /// @brief Variant type for all declarations.
-using Declaration = std::variant<ConstantDecl, SignalDecl, VariableDecl, TypeDecl, ComponentDecl>;
+using Declaration = std::variant<ConstantDecl,
+                                 SignalDecl,
+                                 VariableDecl,
+                                 TypeDecl,
+                                 ComponentDecl,
+                                 FunctionDecl,
+                                 ProcedureDecl>;
 
 } // namespace ast
 

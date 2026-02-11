@@ -64,7 +64,11 @@ class Translator final
     // Declarations
     [[nodiscard]] auto makeComponentDecl(vhdlParser::Component_declarationContext& ctx) -> ast::ComponentDecl;
     [[nodiscard]] auto makeConstantDecl(vhdlParser::Constant_declarationContext& ctx) -> ast::ConstantDecl;
+    [[nodiscard]] auto makeFormalParam(vhdlParser::Interface_declarationContext& ctx) -> ast::FormalParam;
+    [[nodiscard]] auto makeFunctionDecl(vhdlParser::Subprogram_declarationContext& ctx) -> ast::FunctionDecl;
     [[nodiscard]] auto makeGenericParam(vhdlParser::Interface_constant_declarationContext& ctx) -> ast::GenericParam;
+    [[nodiscard]] auto makePackageDeclarativeItem(vhdlParser::Package_declarative_itemContext& ctx) -> ast::Declaration;
+    [[nodiscard]] auto makeProcedureDecl(vhdlParser::Subprogram_declarationContext& ctx) -> ast::ProcedureDecl;
     [[nodiscard]] auto makeSignalDecl(vhdlParser::Signal_declarationContext& ctx) -> ast::SignalDecl;
     [[nodiscard]] auto makeSignalPort(vhdlParser::Interface_port_declarationContext& ctx) -> ast::Port;
     [[nodiscard]] auto makeTypeDecl(vhdlParser::Type_declarationContext& ctx) -> ast::TypeDecl;
@@ -90,6 +94,7 @@ class Translator final
     [[nodiscard]] auto makeConcurrentStatementKind(vhdlParser::Architecture_statementContext& ctx) -> ast::ConcurrentStmtKind;
 
     [[nodiscard]] auto makeCaseStatement(vhdlParser::Case_statementContext& ctx) -> ast::CaseStatement;
+    [[nodiscard]] auto makeComponentInstantiation(vhdlParser::Component_instantiation_statementContext& ctx) -> ast::ComponentInstantiation;
     [[nodiscard]] auto makeConcurrentAssignBody(vhdlParser::Concurrent_signal_assignment_statementContext& ctx) -> ast::ConcurrentStmtKind;
     [[nodiscard]] auto makeConditionalAssign(vhdlParser::Conditional_signal_assignmentContext& ctx) -> ast::ConditionalConcurrentAssign;
     [[nodiscard]] auto makeConditionalWaveform(vhdlParser::Conditional_waveformsContext& ctx) -> ast::ConditionalConcurrentAssign::ConditionalWaveform;
