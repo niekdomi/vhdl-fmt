@@ -121,7 +121,6 @@ if(CCACHE_PROGRAM)
     set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
 endif()
 
-
 find_program(MOLD_LINKER mold)
 if(MOLD_LINKER)
     message(STATUS "  Linker:   mold (${MOLD_LINKER})")
@@ -129,7 +128,6 @@ if(MOLD_LINKER)
 else()
     message(STATUS "  Linker:   default")
 endif()
-
 
 find_package(antlr4-runtime CONFIG REQUIRED)
 find_package(argparse REQUIRED)
