@@ -8,7 +8,7 @@ are fully implemented yet.
 
 ## Installation
 
-**TODO**
+The release binary can be found [here](https://github.com/niekdomi/vhdl-fmt/releases)
 
 ## Usage
 
