@@ -1,8 +1,0 @@
----
-InheritParentConfig: true
-
-Checks: >
-  -bugprone-unchecked-optional-access,
-  -cppcoreguidelines-avoid-magic-numbers,
-  -readability-function-cognitive-complexity,
-  -readability-magic-numbers,

@@ -1,0 +1,3992 @@
+./Cargo.toml:
+[package]
+name = "vhdl-fmt-rust"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.5.60", features = ["derive"] }
+pretty = "0.12.5"
+serde = { version = "1.0", features = ["derive"] }
+toml = "1.0.6"
+vhdl_lang = "0.86.0"
+
+
+./src/main.rs:
+mod config;
+mod fmt;
+
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::process;
+
+use clap::{Arg, ArgAction, Command};
+use pretty::Arena;
+use vhdl_lang::{VHDLParser, VHDLStandard};
+
+use config::FormatConfig;
+use fmt::Formatter;
+
+fn main() {
+    let matches = Command::new("vhdl-fmt")
+        .version(env!("CARGO_PKG_VERSION"))
+        .about("A fast, opinionated VHDL code formatter")
+        .arg(
+            Arg::new("files")
+                .help("VHDL files to format")
+                .num_args(1..)
+                .required(true),
+        )
+        .arg(
+            Arg::new("write")
+                .long("write")
+                .short('w')
+                .help("Overwrite the input file(s) with the formatted output")
+                .action(ArgAction::SetTrue),
+        )
+        .arg(
+            Arg::new("check")
+                .long("check")
+                .short('c')
+                .help("Check whether file(s) are already formatted; exit non-zero if not")
+                .action(ArgAction::SetTrue),
+        )
+        .arg(
+            Arg::new("location")
+                .long("location")
+                .short('l')
+                .help("Path to a vhdl-fmt.toml configuration file")
+                .value_name("path"),
+        )
+        .get_matches();
+
+    let config = load_config(matches.get_one::<String>("location").map(Path::new));
+
+    let files: Vec<&String> = matches.get_many("files").unwrap().collect();
+    let write = matches.get_flag("write");
+    let check = matches.get_flag("check");
+
+    let mut any_unformatted = false;
+
+    for file_path in files {
+        let path = Path::new(file_path);
+
+        let source = match fs::read_to_string(path) {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("error: could not read {}: {}", file_path, e);
+                process::exit(1);
+            }
+        };
+
+        let formatted = match format_source(&source, &config) {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("error: could not parse {}: {}", file_path, e);
+                process::exit(1);
+            }
+        };
+
+        if check {
+            if source != formatted {
+                eprintln!("{} is not formatted", file_path);
+                any_unformatted = true;
+            }
+        } else if write {
+            if source != formatted {
+                if let Err(e) = fs::write(path, &formatted) {
+                    eprintln!("error: could not write {}: {}", file_path, e);
+                    process::exit(1);
+                }
+            }
+        } else {
+            print!("{}", formatted);
+        }
+    }
+
+    if any_unformatted {
+        process::exit(1);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Config loading
+// ---------------------------------------------------------------------------
+
+fn load_config(location: Option<&Path>) -> FormatConfig {
+    let config_path: Option<PathBuf> = if let Some(p) = location {
+        Some(p.to_path_buf())
+    } else {
+        let candidate = Path::new("vhdl-fmt.toml");
+        if candidate.exists() {
+            Some(candidate.to_path_buf())
+        } else {
+            None
+        }
+    };
+
+    if let Some(path) = config_path {
+        match fs::read_to_string(&path) {
+            Ok(content) => match toml::from_str(&content) {
+                Ok(cfg) => return cfg,
+                Err(e) => {
+                    eprintln!(
+                        "warning: could not parse config {}: {} — using defaults",
+                        path.display(),
+                        e
+                    );
+                }
+            },
+            Err(e) => {
+                eprintln!(
+                    "warning: could not read config {}: {} — using defaults",
+                    path.display(),
+                    e
+                );
+            }
+        }
+    }
+
+    FormatConfig::default()
+}
+
+// ---------------------------------------------------------------------------
+// Core formatting entry point
+// ---------------------------------------------------------------------------
+
+pub fn format_source(source: &str, config: &FormatConfig) -> Result<String, String> {
+    let parser = VHDLParser::new(VHDLStandard::default());
+    use std::path::Path;
+    let vhdl_source = vhdl_lang::Source::inline(Path::new("<stdin>"), source);
+    let mut diagnostics = Vec::new();
+    let design_file = parser.parse_design_source(&vhdl_source, &mut diagnostics);
+
+    // Surface parse errors as a combined error string.
+    if !diagnostics.is_empty() {
+        let errors: Vec<String> = diagnostics.iter().map(|d| d.message.clone()).collect();
+        return Err(errors.join("\n"));
+    }
+
+    let arena = Arena::new();
+    let formatter = Formatter::new(&arena, config);
+    let doc = formatter.format_design_file(&design_file);
+
+    let mut output = String::new();
+    doc.render_fmt(config.line_length, &mut output)
+        .map_err(|e| e.to_string())?;
+
+    // Ensure a single trailing newline.
+    if !output.ends_with('\n') {
+        output.push('\n');
+    }
+
+    Ok(output)
+}
+
+
+./src/config.rs:
+use serde::Deserialize;
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct FormatConfig {
+    pub line_length: usize,
+    pub indentation: IndentConfig,
+    pub casing: CasingConfig,
+}
+
+impl Default for FormatConfig {
+    fn default() -> Self {
+        Self {
+            line_length: 100,
+            indentation: IndentConfig::default(),
+            casing: CasingConfig::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct IndentConfig {
+    pub size: usize,
+}
+
+impl Default for IndentConfig {
+    fn default() -> Self {
+        Self { size: 4 }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct CasingConfig {
+    pub keywords: CasingMode,
+    pub identifiers: CasingMode,
+    pub constants: CasingMode,
+}
+
+impl Default for CasingConfig {
+    fn default() -> Self {
+        Self {
+            keywords: CasingMode::Preserve,
+            identifiers: CasingMode::Preserve,
+            constants: CasingMode::Preserve,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum CasingMode {
+    #[default]
+    Preserve,
+    LowerCase,
+    UpperCase,
+}
+
+impl CasingMode {
+    pub fn apply(&self, s: &str) -> String {
+        match self {
+            CasingMode::Preserve => s.to_string(),
+            CasingMode::LowerCase => s.to_lowercase(),
+            CasingMode::UpperCase => s.to_uppercase(),
+        }
+    }
+}
+
+
+./src/fmt/sequential.rs:
+use pretty::DocAllocator;
+use vhdl_lang::ast::token_range::WithTokenSpan;
+use vhdl_lang::ast::{
+    AssignmentRightHand, CaseStatement, Choice, DelayMechanism, ExitStatement, Expression,
+    IfStatement, IterationScheme, LabeledSequentialStatement, LoopStatement, NextStatement,
+    ReportStatement, SequentialStatement, SignalAssignment, SignalForceAssignment,
+    SignalReleaseAssignment, Target, VariableAssignment, WaitStatement, Waveform, WaveformElement,
+};
+
+use crate::fmt::{Doc, Formatter};
+
+impl<'a> Formatter<'a> {
+    // -----------------------------------------------------------------------
+    // Statement list
+    // -----------------------------------------------------------------------
+
+    pub fn format_sequential_statements(
+        &self,
+        statements: &[LabeledSequentialStatement],
+    ) -> Doc<'a> {
+        if statements.is_empty() {
+            return self.nil();
+        }
+        let items: Vec<Doc<'a>> = statements
+            .iter()
+            .map(|s| self.format_labeled_sequential_statement(s))
+            .collect();
+        self.nest(self.hardline().append(self.join_hardline(items)))
+    }
+
+    fn format_labeled_sequential_statement(&self, stmt: &LabeledSequentialStatement) -> Doc<'a> {
+        let label_doc = if let Some(label) = &stmt.label.tree {
+            self.ident(&label.item.name_utf8())
+                .append(self.punct(":"))
+                .append(self.space())
+        } else {
+            self.nil()
+        };
+        label_doc.append(self.format_sequential_statement(&stmt.statement))
+    }
+
+    pub fn format_sequential_statement(
+        &self,
+        stmt: &WithTokenSpan<SequentialStatement>,
+    ) -> Doc<'a> {
+        match &stmt.item {
+            SequentialStatement::Wait(w) => self.format_wait_statement(w),
+            SequentialStatement::Assert(a) => self
+                .kw("assert")
+                .append(self.space())
+                .append(self.format_assert_inner(a))
+                .append(self.punct(";")),
+            SequentialStatement::Report(r) => self.format_report_statement(r),
+            SequentialStatement::VariableAssignment(a) => self.format_variable_assignment(a),
+            SequentialStatement::SignalAssignment(a) => self.format_signal_assignment(a),
+            SequentialStatement::SignalForceAssignment(a) => self.format_signal_force_assignment(a),
+            SequentialStatement::SignalReleaseAssignment(a) => {
+                self.format_signal_release_assignment(a)
+            }
+            SequentialStatement::ProcedureCall(call) => self
+                .format_call_or_indexed(&call.item)
+                .append(self.punct(";")),
+            SequentialStatement::If(s) => self.format_if_statement(s),
+            SequentialStatement::Case(s) => self.format_case_statement(s),
+            SequentialStatement::Loop(s) => self.format_loop_statement(s),
+            SequentialStatement::Next(s) => self.format_next_statement(s),
+            SequentialStatement::Exit(s) => self.format_exit_statement(s),
+            SequentialStatement::Return(r) => {
+                let expr_doc = if let Some(expr) = &r.expression {
+                    self.space().append(self.format_expression(expr.as_ref()))
+                } else {
+                    self.nil()
+                };
+                self.kw("return").append(expr_doc).append(self.punct(";"))
+            }
+            SequentialStatement::Null => self.kw("null").append(self.punct(";")),
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Wait statement
+    // -----------------------------------------------------------------------
+
+    fn format_wait_statement(&self, stmt: &WaitStatement) -> Doc<'a> {
+        let sensitivity_doc = if let Some(names) = &stmt.sensitivity_clause {
+            self.space()
+                .append(self.kw("on"))
+                .append(self.space())
+                .append(self.format_name_list(names))
+        } else {
+            self.nil()
+        };
+
+        let condition_doc = if let Some(cond) = &stmt.condition_clause {
+            self.space()
+                .append(self.kw("until"))
+                .append(self.space())
+                .append(self.format_expression(cond.as_ref()))
+        } else {
+            self.nil()
+        };
+
+        let timeout_doc = if let Some(timeout) = &stmt.timeout_clause {
+            self.space()
+                .append(self.kw("for"))
+                .append(self.space())
+                .append(self.format_expression(timeout.as_ref()))
+        } else {
+            self.nil()
+        };
+
+        self.kw("wait")
+            .append(sensitivity_doc)
+            .append(condition_doc)
+            .append(timeout_doc)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Assert / report
+    // -----------------------------------------------------------------------
+
+    /// Formats the inner part of an assert: `condition [report expr] [severity expr]`
+    pub fn format_assert_inner(&self, stmt: &vhdl_lang::ast::AssertStatement) -> Doc<'a> {
+        let cond_doc = self.format_expression(stmt.condition.as_ref());
+
+        let report_doc = if let Some(report) = &stmt.report {
+            self.space()
+                .append(self.kw("report"))
+                .append(self.space())
+                .append(self.format_expression(report.as_ref()))
+        } else {
+            self.nil()
+        };
+
+        let severity_doc = self.format_opt_severity(stmt.severity.as_ref());
+
+        cond_doc.append(report_doc).append(severity_doc)
+    }
+
+    pub fn format_opt_severity(&self, severity: Option<&WithTokenSpan<Expression>>) -> Doc<'a> {
+        if let Some(sev) = severity {
+            self.space()
+                .append(self.kw("severity"))
+                .append(self.space())
+                .append(self.format_expression(sev.as_ref()))
+        } else {
+            self.nil()
+        }
+    }
+
+    fn format_report_statement(&self, stmt: &ReportStatement) -> Doc<'a> {
+        let sev = self.format_opt_severity(stmt.severity.as_ref());
+        self.kw("report")
+            .append(self.space())
+            .append(self.format_expression(stmt.report.as_ref()))
+            .append(sev)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Assignment statements
+    // -----------------------------------------------------------------------
+
+    fn format_variable_assignment(&self, stmt: &VariableAssignment) -> Doc<'a> {
+        // Handle `with expr select? target := rhs` (selected assignment)
+        if let AssignmentRightHand::Selected(sel) = &stmt.rhs {
+            let with_expr = self.format_expression(sel.expression.as_ref());
+            let target = self.format_target(&stmt.target);
+            let alternatives: Vec<Doc<'a>> = sel
+                .alternatives
+                .iter()
+                .map(|alt| {
+                    let val = self.format_expression(alt.item.as_ref());
+                    let choices = self.format_choices(&alt.choices);
+                    val.append(self.space())
+                        .append(self.kw("when"))
+                        .append(self.space())
+                        .append(choices)
+                })
+                .collect();
+            let alts_doc = self.intersperse(alternatives, self.punct(",").append(self.line()));
+            return self
+                .kw("with")
+                .append(self.space())
+                .append(with_expr)
+                .append(self.space())
+                .append(self.kw("select"))
+                .append(self.space())
+                .append(target)
+                .append(self.space())
+                .append(self.punct(":="))
+                .append(self.space())
+                .append(alts_doc)
+                .append(self.punct(";"));
+        }
+
+        let target = self.format_target(&stmt.target);
+        let rhs = self.format_assignment_rhs(&stmt.rhs, |f, e| f.format_expression(e.as_ref()));
+        target
+            .append(self.space())
+            .append(self.punct(":="))
+            .append(self.space())
+            .append(rhs)
+            .append(self.punct(";"))
+    }
+
+    fn format_signal_assignment(&self, stmt: &SignalAssignment) -> Doc<'a> {
+        let target = self.format_target(&stmt.target);
+
+        let delay_doc = if let Some(delay) = &stmt.delay_mechanism {
+            self.format_delay_mechanism(delay).append(self.space())
+        } else {
+            self.nil()
+        };
+
+        let rhs = self.format_assignment_rhs(&stmt.rhs, |f, w| f.format_waveform(w));
+
+        target
+            .append(self.space())
+            .append(self.punct("<="))
+            .append(self.space())
+            .append(delay_doc)
+            .append(rhs)
+            .append(self.punct(";"))
+    }
+
+    fn format_signal_force_assignment(&self, stmt: &SignalForceAssignment) -> Doc<'a> {
+        use vhdl_lang::ast::ForceMode;
+        let target = self.format_target(&stmt.target);
+        let force_mode_doc = match &stmt.force_mode {
+            Some(ForceMode::In) => self.space().append(self.kw("in")),
+            Some(ForceMode::Out) => self.space().append(self.kw("out")),
+            None => self.nil(),
+        };
+        let rhs = self.format_assignment_rhs(&stmt.rhs, |f, e| f.format_expression(e.as_ref()));
+        target
+            .append(self.space())
+            .append(self.punct("<="))
+            .append(self.space())
+            .append(self.kw("force"))
+            .append(force_mode_doc)
+            .append(self.space())
+            .append(rhs)
+            .append(self.punct(";"))
+    }
+
+    fn format_signal_release_assignment(&self, stmt: &SignalReleaseAssignment) -> Doc<'a> {
+        use vhdl_lang::ast::ForceMode;
+        let target = self.format_target(&stmt.target);
+        let release_mode_doc = match &stmt.force_mode {
+            Some(ForceMode::In) => self.space().append(self.kw("in")),
+            Some(ForceMode::Out) => self.space().append(self.kw("out")),
+            None => self.nil(),
+        };
+        target
+            .append(self.space())
+            .append(self.punct("<="))
+            .append(self.space())
+            .append(self.kw("release"))
+            .append(release_mode_doc)
+            .append(self.punct(";"))
+    }
+
+    pub fn format_target(&self, target: &WithTokenSpan<Target>) -> Doc<'a> {
+        match &target.item {
+            Target::Name(name) => self.format_name(name),
+            Target::Aggregate(associations) => {
+                let items: Vec<Doc<'a>> = associations
+                    .iter()
+                    .map(|a| self.format_element_association(a))
+                    .collect();
+                self.punct("(")
+                    .append(self.intersperse(items, self.arena.text(", ")))
+                    .append(self.punct(")"))
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Delay mechanism
+    // -----------------------------------------------------------------------
+
+    pub fn format_delay_mechanism(&self, delay: &WithTokenSpan<DelayMechanism>) -> Doc<'a> {
+        match &delay.item {
+            DelayMechanism::Transport => self.kw("transport"),
+            DelayMechanism::Inertial { reject } => {
+                if let Some(reject_expr) = reject {
+                    self.kw("reject")
+                        .append(self.space())
+                        .append(self.format_expression(reject_expr.as_ref()))
+                        .append(self.space())
+                        .append(self.kw("inertial"))
+                } else {
+                    self.kw("inertial")
+                }
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Waveforms
+    // -----------------------------------------------------------------------
+
+    pub fn format_waveform(&self, waveform: &Waveform) -> Doc<'a> {
+        match waveform {
+            Waveform::Elements(elements) => {
+                let items: Vec<Doc<'a>> = elements
+                    .iter()
+                    .map(|e| self.format_waveform_element(e))
+                    .collect();
+                self.intersperse(items, self.arena.text(", "))
+            }
+            Waveform::Unaffected(_) => self.kw("unaffected"),
+        }
+    }
+
+    fn format_waveform_element(&self, elem: &WaveformElement) -> Doc<'a> {
+        let value_doc = self.format_expression(elem.value.as_ref());
+        if let Some(after) = &elem.after {
+            value_doc
+                .append(self.space())
+                .append(self.kw("after"))
+                .append(self.space())
+                .append(self.format_expression(after.as_ref()))
+        } else {
+            value_doc
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Assignment RHS helpers
+    // -----------------------------------------------------------------------
+
+    fn format_assignment_rhs<T>(
+        &self,
+        rhs: &AssignmentRightHand<T>,
+        fmt: impl Fn(&Self, &T) -> Doc<'a>,
+    ) -> Doc<'a> {
+        match rhs {
+            AssignmentRightHand::Simple(v) => fmt(self, v),
+            AssignmentRightHand::Conditional(conds) => {
+                let mut parts: Vec<Doc<'a>> = Vec::new();
+                for cond in &conds.conditionals {
+                    let val = fmt(self, &cond.item);
+                    let cond_doc = self.format_expression(cond.condition.as_ref());
+                    parts.push(
+                        val.append(self.space())
+                            .append(self.kw("when"))
+                            .append(self.space())
+                            .append(cond_doc),
+                    );
+                }
+                if let Some((else_val, _)) = &conds.else_item {
+                    let last = self.intersperse(
+                        parts,
+                        self.space().append(self.kw("else")).append(self.space()),
+                    );
+                    last.append(self.space())
+                        .append(self.kw("else"))
+                        .append(self.space())
+                        .append(fmt(self, else_val))
+                } else {
+                    self.intersperse(
+                        parts,
+                        self.space().append(self.kw("else")).append(self.space()),
+                    )
+                }
+            }
+            AssignmentRightHand::Selected(sel) => {
+                // selected signal assignment: `with expr select target <= ... when ...`
+                // (handled at the call site for variable assignments; here for signal)
+                let alternatives: Vec<Doc<'a>> = sel
+                    .alternatives
+                    .iter()
+                    .map(|alt| {
+                        let val = fmt(self, &alt.item);
+                        let choices = self.format_choices(&alt.choices);
+                        val.append(self.space())
+                            .append(self.kw("when"))
+                            .append(self.space())
+                            .append(choices)
+                    })
+                    .collect();
+                self.intersperse(alternatives, self.punct(",").append(self.line()))
+            }
+        }
+    }
+
+    fn format_choices(&self, choices: &[WithTokenSpan<Choice>]) -> Doc<'a> {
+        self.intersperse(
+            choices.iter().map(|c| self.format_choice(c)),
+            self.space().append(self.punct("|")).append(self.space()),
+        )
+    }
+
+    // -----------------------------------------------------------------------
+    // If statement
+    // -----------------------------------------------------------------------
+
+    fn format_if_statement(&self, stmt: &IfStatement) -> Doc<'a> {
+        let mut parts: Vec<Doc<'a>> = Vec::new();
+
+        for (i, cond) in stmt.conds.conditionals.iter().enumerate() {
+            let kw = if i == 0 { "if" } else { "elsif" };
+            let cond_doc = self.format_expression(cond.condition.as_ref());
+            let body = self.format_sequential_statements(&cond.item);
+            parts.push(
+                self.kw(kw)
+                    .append(self.space())
+                    .append(cond_doc)
+                    .append(self.space())
+                    .append(self.kw("then"))
+                    .append(body),
+            );
+        }
+
+        let else_doc = if let Some((else_stmts, _)) = &stmt.conds.else_item {
+            let body = self.format_sequential_statements(else_stmts);
+            self.hardline().append(self.kw("else")).append(body)
+        } else {
+            self.nil()
+        };
+
+        // end_label_pos is Option<SrcPos> — no identifier text available,
+        // so we just emit `end if` without the label.
+        let end_label_doc = self.nil();
+        let _ = &stmt.end_label_pos; // suppress unused warning
+
+        self.intersperse(parts, self.hardline())
+            .append(else_doc)
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("if"))
+            .append(end_label_doc)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Case statement
+    // -----------------------------------------------------------------------
+
+    fn format_case_statement(&self, stmt: &CaseStatement) -> Doc<'a> {
+        let expr_doc = self.format_expression(stmt.expression.as_ref());
+
+        let matching = if stmt.is_matching {
+            self.punct("?")
+        } else {
+            self.nil()
+        };
+
+        let alternatives: Vec<Doc<'a>> = stmt
+            .alternatives
+            .iter()
+            .map(|alt| {
+                let choices = self.format_choices(&alt.choices);
+                let body = self.format_sequential_statements(&alt.item);
+                self.kw("when")
+                    .append(self.space())
+                    .append(choices)
+                    .append(self.space())
+                    .append(self.punct("=>"))
+                    .append(body)
+            })
+            .collect();
+
+        let alts_doc = self.nest(self.hardline().append(self.join_hardline(alternatives)));
+
+        // end_label_pos is Option<SrcPos> — no identifier text available.
+        let end_label_doc = self.nil();
+        let _ = &stmt.end_label_pos;
+
+        let end_matching = if stmt.is_matching {
+            self.punct("?")
+        } else {
+            self.nil()
+        };
+
+        self.kw("case")
+            .append(matching)
+            .append(self.space())
+            .append(expr_doc)
+            .append(self.space())
+            .append(self.kw("is"))
+            .append(alts_doc)
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("case"))
+            .append(end_matching)
+            .append(end_label_doc)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Loop statement
+    // -----------------------------------------------------------------------
+
+    fn format_loop_statement(&self, stmt: &LoopStatement) -> Doc<'a> {
+        let scheme_doc = if let Some(scheme) = &stmt.iteration_scheme {
+            match scheme {
+                IterationScheme::While(cond) => self
+                    .kw("while")
+                    .append(self.space())
+                    .append(self.format_expression(cond.as_ref()))
+                    .append(self.space()),
+                IterationScheme::For(ident, range) => self
+                    .kw("for")
+                    .append(self.space())
+                    .append(self.ident(&ident.tree.item.name_utf8()))
+                    .append(self.space())
+                    .append(self.kw("in"))
+                    .append(self.space())
+                    .append(self.format_discrete_range(range))
+                    .append(self.space()),
+            }
+        } else {
+            self.nil()
+        };
+
+        let body = self.format_sequential_statements(&stmt.statements);
+
+        // end_label_pos is Option<SrcPos> — no identifier text available.
+        let end_label_doc = self.nil();
+        let _ = &stmt.end_label_pos;
+
+        scheme_doc
+            .append(self.kw("loop"))
+            .append(body)
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("loop"))
+            .append(end_label_doc)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Next / exit statements
+    // -----------------------------------------------------------------------
+
+    fn format_next_statement(&self, stmt: &NextStatement) -> Doc<'a> {
+        let label_doc = if let Some(label) = &stmt.loop_label {
+            self.space()
+                .append(self.ident(&label.item.item.name_utf8()))
+        } else {
+            self.nil()
+        };
+        let cond_doc = if let Some(cond) = &stmt.condition {
+            self.space()
+                .append(self.kw("when"))
+                .append(self.space())
+                .append(self.format_expression(cond.as_ref()))
+        } else {
+            self.nil()
+        };
+        self.kw("next")
+            .append(label_doc)
+            .append(cond_doc)
+            .append(self.punct(";"))
+    }
+
+    fn format_exit_statement(&self, stmt: &ExitStatement) -> Doc<'a> {
+        let label_doc = if let Some(label) = &stmt.loop_label {
+            self.space()
+                .append(self.ident(&label.item.item.name_utf8()))
+        } else {
+            self.nil()
+        };
+        let cond_doc = if let Some(cond) = &stmt.condition {
+            self.space()
+                .append(self.kw("when"))
+                .append(self.space())
+                .append(self.format_expression(cond.as_ref()))
+        } else {
+            self.nil()
+        };
+        self.kw("exit")
+            .append(label_doc)
+            .append(cond_doc)
+            .append(self.punct(";"))
+    }
+}
+
+
+./src/fmt/design.rs:
+use vhdl_lang::ast::{
+    AnyDesignUnit, AnyPrimaryUnit, AnySecondaryUnit, ArchitectureBody, ConfigurationDeclaration,
+    ConfigurationItem, ContextDeclaration, ContextItem, DesignFile, EntityDeclaration, PackageBody,
+    PackageDeclaration,
+};
+
+use crate::fmt::{Doc, Formatter};
+
+impl<'a> Formatter<'a> {
+    // -----------------------------------------------------------------------
+    // Top-level entry point
+    // -----------------------------------------------------------------------
+
+    pub fn format_design_file(&self, file: &DesignFile) -> Doc<'a> {
+        let units: Vec<Doc<'a>> = file
+            .design_units
+            .iter()
+            .map(|(_tokens, unit)| self.format_design_unit(unit))
+            .collect();
+        // Separate top-level design units by a blank line.
+        self.intersperse(units, self.hardline().append(self.hardline()))
+    }
+
+    pub fn format_design_unit(&self, unit: &AnyDesignUnit) -> Doc<'a> {
+        match unit {
+            AnyDesignUnit::Primary(p) => self.format_primary_unit(p),
+            AnyDesignUnit::Secondary(s) => self.format_secondary_unit(s),
+        }
+    }
+
+    fn format_primary_unit(&self, unit: &AnyPrimaryUnit) -> Doc<'a> {
+        match unit {
+            AnyPrimaryUnit::Entity(e) => self.format_entity(e),
+            AnyPrimaryUnit::Configuration(c) => self.format_configuration(c),
+            AnyPrimaryUnit::Package(p) => self.format_package(p),
+            AnyPrimaryUnit::PackageInstance(p) => self.format_package_instantiation(p),
+            AnyPrimaryUnit::Context(c) => self.format_context(c),
+        }
+    }
+
+    fn format_secondary_unit(&self, unit: &AnySecondaryUnit) -> Doc<'a> {
+        match unit {
+            AnySecondaryUnit::Architecture(a) => self.format_architecture(a),
+            AnySecondaryUnit::PackageBody(b) => self.format_package_body(b),
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Context clause  (library / use / context items at the top of a unit)
+    // -----------------------------------------------------------------------
+
+    pub fn format_context_clause(&self, clause: &[ContextItem]) -> Doc<'a> {
+        if clause.is_empty() {
+            return self.nil();
+        }
+        let items: Vec<Doc<'a>> = clause
+            .iter()
+            .map(|item| self.format_context_item(item))
+            .collect();
+        self.join_hardline(items).append(self.hardline())
+    }
+
+    fn format_context_item(&self, item: &ContextItem) -> Doc<'a> {
+        match item {
+            ContextItem::Library(lib) => self.format_library_clause(lib),
+            ContextItem::Use(use_clause) => self.format_use_clause(use_clause),
+            ContextItem::Context(ctx_ref) => self.format_context_reference(ctx_ref),
+        }
+    }
+
+    fn format_context_reference(&self, ctx: &vhdl_lang::ast::ContextReference) -> Doc<'a> {
+        self.kw("context")
+            .append(self.space())
+            .append(self.format_name_list(&ctx.name_list))
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Entity declaration
+    // -----------------------------------------------------------------------
+
+    pub fn format_entity(&self, entity: &EntityDeclaration) -> Doc<'a> {
+        let context_doc = self.format_context_clause(&entity.context_clause);
+        let name = self.ident(&entity.ident.tree.item.name_utf8());
+
+        let generics_doc = if let Some(generics) = &entity.generic_clause {
+            self.nest(
+                self.hardline()
+                    .append(self.kw("generic"))
+                    .append(self.space())
+                    .append(self.format_interface_list_semi(generics)),
+            )
+        } else {
+            self.nil()
+        };
+
+        let ports_doc = if let Some(ports) = &entity.port_clause {
+            self.nest(
+                self.hardline()
+                    .append(self.kw("port"))
+                    .append(self.space())
+                    .append(self.format_interface_list_semi(ports)),
+            )
+        } else {
+            self.nil()
+        };
+
+        let decls_doc = if entity.decl.is_empty() {
+            self.nil()
+        } else {
+            self.nest(
+                self.hardline()
+                    .append(self.format_declarations(&entity.decl)),
+            )
+        };
+
+        let begin_stmts_doc = if !entity.statements.is_empty() {
+            self.hardline()
+                .append(self.kw("begin"))
+                .append(self.format_concurrent_statements(&entity.statements))
+        } else {
+            self.nil()
+        };
+
+        // Always emit `end entity <name>`
+        context_doc
+            .append(self.kw("entity"))
+            .append(self.space())
+            .append(name.clone())
+            .append(self.space())
+            .append(self.kw("is"))
+            .append(generics_doc)
+            .append(ports_doc)
+            .append(decls_doc)
+            .append(begin_stmts_doc)
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("entity"))
+            .append(self.space())
+            .append(name)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Architecture body
+    // -----------------------------------------------------------------------
+
+    pub fn format_architecture(&self, arch: &ArchitectureBody) -> Doc<'a> {
+        let context_doc = self.format_context_clause(&arch.context_clause);
+        // ident is WithDecl<Ident> = WithDecl<WithToken<Symbol>>; name via .tree.item
+        let arch_name = self.ident(&arch.ident.tree.item.name_utf8());
+        // entity_name is WithRef<Ident> = WithRef<WithToken<Symbol>>; name via .item.item
+        let entity_name = self.ident(&arch.entity_name.item.item.name_utf8());
+
+        let decls_doc = if arch.decl.is_empty() {
+            self.nil()
+        } else {
+            self.nest(self.hardline().append(self.format_declarations(&arch.decl)))
+        };
+
+        let stmts_doc = self.format_concurrent_statements(&arch.statements);
+
+        // Always emit `end architecture <name>`
+        context_doc
+            .append(self.kw("architecture"))
+            .append(self.space())
+            .append(arch_name.clone())
+            .append(self.space())
+            .append(self.kw("of"))
+            .append(self.space())
+            .append(entity_name)
+            .append(self.space())
+            .append(self.kw("is"))
+            .append(decls_doc)
+            .append(self.hardline())
+            .append(self.kw("begin"))
+            .append(stmts_doc)
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("architecture"))
+            .append(self.space())
+            .append(arch_name)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Package declaration
+    // -----------------------------------------------------------------------
+
+    pub fn format_package(&self, pkg: &PackageDeclaration) -> Doc<'a> {
+        let context_doc = self.format_context_clause(&pkg.context_clause);
+        let name = self.ident(&pkg.ident.tree.item.name_utf8());
+
+        let generics_doc = if let Some(generics) = &pkg.generic_clause {
+            self.nest(
+                self.hardline()
+                    .append(self.kw("generic"))
+                    .append(self.space())
+                    .append(self.format_interface_list_semi(generics)),
+            )
+        } else {
+            self.nil()
+        };
+
+        let decls_doc = if pkg.decl.is_empty() {
+            self.nil()
+        } else {
+            self.nest(self.hardline().append(self.format_declarations(&pkg.decl)))
+        };
+
+        context_doc
+            .append(self.kw("package"))
+            .append(self.space())
+            .append(name.clone())
+            .append(self.space())
+            .append(self.kw("is"))
+            .append(generics_doc)
+            .append(decls_doc)
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("package"))
+            .append(self.space())
+            .append(name)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Package body
+    // -----------------------------------------------------------------------
+
+    pub fn format_package_body(&self, body: &PackageBody) -> Doc<'a> {
+        let context_doc = self.format_context_clause(&body.context_clause);
+        let name = self.ident(&body.ident.tree.item.name_utf8());
+
+        let decls_doc = if body.decl.is_empty() {
+            self.nil()
+        } else {
+            self.nest(self.hardline().append(self.format_declarations(&body.decl)))
+        };
+
+        context_doc
+            .append(self.kw("package"))
+            .append(self.space())
+            .append(self.kw("body"))
+            .append(self.space())
+            .append(name.clone())
+            .append(self.space())
+            .append(self.kw("is"))
+            .append(decls_doc)
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("package"))
+            .append(self.space())
+            .append(self.kw("body"))
+            .append(self.space())
+            .append(name)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Context declaration
+    // -----------------------------------------------------------------------
+
+    pub fn format_context(&self, ctx: &ContextDeclaration) -> Doc<'a> {
+        let name = self.ident(&ctx.ident.tree.item.name_utf8());
+        // ctx.items is ContextClause = Vec<ContextItem>; iterate directly
+        let items: Vec<Doc<'a>> = ctx
+            .items
+            .iter()
+            .map(|item| self.format_context_item(item))
+            .collect();
+
+        let body_doc = if items.is_empty() {
+            self.nil()
+        } else {
+            self.nest(self.hardline().append(self.join_hardline(items)))
+        };
+
+        self.kw("context")
+            .append(self.space())
+            .append(name.clone())
+            .append(self.space())
+            .append(self.kw("is"))
+            .append(body_doc)
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("context"))
+            .append(self.space())
+            .append(name)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Configuration declaration
+    // -----------------------------------------------------------------------
+
+    pub fn format_configuration(&self, config: &ConfigurationDeclaration) -> Doc<'a> {
+        let context_doc = self.format_context_clause(&config.context_clause);
+        let name = self.ident(&config.ident.tree.item.name_utf8());
+        let entity_name = self.format_name(&config.entity_name.item);
+
+        let decls_doc = if config.decl.is_empty() {
+            self.nil()
+        } else {
+            let items: Vec<Doc<'a>> = config
+                .decl
+                .iter()
+                .map(|d| self.format_declaration(d))
+                .collect();
+            self.nest(self.hardline().append(self.join_hardline(items)))
+        };
+
+        let vunit_docs = if config.vunit_bind_inds.is_empty() {
+            self.nil()
+        } else {
+            let vunits: Vec<Doc<'a>> = config
+                .vunit_bind_inds
+                .iter()
+                .map(|v| {
+                    let names = self.format_name_list(&v.vunit_list);
+                    self.kw("use")
+                        .append(self.space())
+                        .append(self.kw("vunit"))
+                        .append(self.space())
+                        .append(names)
+                        .append(self.punct(";"))
+                })
+                .collect();
+            self.nest(self.hardline().append(self.join_hardline(vunits)))
+        };
+
+        let block_config_doc = self.format_block_configuration(&config.block_config);
+
+        context_doc
+            .append(self.kw("configuration"))
+            .append(self.space())
+            .append(name.clone())
+            .append(self.space())
+            .append(self.kw("of"))
+            .append(self.space())
+            .append(entity_name)
+            .append(self.space())
+            .append(self.kw("is"))
+            .append(decls_doc)
+            .append(vunit_docs)
+            .append(self.nest(self.hardline().append(block_config_doc)))
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("configuration"))
+            .append(self.space())
+            .append(name)
+            .append(self.punct(";"))
+    }
+
+    fn format_block_configuration(&self, block: &vhdl_lang::ast::BlockConfiguration) -> Doc<'a> {
+        // block_spec is WithTokenSpan<Name>; format as a name
+        let spec_doc = self.format_name(&block.block_spec.item);
+
+        let use_clauses: Vec<Doc<'a>> = block
+            .use_clauses
+            .iter()
+            .map(|u| self.format_use_clause(u))
+            .collect();
+        let use_doc = if use_clauses.is_empty() {
+            self.nil()
+        } else {
+            self.nest(self.hardline().append(self.join_hardline(use_clauses)))
+        };
+
+        let items: Vec<Doc<'a>> = block
+            .items
+            .iter()
+            .map(|item| self.format_configuration_item(item))
+            .collect();
+        let items_doc = if items.is_empty() {
+            self.nil()
+        } else {
+            self.nest(self.hardline().append(self.join_hardline(items)))
+        };
+
+        self.kw("for")
+            .append(self.space())
+            .append(spec_doc)
+            .append(use_doc)
+            .append(items_doc)
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("for"))
+            .append(self.punct(";"))
+    }
+
+    fn format_configuration_item(&self, item: &ConfigurationItem) -> Doc<'a> {
+        match item {
+            ConfigurationItem::Block(block) => self.format_block_configuration(block),
+            ConfigurationItem::Component(comp) => self.format_component_configuration(comp),
+        }
+    }
+
+    fn format_component_configuration(
+        &self,
+        comp: &vhdl_lang::ast::ComponentConfiguration,
+    ) -> Doc<'a> {
+        let spec = self.format_component_specification(&comp.spec);
+
+        let binding_doc = if let Some(binding) = &comp.bind_ind {
+            self.nest(
+                self.hardline()
+                    .append(self.format_binding_indication(binding)),
+            )
+        } else {
+            self.nil()
+        };
+
+        let vunit_docs = if comp.vunit_bind_inds.is_empty() {
+            self.nil()
+        } else {
+            let vunits: Vec<Doc<'a>> = comp
+                .vunit_bind_inds
+                .iter()
+                .map(|v| {
+                    let names = self.format_name_list(&v.vunit_list);
+                    self.kw("use")
+                        .append(self.space())
+                        .append(self.kw("vunit"))
+                        .append(self.space())
+                        .append(names)
+                        .append(self.punct(";"))
+                })
+                .collect();
+            self.nest(self.hardline().append(self.join_hardline(vunits)))
+        };
+
+        let block_config_doc = if let Some(block) = &comp.block_config {
+            self.nest(
+                self.hardline()
+                    .append(self.format_block_configuration(block)),
+            )
+        } else {
+            self.nil()
+        };
+
+        self.kw("for")
+            .append(self.space())
+            .append(spec)
+            .append(binding_doc)
+            .append(vunit_docs)
+            .append(block_config_doc)
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("for"))
+            .append(self.punct(";"))
+    }
+}
+
+
+./src/fmt/name.rs:
+use pretty::DocAllocator;
+use vhdl_lang::ast::token_range::WithTokenSpan;
+use vhdl_lang::ast::{
+    ActualPart, AssociationElement, AttributeDesignator, AttributeName, CallOrIndexed,
+    ExternalName, ExternalPath, MapAspect, Name, RangeAttribute, SeparatedList, SignalAttribute,
+    TypeAttribute,
+};
+
+use crate::fmt::{Doc, Formatter};
+
+impl<'a> Formatter<'a> {
+    pub fn format_name(&self, name: &Name) -> Doc<'a> {
+        match name {
+            // Designator(WithRef<Designator>) — inner Designator via .item
+            Name::Designator(designator) => self.designator(&designator.item),
+            // Selected: suffix is WithToken<WithRef<Designator>> — inner Designator via .item.item
+            Name::Selected(prefix, suffix) => self
+                .format_name(&prefix.item)
+                .append(self.punct("."))
+                .append(self.designator(&suffix.item.item)),
+            Name::SelectedAll(prefix) => self
+                .format_name(&prefix.item)
+                .append(self.punct("."))
+                .append(self.kw("all")),
+            Name::Slice(prefix, range) => self
+                .format_name(&prefix.item)
+                .append(self.punct("("))
+                .append(self.format_discrete_range(range))
+                .append(self.punct(")")),
+            Name::Attribute(attr) => self.format_attribute_name(attr),
+            Name::CallOrIndexed(call) => self.format_call_or_indexed(call),
+            Name::External(ext) => self.format_external_name(ext),
+        }
+    }
+
+    pub fn format_name_list(&self, names: &[WithTokenSpan<Name>]) -> Doc<'a> {
+        self.intersperse(
+            names.iter().map(|n| self.format_name(&n.item)),
+            self.arena.text(", "),
+        )
+    }
+
+    pub fn format_call_or_indexed(&self, call: &CallOrIndexed) -> Doc<'a> {
+        let prefix = self.format_name(&call.name.item);
+        let assocs = self.format_association_list(&call.parameters);
+        prefix
+            .append(self.punct("("))
+            .append(assocs)
+            .append(self.punct(")"))
+    }
+
+    pub fn format_attribute_name(&self, attr: &AttributeName) -> Doc<'a> {
+        let prefix = self.format_name(&attr.name.item);
+        // The signature (e.g. [return type]) is rare but possible.
+        let sig = if let Some(sig) = &attr.signature {
+            self.format_signature(sig)
+        } else {
+            self.nil()
+        };
+        // attr.attr is WithToken<AttributeDesignator>; inner via .item
+        let attr_id = self.format_attribute_designator(&attr.attr.item);
+        let expr_part = if let Some(expr) = &attr.expr {
+            self.punct("(")
+                // expr is Box<WithTokenSpan<Expression>>; use &** to get
+                // &WithTokenSpan<Expression> then auto-deref calls WithTokenSpan::as_ref()
+                .append(self.format_expression((&**expr).as_ref()))
+                .append(self.punct(")"))
+        } else {
+            self.nil()
+        };
+        prefix
+            .append(sig)
+            .append(self.punct("'"))
+            .append(attr_id)
+            .append(expr_part)
+    }
+
+    fn format_attribute_designator(&self, attr: &AttributeDesignator) -> Doc<'a> {
+        match attr {
+            AttributeDesignator::Type(TypeAttribute::Subtype) => self.kw("subtype"),
+            AttributeDesignator::Type(TypeAttribute::Element) => self.kw("element"),
+            AttributeDesignator::Range(RangeAttribute::Range) => self.kw("range"),
+            AttributeDesignator::Range(RangeAttribute::ReverseRange) => self.kw("reverse_range"),
+            // WithRef<Symbol>: inner Symbol via .item
+            AttributeDesignator::Ident(sym) => self.ident(&sym.item.name_utf8()),
+            AttributeDesignator::Ascending => self.kw("ascending"),
+            AttributeDesignator::Left => self.kw("left"),
+            AttributeDesignator::Right => self.kw("right"),
+            AttributeDesignator::High => self.kw("high"),
+            AttributeDesignator::Low => self.kw("low"),
+            AttributeDesignator::Length => self.kw("length"),
+            AttributeDesignator::Image => self.kw("image"),
+            AttributeDesignator::Value => self.kw("value"),
+            AttributeDesignator::Pos => self.kw("pos"),
+            AttributeDesignator::Val => self.kw("val"),
+            AttributeDesignator::Succ => self.kw("succ"),
+            AttributeDesignator::Pred => self.kw("pred"),
+            AttributeDesignator::LeftOf => self.kw("leftof"),
+            AttributeDesignator::RightOf => self.kw("rightof"),
+            AttributeDesignator::Signal(sa) => {
+                let s = match sa {
+                    SignalAttribute::Delayed => "delayed",
+                    SignalAttribute::Stable => "stable",
+                    SignalAttribute::Quiet => "quiet",
+                    SignalAttribute::Transaction => "transaction",
+                    SignalAttribute::Event => "event",
+                    SignalAttribute::Active => "active",
+                    SignalAttribute::LastEvent => "last_event",
+                    SignalAttribute::LastActive => "last_active",
+                    SignalAttribute::LastValue => "last_value",
+                    SignalAttribute::Driving => "driving",
+                    SignalAttribute::DrivingValue => "driving_value",
+                };
+                self.kw(s)
+            }
+            AttributeDesignator::SimpleName => self.kw("simple_name"),
+            AttributeDesignator::InstanceName => self.kw("instance_name"),
+            AttributeDesignator::PathName => self.kw("path_name"),
+            AttributeDesignator::Converse => self.kw("converse"),
+        }
+    }
+
+    pub fn format_external_name(&self, ext: &ExternalName) -> Doc<'a> {
+        // << class path : subtype >>
+        let class = match ext.class {
+            vhdl_lang::ast::ExternalObjectClass::Constant => self.kw("constant"),
+            vhdl_lang::ast::ExternalObjectClass::Signal => self.kw("signal"),
+            vhdl_lang::ast::ExternalObjectClass::Variable => self.kw("variable"),
+        };
+        // ext.path is WithTokenSpan<ExternalPath>; unwrap via .item
+        let path = self.format_external_path(&ext.path.item);
+        // ext.subtype is SubtypeIndication (not wrapped)
+        let subtype = self.format_subtype_indication(&ext.subtype);
+        self.punct("<<")
+            .append(self.space())
+            .append(class)
+            .append(self.space())
+            .append(path)
+            .append(self.space())
+            .append(self.punct(":"))
+            .append(self.space())
+            .append(subtype)
+            .append(self.space())
+            .append(self.punct(">>"))
+    }
+
+    fn format_external_path(&self, path: &ExternalPath) -> Doc<'a> {
+        match path {
+            // Each variant holds WithTokenSpan<Name>; inner Name via .item
+            ExternalPath::Package(name) => self.punct("@").append(self.format_name(&name.item)),
+            ExternalPath::Absolute(name) => self.punct(".").append(self.format_name(&name.item)),
+            ExternalPath::Relative(name, up) => {
+                let dots = self.arena.text("^.".repeat(*up));
+                dots.append(self.format_name(&name.item))
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Association lists (port map / generic map / call arguments)
+    // -----------------------------------------------------------------------
+
+    pub fn format_association_list(&self, list: &SeparatedList<AssociationElement>) -> Doc<'a> {
+        if list.items.is_empty() {
+            return self.nil();
+        }
+        let items: Vec<Doc<'a>> = list
+            .items
+            .iter()
+            .map(|el| self.format_association_element(el))
+            .collect();
+        // Try to fit all on one line; if not, one per line with trailing indent.
+        let inner = self.intersperse(items, self.punct(",").append(self.line()));
+        self.nest(self.line_().append(inner))
+            .append(self.line_())
+            .group()
+    }
+
+    pub fn format_association_element(&self, element: &AssociationElement) -> Doc<'a> {
+        let actual = match &element.actual.item {
+            ActualPart::Expression(expr) => {
+                self.format_expression(WithTokenSpan::new(expr, element.actual.span))
+            }
+            ActualPart::Open => self.kw("open"),
+        };
+        if let Some(formal) = &element.formal {
+            self.format_name(&formal.item)
+                .append(self.space())
+                .append(self.punct("=>"))
+                .append(self.space())
+                .append(actual)
+        } else {
+            actual
+        }
+    }
+
+    pub fn format_map_aspect(&self, aspect: &MapAspect) -> Doc<'a> {
+        self.format_association_list_parens(&aspect.list)
+    }
+
+    /// Format an association list already wrapped in `(…)` with one-per-line
+    /// breaking when it doesn't fit inline.
+    pub fn format_association_list_parens(
+        &self,
+        list: &SeparatedList<AssociationElement>,
+    ) -> Doc<'a> {
+        if list.items.is_empty() {
+            return self.punct("(").append(self.punct(")"));
+        }
+        let items: Vec<Doc<'a>> = list
+            .items
+            .iter()
+            .map(|el| self.format_association_element(el))
+            .collect();
+        let inner = self.intersperse(items, self.punct(",").append(self.line()));
+        self.punct("(")
+            .append(self.nest(self.line_().append(inner)))
+            .append(self.line_())
+            .append(self.punct(")"))
+            .group()
+    }
+}
+
+
+./src/fmt/declaration.rs:
+use pretty::DocAllocator;
+use vhdl_lang::ast::token_range::WithTokenSpan;
+use vhdl_lang::ast::{
+    AliasDeclaration, ArrayIndex, Attribute, AttributeDeclaration, AttributeSpecification,
+    ComponentDeclaration, Declaration, ElementDeclaration, EntityName, EnumerationLiteral,
+    FileDeclaration, LibraryClause, ModeViewDeclaration, ObjectClass, ObjectDeclaration,
+    PackageInstantiation, PhysicalTypeDeclaration, ProtectedTypeBody, ProtectedTypeDeclaration,
+    ProtectedTypeDeclarativeItem, SubtypeIndication, TypeDeclaration, TypeDefinition, UseClause,
+};
+
+use crate::fmt::{Doc, Formatter};
+
+impl<'a> Formatter<'a> {
+    // -----------------------------------------------------------------------
+    // Declaration dispatch
+    // -----------------------------------------------------------------------
+
+    pub fn format_declarations(&self, decls: &[WithTokenSpan<Declaration>]) -> Doc<'a> {
+        if decls.is_empty() {
+            return self.nil();
+        }
+        let items: Vec<Doc<'a>> = decls.iter().map(|d| self.format_declaration(d)).collect();
+        self.join_hardline(items)
+    }
+
+    pub fn format_declaration(&self, decl: &WithTokenSpan<Declaration>) -> Doc<'a> {
+        match &decl.item {
+            Declaration::Object(obj) => self.format_object_declaration(obj),
+            Declaration::File(file) => self.format_file_declaration(file),
+            Declaration::Type(type_decl) => self.format_type_declaration(type_decl),
+            Declaration::Component(comp) => self.format_component_declaration(comp),
+            Declaration::Attribute(attr) => self.format_attribute(attr),
+            Declaration::Alias(alias) => self.format_alias_declaration(alias),
+            Declaration::SubprogramDeclaration(sub) => self.format_subprogram_declaration(sub),
+            Declaration::SubprogramInstantiation(inst) => {
+                self.format_subprogram_instantiation(inst)
+            }
+            Declaration::SubprogramBody(body) => self.format_subprogram_body(body),
+            Declaration::Use(use_clause) => self.format_use_clause(use_clause),
+            Declaration::Package(pkg) => self.format_package_instantiation(pkg),
+            Declaration::Configuration(config) => self.format_configuration_specification(config),
+            Declaration::View(view) => self.format_view_declaration(view),
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Object declarations (signal, variable, constant, shared variable)
+    // -----------------------------------------------------------------------
+
+    pub fn format_object_declaration(&self, obj: &ObjectDeclaration) -> Doc<'a> {
+        let class_kw = match obj.class {
+            ObjectClass::Signal => self.kw("signal"),
+            ObjectClass::Variable => self.kw("variable"),
+            ObjectClass::Constant => self.kw("constant"),
+            ObjectClass::SharedVariable => self
+                .kw("shared")
+                .append(self.space())
+                .append(self.kw("variable")),
+        };
+
+        let idents_doc = self.intersperse(
+            obj.idents
+                .iter()
+                .map(|id| self.ident(&id.tree.item.name_utf8())),
+            self.arena.text(", "),
+        );
+
+        let subtype_doc = self.format_subtype_indication(&obj.subtype_indication);
+
+        let default_doc = if let Some(expr) = &obj.expression {
+            self.space()
+                .append(self.punct(":="))
+                .append(self.space())
+                .append(self.format_expression(expr.as_ref()))
+        } else {
+            self.nil()
+        };
+
+        class_kw
+            .append(self.space())
+            .append(idents_doc)
+            .append(self.punct(":"))
+            .append(self.space())
+            .append(subtype_doc)
+            .append(default_doc)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // File declarations
+    // -----------------------------------------------------------------------
+
+    fn format_file_declaration(&self, file: &FileDeclaration) -> Doc<'a> {
+        let idents_doc = self.intersperse(
+            file.idents
+                .iter()
+                .map(|id| self.ident(&id.tree.item.name_utf8())),
+            self.arena.text(", "),
+        );
+        let subtype_doc = self.format_subtype_indication(&file.subtype_indication);
+
+        let open_info_doc = if let Some((_tok, open_expr)) = &file.open_info {
+            self.space()
+                .append(self.kw("open"))
+                .append(self.space())
+                .append(self.format_expression(open_expr.as_ref()))
+        } else {
+            self.nil()
+        };
+
+        let file_name_doc = if let Some((_tok, name_expr)) = &file.file_name {
+            self.space()
+                .append(self.kw("is"))
+                .append(self.space())
+                .append(self.format_expression(name_expr.as_ref()))
+        } else {
+            self.nil()
+        };
+
+        self.kw("file")
+            .append(self.space())
+            .append(idents_doc)
+            .append(self.punct(":"))
+            .append(self.space())
+            .append(subtype_doc)
+            .append(open_info_doc)
+            .append(file_name_doc)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Type declarations
+    // -----------------------------------------------------------------------
+
+    pub fn format_type_declaration(&self, decl: &TypeDeclaration) -> Doc<'a> {
+        let name = self.ident(&decl.ident.tree.item.name_utf8());
+        match &decl.def {
+            TypeDefinition::Incomplete(_) => self
+                .kw("type")
+                .append(self.space())
+                .append(name)
+                .append(self.punct(";")),
+            def => {
+                let def_doc = self.format_type_definition(def, &decl.ident.tree.item.name_utf8());
+                self.kw("type")
+                    .append(self.space())
+                    .append(name)
+                    .append(self.space())
+                    .append(self.kw("is"))
+                    .append(self.space())
+                    .append(def_doc)
+                    .append(self.punct(";"))
+            }
+        }
+    }
+
+    fn format_type_definition(&self, def: &TypeDefinition, type_name: &str) -> Doc<'a> {
+        match def {
+            TypeDefinition::Enumeration(literals) => {
+                let lits: Vec<Doc<'a>> = literals
+                    .iter()
+                    .map(|l| self.format_enumeration_literal(&l.tree.item))
+                    .collect();
+                self.punct("(")
+                    .append(self.intersperse(lits, self.arena.text(", ")))
+                    .append(self.punct(")"))
+            }
+            TypeDefinition::Numeric(range) => self
+                .kw("range")
+                .append(self.space())
+                .append(self.format_range(range)),
+            TypeDefinition::Physical(phys) => self.format_physical_type(phys),
+            TypeDefinition::Array(indices, _of_tok, subtype) => {
+                self.format_array_type(indices, subtype)
+            }
+            TypeDefinition::Record(elements) => self.format_record_type(elements, type_name),
+            TypeDefinition::Access(subtype) => self
+                .kw("access")
+                .append(self.space())
+                .append(self.format_subtype_indication(subtype)),
+            TypeDefinition::File(name) => self
+                .kw("file")
+                .append(self.space())
+                .append(self.kw("of"))
+                .append(self.space())
+                .append(self.format_name(&name.item)),
+            TypeDefinition::Protected(prot) => {
+                self.format_protected_type_declaration(prot, type_name)
+            }
+            TypeDefinition::ProtectedBody(body) => self.format_protected_type_body(body, type_name),
+            TypeDefinition::Subtype(subtype) => self.format_subtype_indication(subtype),
+            TypeDefinition::Incomplete(_) => self.nil(), // handled above
+        }
+    }
+
+    fn format_physical_type(&self, phys: &PhysicalTypeDeclaration) -> Doc<'a> {
+        let range_doc = self.format_range(&phys.range);
+        let primary = self.ident(&phys.primary_unit.tree.item.name_utf8());
+
+        let secondary: Vec<Doc<'a>> = phys
+            .secondary_units
+            .iter()
+            .map(|(ident, literal)| {
+                let name = self.ident(&ident.tree.item.name_utf8());
+                let lit = self.format_physical_literal(literal);
+                name.append(self.space())
+                    .append(self.punct("="))
+                    .append(self.space())
+                    .append(lit)
+                    .append(self.punct(";"))
+            })
+            .collect();
+
+        let units_body = if secondary.is_empty() {
+            self.nest(self.hardline().append(primary.append(self.punct(";"))))
+        } else {
+            let sec_doc = self.join_hardline(secondary);
+            self.nest(
+                self.hardline()
+                    .append(primary.append(self.punct(";")))
+                    .append(self.hardline())
+                    .append(sec_doc),
+            )
+        };
+
+        self.kw("range")
+            .append(self.space())
+            .append(range_doc)
+            .append(self.hardline())
+            .append(self.nest(self.kw("units").append(units_body)))
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("units"))
+    }
+
+    fn format_physical_literal(
+        &self,
+        literal: &WithTokenSpan<vhdl_lang::ast::PhysicalLiteral>,
+    ) -> Doc<'a> {
+        use vhdl_lang::ast::AbstractLiteral;
+        let value_doc = match &literal.item.value {
+            AbstractLiteral::Integer(i) => self.arena.text(i.to_string()),
+            AbstractLiteral::Real(r) => self.arena.text(r.to_string()),
+        };
+        // unit is WithRef<Ident> = WithRef<WithToken<Symbol>>; inner symbol via .item.item
+        let unit = self.ident(&literal.item.unit.item.item.name_utf8());
+        value_doc.append(self.space()).append(unit)
+    }
+
+    fn format_enumeration_literal(&self, lit: &EnumerationLiteral) -> Doc<'a> {
+        match lit {
+            EnumerationLiteral::Identifier(sym) => self.ident(&sym.name_utf8()),
+            EnumerationLiteral::Character(c) => self.arena.text(format!("'{}'", *c as char)),
+        }
+    }
+
+    fn format_array_type(&self, indices: &[ArrayIndex], subtype: &SubtypeIndication) -> Doc<'a> {
+        let index_docs: Vec<Doc<'a>> = indices
+            .iter()
+            .map(|idx| match idx {
+                ArrayIndex::IndexSubtypeDefintion(name) => self
+                    .format_name(&name.item)
+                    .append(self.space())
+                    .append(self.kw("range"))
+                    .append(self.space())
+                    .append(self.punct("<>")),
+                ArrayIndex::Discrete(range) => self.format_discrete_range(&range.item),
+            })
+            .collect();
+
+        let indices_doc = self.intersperse(index_docs, self.arena.text(", "));
+        let subtype_doc = self.format_subtype_indication(subtype);
+
+        self.kw("array")
+            .append(self.space())
+            .append(self.punct("("))
+            .append(indices_doc)
+            .append(self.punct(")"))
+            .append(self.space())
+            .append(self.kw("of"))
+            .append(self.space())
+            .append(subtype_doc)
+    }
+
+    fn format_record_type(&self, elements: &[ElementDeclaration], type_name: &str) -> Doc<'a> {
+        let elems: Vec<Doc<'a>> = elements
+            .iter()
+            .map(|e| self.format_element_declaration(e))
+            .collect();
+        let body = self.join_hardline(elems);
+        self.kw("record")
+            .append(self.nest(self.hardline().append(body)))
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("record"))
+            .append(self.space())
+            .append(self.ident(type_name))
+    }
+
+    fn format_element_declaration(&self, elem: &ElementDeclaration) -> Doc<'a> {
+        let idents_doc = self.intersperse(
+            elem.idents
+                .iter()
+                .map(|id| self.ident(&id.tree.item.name_utf8())),
+            self.arena.text(", "),
+        );
+        idents_doc
+            .append(self.punct(":"))
+            .append(self.space())
+            .append(self.format_subtype_indication(&elem.subtype))
+            .append(self.punct(";"))
+    }
+
+    fn format_protected_type_declaration(
+        &self,
+        prot: &ProtectedTypeDeclaration,
+        type_name: &str,
+    ) -> Doc<'a> {
+        let items: Vec<Doc<'a>> = prot
+            .items
+            .iter()
+            .map(|item| match item {
+                ProtectedTypeDeclarativeItem::Subprogram(sub) => {
+                    self.format_subprogram_declaration(sub)
+                }
+            })
+            .collect();
+
+        let body = if items.is_empty() {
+            self.nil()
+        } else {
+            self.nest(self.hardline().append(self.join_hardline(items)))
+        };
+
+        self.kw("protected")
+            .append(body)
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("protected"))
+            .append(self.space())
+            .append(self.ident(type_name))
+    }
+
+    fn format_protected_type_body(&self, body: &ProtectedTypeBody, type_name: &str) -> Doc<'a> {
+        let decls = self.format_declarations(&body.decl);
+        let decls_doc = if body.decl.is_empty() {
+            self.nil()
+        } else {
+            self.nest(self.hardline().append(decls))
+        };
+
+        self.kw("protected")
+            .append(self.space())
+            .append(self.kw("body"))
+            .append(decls_doc)
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("protected"))
+            .append(self.space())
+            .append(self.kw("body"))
+            .append(self.space())
+            .append(self.ident(type_name))
+    }
+
+    // -----------------------------------------------------------------------
+    // Component declarations
+    // -----------------------------------------------------------------------
+
+    pub fn format_component_declaration(&self, comp: &ComponentDeclaration) -> Doc<'a> {
+        let name = self.ident(&comp.ident.tree.item.name_utf8());
+
+        let generics_doc = if let Some(generics) = &comp.generic_list {
+            self.nest(
+                self.hardline()
+                    .append(self.kw("generic"))
+                    .append(self.space())
+                    .append(self.format_interface_list_semi(generics)),
+            )
+        } else {
+            self.nil()
+        };
+
+        let ports_doc = if let Some(ports) = &comp.port_list {
+            self.nest(
+                self.hardline()
+                    .append(self.kw("port"))
+                    .append(self.space())
+                    .append(self.format_interface_list_semi(ports)),
+            )
+        } else {
+            self.nil()
+        };
+
+        self.kw("component")
+            .append(self.space())
+            .append(name.clone())
+            .append(self.space())
+            .append(self.kw("is"))
+            .append(generics_doc)
+            .append(ports_doc)
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("component"))
+            .append(self.space())
+            .append(name)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Attribute declarations and specifications
+    // -----------------------------------------------------------------------
+
+    fn format_attribute(&self, attr: &Attribute) -> Doc<'a> {
+        match attr {
+            Attribute::Declaration(decl) => self.format_attribute_declaration(decl),
+            Attribute::Specification(spec) => self.format_attribute_specification(spec),
+        }
+    }
+
+    fn format_attribute_declaration(&self, decl: &AttributeDeclaration) -> Doc<'a> {
+        self.kw("attribute")
+            .append(self.space())
+            .append(self.ident(&decl.ident.tree.item.name_utf8()))
+            .append(self.punct(":"))
+            .append(self.space())
+            .append(self.format_name(&decl.type_mark.item))
+            .append(self.punct(";"))
+    }
+
+    fn format_attribute_specification(&self, spec: &AttributeSpecification) -> Doc<'a> {
+        // spec.ident is WithRef<Ident> = WithRef<WithToken<Symbol>>
+        let attr_name = self.ident(&spec.ident.item.item.name_utf8());
+        let entity_name_doc = match &spec.entity_name {
+            EntityName::Name(name) => {
+                // name.designator is WithToken<WithRef<Designator>>; inner Designator via .item.item
+                let d = self.designator(&name.designator.item.item);
+                if let Some(sig) = &name.signature {
+                    d.append(self.format_signature(sig))
+                } else {
+                    d
+                }
+            }
+            EntityName::All => self.kw("all"),
+            EntityName::Others => self.kw("others"),
+        };
+        let entity_class_doc = self.format_entity_class(&spec.entity_class);
+        let expr_doc = self.format_expression(spec.expr.as_ref());
+
+        self.kw("attribute")
+            .append(self.space())
+            .append(attr_name)
+            .append(self.space())
+            .append(self.kw("of"))
+            .append(self.space())
+            .append(entity_name_doc)
+            .append(self.punct(":"))
+            .append(self.space())
+            .append(entity_class_doc)
+            .append(self.space())
+            .append(self.kw("is"))
+            .append(self.space())
+            .append(expr_doc)
+            .append(self.punct(";"))
+    }
+
+    fn format_entity_class(&self, class: &vhdl_lang::ast::EntityClass) -> Doc<'a> {
+        use vhdl_lang::ast::EntityClass;
+        let s = match class {
+            EntityClass::Entity => "entity",
+            EntityClass::Architecture => "architecture",
+            EntityClass::Configuration => "configuration",
+            EntityClass::Procedure => "procedure",
+            EntityClass::Function => "function",
+            EntityClass::Package => "package",
+            EntityClass::Type => "type",
+            EntityClass::Subtype => "subtype",
+            EntityClass::Constant => "constant",
+            EntityClass::Signal => "signal",
+            EntityClass::Variable => "variable",
+            EntityClass::Component => "component",
+            EntityClass::Label => "label",
+            EntityClass::Literal => "literal",
+            EntityClass::Units => "units",
+            EntityClass::File => "file",
+        };
+        self.kw(s)
+    }
+
+    // -----------------------------------------------------------------------
+    // Alias declarations
+    // -----------------------------------------------------------------------
+
+    fn format_alias_declaration(&self, alias: &AliasDeclaration) -> Doc<'a> {
+        // designator is WithDecl<WithToken<Designator>>; inner Designator via .tree.item
+        let name = self.designator(&alias.designator.tree.item);
+        let subtype_doc = if let Some(subtype) = &alias.subtype_indication {
+            self.punct(":")
+                .append(self.space())
+                .append(self.format_subtype_indication(subtype))
+                .append(self.space())
+        } else {
+            self.space()
+        };
+        let target = self.format_name(&alias.name.item);
+        let sig_doc = if let Some(sig) = &alias.signature {
+            self.format_signature(sig)
+        } else {
+            self.nil()
+        };
+        self.kw("alias")
+            .append(self.space())
+            .append(name)
+            .append(subtype_doc)
+            .append(self.kw("is"))
+            .append(self.space())
+            .append(target)
+            .append(sig_doc)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Use / library / context-reference clauses
+    // -----------------------------------------------------------------------
+
+    pub fn format_use_clause(&self, clause: &UseClause) -> Doc<'a> {
+        self.kw("use")
+            .append(self.space())
+            .append(self.format_name_list(&clause.name_list))
+            .append(self.punct(";"))
+    }
+
+    pub fn format_library_clause(&self, clause: &LibraryClause) -> Doc<'a> {
+        // name_list is Vec<WithRef<Ident>> = Vec<WithRef<WithToken<Symbol>>>
+        // WithRef<T>.item gives T; WithToken<Symbol>.item gives Symbol
+        let names = self.intersperse(
+            clause
+                .name_list
+                .iter()
+                .map(|id| self.ident(&id.item.item.name_utf8())),
+            self.arena.text(", "),
+        );
+        self.kw("library")
+            .append(self.space())
+            .append(names)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Package instantiation (as a declaration)
+    // -----------------------------------------------------------------------
+
+    pub fn format_package_instantiation(&self, pkg: &PackageInstantiation) -> Doc<'a> {
+        let name = self.ident(&pkg.ident.tree.item.name_utf8());
+        let pkg_name = self.format_name(&pkg.package_name.item);
+        let generic_map_doc = if let Some(gm) = &pkg.generic_map {
+            self.space()
+                .append(self.format_named_map_aspect("generic", gm))
+        } else {
+            self.nil()
+        };
+        self.kw("package")
+            .append(self.space())
+            .append(name)
+            .append(self.space())
+            .append(self.kw("is"))
+            .append(self.space())
+            .append(self.kw("new"))
+            .append(self.space())
+            .append(pkg_name)
+            .append(generic_map_doc)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Configuration specification (for … use …)
+    // -----------------------------------------------------------------------
+
+    fn format_configuration_specification(
+        &self,
+        config: &vhdl_lang::ast::ConfigurationSpecification,
+    ) -> Doc<'a> {
+        let spec = self.format_component_specification(&config.spec);
+        let binding = self.format_binding_indication(&config.bind_ind);
+        let end_for = if config.end_token.is_some() {
+            self.hardline()
+                .append(self.kw("end"))
+                .append(self.space())
+                .append(self.kw("for"))
+                .append(self.punct(";"))
+        } else {
+            self.punct(";")
+        };
+
+        let vunit_docs = if config.vunit_bind_inds.is_empty() {
+            self.nil()
+        } else {
+            let vunits: Vec<Doc<'a>> = config
+                .vunit_bind_inds
+                .iter()
+                .map(|v| self.format_vunit_binding_indication(v))
+                .collect();
+            self.hardline().append(self.join_hardline(vunits))
+        };
+
+        self.kw("for")
+            .append(self.space())
+            .append(spec)
+            .append(self.hardline())
+            .append(self.nest(binding))
+            .append(vunit_docs)
+            .append(end_for)
+    }
+
+    pub fn format_component_specification(
+        &self,
+        spec: &vhdl_lang::ast::ComponentSpecification,
+    ) -> Doc<'a> {
+        use vhdl_lang::ast::InstantiationList;
+        let list_doc = match &spec.instantiation_list {
+            InstantiationList::Labels(labels) => self.intersperse(
+                labels.iter().map(|l| self.ident(&l.item.name_utf8())),
+                self.arena.text(", "),
+            ),
+            InstantiationList::Others => self.kw("others"),
+            InstantiationList::All => self.kw("all"),
+        };
+        let comp_name = self.format_name(&spec.component_name.item);
+        list_doc
+            .append(self.punct(":"))
+            .append(self.space())
+            .append(comp_name)
+    }
+
+    pub fn format_binding_indication(&self, bind: &vhdl_lang::ast::BindingIndication) -> Doc<'a> {
+        use vhdl_lang::ast::EntityAspect;
+        let entity_aspect_doc = if let Some(aspect) = &bind.entity_aspect {
+            let aspect_doc = match aspect {
+                EntityAspect::Entity(name, arch) => {
+                    let name_doc = self.format_name(&name.item);
+                    let arch_doc = if let Some(a) = arch {
+                        self.punct("(")
+                            .append(self.ident(&a.item.name_utf8()))
+                            .append(self.punct(")"))
+                    } else {
+                        self.nil()
+                    };
+                    self.kw("entity")
+                        .append(self.space())
+                        .append(name_doc)
+                        .append(arch_doc)
+                }
+                EntityAspect::Configuration(name) => self
+                    .kw("configuration")
+                    .append(self.space())
+                    .append(self.format_name(&name.item)),
+                EntityAspect::Open => self.kw("open"),
+            };
+            self.kw("use")
+                .append(self.space())
+                .append(aspect_doc)
+                .append(self.punct(";"))
+        } else {
+            self.nil()
+        };
+
+        let generic_map_doc = if let Some(gm) = &bind.generic_map {
+            self.hardline()
+                .append(self.format_named_map_aspect("generic", gm))
+                .append(self.punct(";"))
+        } else {
+            self.nil()
+        };
+
+        let port_map_doc = if let Some(pm) = &bind.port_map {
+            self.hardline()
+                .append(self.format_named_map_aspect("port", pm))
+                .append(self.punct(";"))
+        } else {
+            self.nil()
+        };
+
+        entity_aspect_doc
+            .append(generic_map_doc)
+            .append(port_map_doc)
+    }
+
+    fn format_vunit_binding_indication(
+        &self,
+        vunit: &vhdl_lang::ast::VUnitBindingIndication,
+    ) -> Doc<'a> {
+        let names = self.format_name_list(&vunit.vunit_list);
+        self.kw("use")
+            .append(self.space())
+            .append(self.kw("vunit"))
+            .append(self.space())
+            .append(names)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // View (mode view) declarations
+    // -----------------------------------------------------------------------
+
+    fn format_view_declaration(&self, view: &ModeViewDeclaration) -> Doc<'a> {
+        let name = self.ident(&view.ident.tree.item.name_utf8());
+        let subtype_doc = self.format_subtype_indication(&view.typ);
+        let elems: Vec<Doc<'a>> = view
+            .elements
+            .iter()
+            .map(|e| self.format_mode_view_element(e))
+            .collect();
+        let body = if elems.is_empty() {
+            self.nil()
+        } else {
+            self.nest(self.hardline().append(self.join_hardline(elems)))
+        };
+        self.kw("view")
+            .append(self.space())
+            .append(name.clone())
+            .append(self.space())
+            .append(self.kw("of"))
+            .append(self.space())
+            .append(subtype_doc)
+            .append(self.space())
+            .append(self.kw("is"))
+            .append(body)
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("view"))
+            .append(self.space())
+            .append(name)
+            .append(self.punct(";"))
+    }
+}
+
+
+./src/fmt/concurrent.rs:
+use vhdl_lang::ast::token_range::WithTokenSpan;
+use vhdl_lang::ast::{
+    AssignmentRightHand, BlockStatement, CaseGenerateStatement, ConcurrentAssertStatement,
+    ConcurrentProcedureCall, ConcurrentSignalAssignment, ConcurrentStatement, ForGenerateStatement,
+    GenerateBody, IfGenerateStatement, InstantiatedUnit, InstantiationStatement,
+    LabeledConcurrentStatement, ProcessStatement, SensitivityList,
+};
+
+use crate::fmt::{Doc, Formatter};
+
+impl<'a> Formatter<'a> {
+    // -----------------------------------------------------------------------
+    // Concurrent statement list
+    // -----------------------------------------------------------------------
+
+    pub fn format_concurrent_statements(
+        &self,
+        statements: &[LabeledConcurrentStatement],
+    ) -> Doc<'a> {
+        if statements.is_empty() {
+            return self.nil();
+        }
+        let items: Vec<Doc<'a>> = statements
+            .iter()
+            .map(|s| self.format_labeled_concurrent_statement(s))
+            .collect();
+        self.nest(self.hardline().append(self.join_hardline(items)))
+    }
+
+    fn format_labeled_concurrent_statement(&self, stmt: &LabeledConcurrentStatement) -> Doc<'a> {
+        let label_doc = if let Some(label) = &stmt.label.tree {
+            self.ident(&label.item.name_utf8())
+                .append(self.punct(":"))
+                .append(self.space())
+        } else {
+            self.nil()
+        };
+        label_doc.append(self.format_concurrent_statement(&stmt.statement))
+    }
+
+    fn format_concurrent_statement(&self, stmt: &WithTokenSpan<ConcurrentStatement>) -> Doc<'a> {
+        match &stmt.item {
+            ConcurrentStatement::ProcedureCall(call) => self.format_concurrent_procedure_call(call),
+            ConcurrentStatement::Block(block) => self.format_block_statement(block),
+            ConcurrentStatement::Process(process) => self.format_process_statement(process),
+            ConcurrentStatement::Assert(assert) => self.format_concurrent_assert(assert),
+            ConcurrentStatement::Assignment(assignment) => {
+                self.format_concurrent_signal_assignment(assignment)
+            }
+            ConcurrentStatement::Instance(inst) => self.format_instantiation_statement(inst),
+            ConcurrentStatement::ForGenerate(stmt) => self.format_for_generate(stmt),
+            ConcurrentStatement::IfGenerate(stmt) => self.format_if_generate(stmt),
+            ConcurrentStatement::CaseGenerate(stmt) => self.format_case_generate(stmt),
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Concurrent procedure call
+    // -----------------------------------------------------------------------
+
+    fn format_concurrent_procedure_call(&self, call: &ConcurrentProcedureCall) -> Doc<'a> {
+        let postponed_doc = if call.postponed {
+            self.kw("postponed").append(self.space())
+        } else {
+            self.nil()
+        };
+        postponed_doc
+            .append(self.format_call_or_indexed(&call.call.item))
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Block statement
+    // -----------------------------------------------------------------------
+
+    fn format_block_statement(&self, block: &BlockStatement) -> Doc<'a> {
+        let guard_doc = if let Some(guard) = &block.guard_condition {
+            self.punct("(")
+                .append(self.format_expression(guard.as_ref()))
+                .append(self.punct(")"))
+        } else {
+            self.nil()
+        };
+
+        let is_doc = if block.is_token.is_some() {
+            self.space().append(self.kw("is"))
+        } else {
+            self.nil()
+        };
+
+        // Header: generics, generic map, ports, port map
+        let generics_doc = if let Some(generics) = &block.header.generic_clause {
+            self.nest(
+                self.hardline()
+                    .append(self.kw("generic"))
+                    .append(self.space())
+                    .append(self.format_interface_list_semi(generics)),
+            )
+        } else {
+            self.nil()
+        };
+
+        let generic_map_doc = if let Some(gm) = &block.header.generic_map {
+            self.nest(
+                self.hardline()
+                    .append(self.format_named_map_aspect("generic", gm))
+                    .append(self.punct(";")),
+            )
+        } else {
+            self.nil()
+        };
+
+        let ports_doc = if let Some(ports) = &block.header.port_clause {
+            self.nest(
+                self.hardline()
+                    .append(self.kw("port"))
+                    .append(self.space())
+                    .append(self.format_interface_list_semi(ports)),
+            )
+        } else {
+            self.nil()
+        };
+
+        let port_map_doc = if let Some(pm) = &block.header.port_map {
+            self.nest(
+                self.hardline()
+                    .append(self.format_named_map_aspect("port", pm))
+                    .append(self.punct(";")),
+            )
+        } else {
+            self.nil()
+        };
+
+        let decls_doc = if block.decl.is_empty() {
+            self.nil()
+        } else {
+            self.nest(
+                self.hardline()
+                    .append(self.format_declarations(&block.decl)),
+            )
+        };
+
+        let stmts_doc = self.format_concurrent_statements(&block.statements);
+
+        self.kw("block")
+            .append(guard_doc)
+            .append(is_doc)
+            .append(generics_doc)
+            .append(generic_map_doc)
+            .append(ports_doc)
+            .append(port_map_doc)
+            .append(decls_doc)
+            .append(self.hardline())
+            .append(self.kw("begin"))
+            .append(stmts_doc)
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("block"))
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Process statement
+    // -----------------------------------------------------------------------
+
+    pub fn format_process_statement(&self, process: &ProcessStatement) -> Doc<'a> {
+        let postponed_doc = if process.postponed {
+            self.kw("postponed").append(self.space())
+        } else {
+            self.nil()
+        };
+
+        let sensitivity_doc = if let Some(sensitivity) = &process.sensitivity_list {
+            let inner = match &sensitivity.item {
+                SensitivityList::Names(names) => self.format_name_list(names),
+                SensitivityList::All => self.kw("all"),
+            };
+            self.punct("(").append(inner).append(self.punct(")"))
+        } else {
+            self.nil()
+        };
+
+        let is_doc = if process.is_token.is_some() {
+            self.space().append(self.kw("is"))
+        } else {
+            self.nil()
+        };
+
+        let decls_doc = if process.decl.is_empty() {
+            self.nil()
+        } else {
+            self.nest(
+                self.hardline()
+                    .append(self.format_declarations(&process.decl)),
+            )
+        };
+
+        let stmts_doc = self.format_sequential_statements(&process.statements);
+
+        // end_label_pos is Option<SrcPos> — no identifier text available.
+        let end_label_doc = self.nil();
+        let _ = &process.end_label_pos;
+
+        postponed_doc
+            .append(self.kw("process"))
+            .append(sensitivity_doc)
+            .append(is_doc)
+            .append(decls_doc)
+            .append(self.hardline())
+            .append(self.kw("begin"))
+            .append(stmts_doc)
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("process"))
+            .append(end_label_doc)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Concurrent assert
+    // -----------------------------------------------------------------------
+
+    fn format_concurrent_assert(&self, assert: &ConcurrentAssertStatement) -> Doc<'a> {
+        let postponed_doc = if assert.postponed {
+            self.kw("postponed").append(self.space())
+        } else {
+            self.nil()
+        };
+        postponed_doc
+            .append(self.kw("assert"))
+            .append(self.space())
+            .append(self.format_assert_inner(&assert.statement))
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Concurrent signal assignment
+    // -----------------------------------------------------------------------
+
+    fn format_concurrent_signal_assignment(&self, assign: &ConcurrentSignalAssignment) -> Doc<'a> {
+        let postponed_doc = if assign.postponed {
+            self.kw("postponed").append(self.space())
+        } else {
+            self.nil()
+        };
+
+        // `with expr select` prefix for selected assignments
+        let with_prefix = if let AssignmentRightHand::Selected(sel) = &assign.assignment.rhs {
+            self.kw("with")
+                .append(self.space())
+                .append(self.format_expression(sel.expression.as_ref()))
+                .append(self.space())
+                .append(self.kw("select"))
+                .append(self.space())
+        } else {
+            self.nil()
+        };
+
+        let target = self.format_target(&assign.assignment.target);
+
+        let delay_doc = if let Some(delay) = &assign.assignment.delay_mechanism {
+            self.format_delay_mechanism(delay).append(self.space())
+        } else {
+            self.nil()
+        };
+
+        let rhs = self.format_concurrent_rhs(&assign.assignment.rhs);
+
+        postponed_doc
+            .append(with_prefix)
+            .append(target)
+            .append(self.space())
+            .append(self.punct("<="))
+            .append(self.space())
+            .append(delay_doc)
+            .append(rhs)
+            .append(self.punct(";"))
+    }
+
+    fn format_concurrent_rhs(
+        &self,
+        rhs: &AssignmentRightHand<vhdl_lang::ast::Waveform>,
+    ) -> Doc<'a> {
+        match rhs {
+            AssignmentRightHand::Simple(waveform) => self.format_waveform(waveform),
+            AssignmentRightHand::Conditional(conds) => {
+                let mut parts: Vec<Doc<'a>> = Vec::new();
+                for cond in &conds.conditionals {
+                    let val = self.format_waveform(&cond.item);
+                    let cond_doc = self.format_expression(cond.condition.as_ref());
+                    parts.push(
+                        val.append(self.space())
+                            .append(self.kw("when"))
+                            .append(self.space())
+                            .append(cond_doc),
+                    );
+                }
+                if let Some((else_waveform, _)) = &conds.else_item {
+                    let joined = self.intersperse(
+                        parts,
+                        self.space().append(self.kw("else")).append(self.space()),
+                    );
+                    joined
+                        .append(self.space())
+                        .append(self.kw("else"))
+                        .append(self.space())
+                        .append(self.format_waveform(else_waveform))
+                } else {
+                    self.intersperse(
+                        parts,
+                        self.space().append(self.kw("else")).append(self.space()),
+                    )
+                }
+            }
+            AssignmentRightHand::Selected(sel) => {
+                let alternatives: Vec<Doc<'a>> = sel
+                    .alternatives
+                    .iter()
+                    .map(|alt| {
+                        let val = self.format_waveform(&alt.item);
+                        let choices = self.intersperse(
+                            alt.choices.iter().map(|c| self.format_choice(c)),
+                            self.space().append(self.punct("|")).append(self.space()),
+                        );
+                        val.append(self.space())
+                            .append(self.kw("when"))
+                            .append(self.space())
+                            .append(choices)
+                    })
+                    .collect();
+                self.intersperse(alternatives, self.punct(",").append(self.line()))
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Instantiation statement
+    // -----------------------------------------------------------------------
+
+    fn format_instantiation_statement(&self, inst: &InstantiationStatement) -> Doc<'a> {
+        let unit_doc = match &inst.unit {
+            InstantiatedUnit::Component(name) => self
+                .kw("component")
+                .append(self.space())
+                .append(self.format_name(&name.item)),
+            InstantiatedUnit::Entity(name, arch) => {
+                let name_doc = self.format_name(&name.item);
+                // arch is Option<WithRef<Ident>> = Option<WithRef<WithToken<Symbol>>>
+                // inner Symbol via .item.item
+                let arch_doc = if let Some(a) = arch {
+                    self.punct("(")
+                        .append(self.ident(&a.item.item.name_utf8()))
+                        .append(self.punct(")"))
+                } else {
+                    self.nil()
+                };
+                self.kw("entity")
+                    .append(self.space())
+                    .append(name_doc)
+                    .append(arch_doc)
+            }
+            InstantiatedUnit::Configuration(name) => self
+                .kw("configuration")
+                .append(self.space())
+                .append(self.format_name(&name.item)),
+        };
+
+        let generic_map_doc = if let Some(gm) = &inst.generic_map {
+            self.nest(
+                self.hardline()
+                    .append(self.format_named_map_aspect("generic", gm)),
+            )
+        } else {
+            self.nil()
+        };
+
+        let port_map_doc = if let Some(pm) = &inst.port_map {
+            self.nest(
+                self.hardline()
+                    .append(self.format_named_map_aspect("port", pm)),
+            )
+        } else {
+            self.nil()
+        };
+
+        unit_doc
+            .append(generic_map_doc)
+            .append(port_map_doc)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Generate statements
+    // -----------------------------------------------------------------------
+
+    fn format_for_generate(&self, stmt: &ForGenerateStatement) -> Doc<'a> {
+        let idx = self.ident(&stmt.index_name.tree.item.name_utf8());
+        let range_doc = self.format_discrete_range(&stmt.discrete_range);
+        let body_doc = self.format_generate_body(&stmt.body);
+
+        // end_label_pos is Option<SrcPos> — no identifier text available.
+        let end_label_doc = self.nil();
+        let _ = &stmt.end_label_pos;
+
+        self.kw("for")
+            .append(self.space())
+            .append(idx)
+            .append(self.space())
+            .append(self.kw("in"))
+            .append(self.space())
+            .append(range_doc)
+            .append(self.space())
+            .append(self.kw("generate"))
+            .append(body_doc)
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("generate"))
+            .append(end_label_doc)
+            .append(self.punct(";"))
+    }
+
+    fn format_if_generate(&self, stmt: &IfGenerateStatement) -> Doc<'a> {
+        let mut parts: Vec<Doc<'a>> = Vec::new();
+
+        for (i, cond) in stmt.conds.conditionals.iter().enumerate() {
+            let kw = if i == 0 { "if" } else { "elsif" };
+            let cond_doc = self.format_expression(cond.condition.as_ref());
+
+            let alt_label_doc = if let Some(label) = &cond.item.alternative_label {
+                self.ident(&label.tree.item.name_utf8())
+                    .append(self.punct(":"))
+                    .append(self.space())
+            } else {
+                self.nil()
+            };
+
+            let body_doc = self.format_generate_body(&cond.item);
+
+            parts.push(
+                self.kw(kw)
+                    .append(self.space())
+                    .append(alt_label_doc)
+                    .append(cond_doc)
+                    .append(self.space())
+                    .append(self.kw("generate"))
+                    .append(body_doc),
+            );
+        }
+
+        let else_doc = if let Some((else_body, _)) = &stmt.conds.else_item {
+            let alt_label_doc = if let Some(label) = &else_body.alternative_label {
+                self.space()
+                    .append(self.ident(&label.tree.item.name_utf8()))
+                    .append(self.punct(":"))
+            } else {
+                self.nil()
+            };
+            let body_doc = self.format_generate_body(else_body);
+            self.hardline()
+                .append(self.kw("else"))
+                .append(alt_label_doc)
+                .append(self.space())
+                .append(self.kw("generate"))
+                .append(body_doc)
+        } else {
+            self.nil()
+        };
+
+        // end_label_pos is Option<SrcPos> — no identifier text available.
+        let end_label_doc = self.nil();
+        let _ = &stmt.end_label_pos;
+
+        self.intersperse(parts, self.hardline())
+            .append(else_doc)
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("generate"))
+            .append(end_label_doc)
+            .append(self.punct(";"))
+    }
+
+    fn format_case_generate(&self, stmt: &CaseGenerateStatement) -> Doc<'a> {
+        let expr_doc = self.format_expression(stmt.sels.expression.as_ref());
+
+        let alternatives: Vec<Doc<'a>> = stmt
+            .sels
+            .alternatives
+            .iter()
+            .map(|alt| {
+                let choices = self.intersperse(
+                    alt.choices.iter().map(|c| self.format_choice(c)),
+                    self.space().append(self.punct("|")).append(self.space()),
+                );
+                let alt_label_doc = if let Some(label) = &alt.item.alternative_label {
+                    self.ident(&label.tree.item.name_utf8())
+                        .append(self.punct(":"))
+                        .append(self.space())
+                } else {
+                    self.nil()
+                };
+                let body_doc = self.format_generate_body(&alt.item);
+                self.kw("when")
+                    .append(self.space())
+                    .append(alt_label_doc)
+                    .append(choices)
+                    .append(self.space())
+                    .append(self.punct("=>"))
+                    .append(body_doc)
+            })
+            .collect();
+
+        let alts_doc = self.nest(self.hardline().append(self.join_hardline(alternatives)));
+
+        // end_label_pos is Option<SrcPos> — no identifier text available.
+        let end_label_doc = self.nil();
+        let _ = &stmt.end_label_pos;
+
+        self.kw("case")
+            .append(self.space())
+            .append(expr_doc)
+            .append(self.space())
+            .append(self.kw("generate"))
+            .append(alts_doc)
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw("generate"))
+            .append(end_label_doc)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Generate body (shared by for/if/case generate)
+    // -----------------------------------------------------------------------
+
+    fn format_generate_body(&self, body: &GenerateBody) -> Doc<'a> {
+        let decls_doc = if let Some((decls, _begin_token)) = &body.decl {
+            let inner = if decls.is_empty() {
+                self.nil()
+            } else {
+                self.nest(self.hardline().append(self.format_declarations(decls)))
+            };
+            inner.append(self.hardline()).append(self.kw("begin"))
+        } else {
+            self.nil()
+        };
+
+        let stmts_doc = self.format_concurrent_statements(&body.statements);
+
+        // Optional inner `end [label] ;`
+        // body.end_label is Option<TokenId> — no text available without token access.
+        let inner_end_doc = if body.end_token.is_some() {
+            self.hardline()
+                .append(self.kw("end"))
+                .append(self.punct(";"))
+        } else {
+            self.nil()
+        };
+
+        decls_doc.append(stmts_doc).append(inner_end_doc)
+    }
+}
+
+
+./src/fmt/subprogram.rs:
+use pretty::DocAllocator;
+use vhdl_lang::ast::token_range::WithTokenSpan;
+use vhdl_lang::ast::{
+    FunctionSpecification, ProcedureSpecification, Signature, SubprogramBody,
+    SubprogramDeclaration, SubprogramHeader, SubprogramInstantiation, SubprogramKind,
+    SubprogramSpecification,
+};
+
+use crate::fmt::{Doc, Formatter};
+
+impl<'a> Formatter<'a> {
+    // -----------------------------------------------------------------------
+    // Subprogram declarations  (procedure foo; / function foo return bar;)
+    // -----------------------------------------------------------------------
+
+    pub fn format_subprogram_declaration(&self, decl: &SubprogramDeclaration) -> Doc<'a> {
+        self.format_subprogram_specification(&decl.specification)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Subprogram specifications
+    // -----------------------------------------------------------------------
+
+    pub fn format_subprogram_specification(&self, spec: &SubprogramSpecification) -> Doc<'a> {
+        match spec {
+            SubprogramSpecification::Procedure(p) => self.format_procedure_specification(p),
+            SubprogramSpecification::Function(f) => self.format_function_specification(f),
+        }
+    }
+
+    fn format_procedure_specification(&self, spec: &ProcedureSpecification) -> Doc<'a> {
+        let name = self.subprogram_designator(&spec.designator.tree.item);
+
+        let header_doc = if let Some(header) = &spec.header {
+            self.format_subprogram_header(header)
+        } else {
+            self.nil()
+        };
+
+        let params_doc = if let Some(params) = &spec.parameter_list {
+            self.space().append(self.format_interface_list(params))
+        } else {
+            self.nil()
+        };
+
+        self.kw("procedure")
+            .append(self.space())
+            .append(name)
+            .append(header_doc)
+            .append(params_doc)
+    }
+
+    fn format_function_specification(&self, spec: &FunctionSpecification) -> Doc<'a> {
+        // Optional purity keyword: `pure` / `impure`
+        let purity_doc = if spec.pure {
+            self.kw("pure").append(self.space())
+        } else {
+            self.nil()
+        };
+
+        let name = self.subprogram_designator(&spec.designator.tree.item);
+
+        let header_doc = if let Some(header) = &spec.header {
+            self.format_subprogram_header(header)
+        } else {
+            self.nil()
+        };
+
+        let params_doc = if let Some(params) = &spec.parameter_list {
+            self.space().append(self.format_interface_list(params))
+        } else {
+            self.nil()
+        };
+
+        let return_doc = self
+            .space()
+            .append(self.kw("return"))
+            .append(self.space())
+            .append(self.format_name(&spec.return_type.item));
+
+        purity_doc
+            .append(self.kw("function"))
+            .append(self.space())
+            .append(name)
+            .append(header_doc)
+            .append(params_doc)
+            .append(return_doc)
+    }
+
+    // -----------------------------------------------------------------------
+    // Subprogram header  (generic clause + optional generic map)
+    // -----------------------------------------------------------------------
+
+    fn format_subprogram_header(&self, header: &SubprogramHeader) -> Doc<'a> {
+        let generic_list_doc = self.nest(
+            self.hardline()
+                .append(self.kw("generic"))
+                .append(self.space())
+                .append(self.format_interface_list(&header.generic_list)),
+        );
+
+        let map_doc = if let Some(map) = &header.map_aspect {
+            self.space()
+                .append(self.format_named_map_aspect("generic", map))
+        } else {
+            self.nil()
+        };
+
+        generic_list_doc.append(map_doc)
+    }
+
+    // -----------------------------------------------------------------------
+    // Subprogram body
+    // -----------------------------------------------------------------------
+
+    pub fn format_subprogram_body(&self, body: &SubprogramBody) -> Doc<'a> {
+        let spec_doc = self.format_subprogram_specification(&body.specification);
+
+        let decls_doc = if body.declarations.is_empty() {
+            self.nil()
+        } else {
+            self.nest(
+                self.hardline()
+                    .append(self.format_declarations(&body.declarations)),
+            )
+        };
+
+        let stmts_doc = if body.statements.is_empty() {
+            self.nil()
+        } else {
+            self.format_sequential_statements(&body.statements)
+        };
+
+        // end [procedure|function] [name];
+        let end_keyword = match body.specification {
+            SubprogramSpecification::Procedure(_) => "procedure",
+            SubprogramSpecification::Function(_) => "function",
+        };
+        let end_name = match &body.specification {
+            SubprogramSpecification::Procedure(p) => {
+                self.subprogram_designator(&p.designator.tree.item)
+            }
+            SubprogramSpecification::Function(f) => {
+                self.subprogram_designator(&f.designator.tree.item)
+            }
+        };
+
+        spec_doc
+            .append(self.space())
+            .append(self.kw("is"))
+            .append(decls_doc)
+            .append(self.hardline())
+            .append(self.kw("begin"))
+            .append(stmts_doc)
+            .append(self.hardline())
+            .append(self.kw("end"))
+            .append(self.space())
+            .append(self.kw(end_keyword))
+            .append(self.space())
+            .append(end_name)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Signatures  [type_mark, ... return type_mark]
+    // -----------------------------------------------------------------------
+
+    pub fn format_signature(&self, sig: &WithTokenSpan<Signature>) -> Doc<'a> {
+        match &sig.item {
+            Signature::Function(params, return_type) => {
+                let params_doc = self.intersperse(
+                    params.iter().map(|p| self.format_name(&p.item)),
+                    self.arena.text(", "),
+                );
+                self.punct("[")
+                    .append(params_doc)
+                    .append(self.space())
+                    .append(self.kw("return"))
+                    .append(self.space())
+                    .append(self.format_name(&return_type.item))
+                    .append(self.punct("]"))
+            }
+            Signature::Procedure(params) => {
+                let params_doc = self.intersperse(
+                    params.iter().map(|p| self.format_name(&p.item)),
+                    self.arena.text(", "),
+                );
+                self.punct("[").append(params_doc).append(self.punct("]"))
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Subprogram instantiation
+    // -----------------------------------------------------------------------
+
+    pub fn format_subprogram_instantiation(&self, inst: &SubprogramInstantiation) -> Doc<'a> {
+        let kind_kw = match inst.kind {
+            SubprogramKind::Procedure => self.kw("procedure"),
+            SubprogramKind::Function => self.kw("function"),
+        };
+        let name = self.ident(&inst.ident.tree.item.name_utf8());
+        let target = self.format_name(&inst.subprogram_name.item);
+
+        let sig_doc = if let Some(sig) = &inst.signature {
+            self.format_signature(sig)
+        } else {
+            self.nil()
+        };
+
+        let generic_map_doc = if let Some(gm) = &inst.generic_map {
+            self.space()
+                .append(self.format_named_map_aspect("generic", gm))
+        } else {
+            self.nil()
+        };
+
+        kind_kw
+            .append(self.space())
+            .append(name)
+            .append(self.space())
+            .append(self.kw("is"))
+            .append(self.space())
+            .append(self.kw("new"))
+            .append(self.space())
+            .append(target)
+            .append(sig_doc)
+            .append(generic_map_doc)
+            .append(self.punct(";"))
+    }
+}
+
+
+./src/fmt/mod.rs:
+pub mod concurrent;
+pub mod declaration;
+pub mod design;
+pub mod expression;
+pub mod interface;
+pub mod name;
+pub mod sequential;
+pub mod subprogram;
+
+use crate::config::FormatConfig;
+use pretty::{Arena, DocAllocator, DocBuilder};
+use vhdl_lang::Token;
+use vhdl_lang::ast::{Designator, Operator, SubprogramDesignator};
+
+/// Convenience type alias — we annotate with `()` (no colour/semantic annotations).
+pub type Doc<'a> = DocBuilder<'a, Arena<'a>>;
+
+pub struct Formatter<'a> {
+    pub arena: &'a Arena<'a>,
+    pub config: &'a FormatConfig,
+    /// Token list for the current design unit (from DesignFile::design_units).
+    /// Empty slice when no token context is available.
+    pub tokens: &'a [Token],
+}
+
+impl<'a> Formatter<'a> {
+    pub fn new(arena: &'a Arena<'a>, config: &'a FormatConfig) -> Self {
+        Self {
+            arena,
+            config,
+            tokens: &[],
+        }
+    }
+
+    /// Create a formatter with a token slice for a specific design unit.
+    pub fn with_tokens(
+        arena: &'a Arena<'a>,
+        config: &'a FormatConfig,
+        tokens: &'a [Token],
+    ) -> Self {
+        Self {
+            arena,
+            config,
+            tokens,
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Low-level token helpers
+    // -----------------------------------------------------------------------
+
+    /// Emit a keyword string, applying the configured keyword casing.
+    pub fn kw(&self, s: &str) -> Doc<'a> {
+        self.arena.text(self.config.casing.keywords.apply(s))
+    }
+
+    /// Emit an identifier string, applying the configured identifier casing.
+    pub fn ident(&self, s: &str) -> Doc<'a> {
+        self.arena.text(self.config.casing.identifiers.apply(s))
+    }
+
+    /// Emit a fixed punctuation string exactly as given (no casing transform).
+    pub fn punct(&self, s: &'static str) -> Doc<'a> {
+        self.arena.text(s)
+    }
+
+    // -----------------------------------------------------------------------
+    // Structural helpers
+    // -----------------------------------------------------------------------
+
+    /// A soft line break: a space when the enclosing group fits on one line,
+    /// a newline + indent when it does not.
+    pub fn line(&self) -> Doc<'a> {
+        self.arena.line()
+    }
+
+    /// A soft line break that produces *nothing* (not even a space) when the
+    /// group fits inline.
+    pub fn line_(&self) -> Doc<'a> {
+        self.arena.line_()
+    }
+
+    /// An unconditional newline.
+    pub fn hardline(&self) -> Doc<'a> {
+        self.arena.hardline()
+    }
+
+    /// The empty document.
+    pub fn nil(&self) -> Doc<'a> {
+        self.arena.nil()
+    }
+
+    /// A single space.
+    pub fn space(&self) -> Doc<'a> {
+        self.arena.text(" ")
+    }
+
+    /// Wrap `doc` in `nest(indent_size)`.
+    pub fn nest(&self, doc: Doc<'a>) -> Doc<'a> {
+        doc.nest(self.config.indentation.size as isize)
+    }
+
+    /// Intersperse `items` with `sep`.
+    pub fn intersperse<I>(&self, items: I, sep: Doc<'a>) -> Doc<'a>
+    where
+        I: IntoIterator<Item = Doc<'a>>,
+    {
+        self.arena.intersperse(items, sep)
+    }
+
+    /// Intersperse items with `hardline()`.
+    pub fn join_hardline<I>(&self, items: I) -> Doc<'a>
+    where
+        I: IntoIterator<Item = Doc<'a>>,
+    {
+        self.intersperse(items, self.hardline())
+    }
+
+    // -----------------------------------------------------------------------
+    // Designator helpers
+    // -----------------------------------------------------------------------
+
+    /// Format a `Designator` (identifier or operator symbol or character).
+    pub fn designator(&self, d: &Designator) -> Doc<'a> {
+        match d {
+            Designator::Identifier(sym) => self.ident(&sym.name_utf8()),
+            Designator::OperatorSymbol(op) => self.arena.text(format!("\"{}\"", operator_str(op))),
+            Designator::Character(c) => self.arena.text(format!("'{}'", *c as char)),
+            Designator::Anonymous(_) => self.nil(),
+        }
+    }
+
+    /// Format a `SubprogramDesignator` (identifier or operator symbol).
+    pub fn subprogram_designator(&self, d: &SubprogramDesignator) -> Doc<'a> {
+        match d {
+            SubprogramDesignator::Identifier(sym) => self.ident(&sym.name_utf8()),
+            SubprogramDesignator::OperatorSymbol(op) => {
+                self.arena.text(format!("\"{}\"", operator_str(op)))
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Comment + blank-line trivia helpers
+    // -----------------------------------------------------------------------
+
+    /// Given a `TokenId` (as a raw `usize` index), return a Doc that:
+    ///  - Emits any leading comments attached to that token (preserving their
+    ///    exact text and relative blank lines between consecutive comments).
+    ///  - Does NOT emit the token itself.
+    ///
+    /// Returns `nil()` when there are no leading comments or no tokens are loaded.
+    pub fn leading_comments(&self, token_idx: usize) -> Doc<'a> {
+        let token = match self.tokens.get(token_idx) {
+            Some(t) => t,
+            None => return self.nil(),
+        };
+        let comments = match &token.comments {
+            Some(c) if !c.leading.is_empty() => c,
+            _ => return self.nil(),
+        };
+
+        let mut doc = self.nil();
+        for (i, comment) in comments.leading.iter().enumerate() {
+            let text = format_comment_text(comment);
+            doc = doc.append(self.arena.text(text));
+
+            // Determine how many newlines follow this comment before the
+            // next comment (or the token itself).
+            let next_line = if let Some(next_comment) = comments.leading.get(i + 1) {
+                next_comment.range.start.line
+            } else {
+                // gap between last leading comment and the token
+                token.pos.start().line
+            };
+            let gap = next_line.saturating_sub(comment.range.end.line);
+            // Always at least one newline after a comment line.
+            let breaks = gap.max(1);
+            for _ in 0..breaks {
+                doc = doc.append(self.hardline());
+            }
+        }
+        doc
+    }
+
+    /// Returns `true` when there is a blank line between the token at
+    /// `prev_idx` (exclusive end) and the token at `next_idx` (start),
+    /// considering the leading comments of `next_idx` if any.
+    ///
+    /// "Blank line" means ≥2 source lines gap (i.e., at least one empty line).
+    pub fn has_blank_before(&self, prev_idx: usize, next_idx: usize) -> bool {
+        let prev = match self.tokens.get(prev_idx) {
+            Some(t) => t,
+            None => return false,
+        };
+        let next = match self.tokens.get(next_idx) {
+            Some(t) => t,
+            None => return false,
+        };
+
+        // The "start" of the next item includes its first leading comment if any.
+        let next_start_line = match &next.comments {
+            Some(c) if !c.leading.is_empty() => c.leading[0].range.start.line,
+            _ => next.pos.start().line,
+        };
+
+        let prev_end_line = prev.pos.end().line;
+
+        // gap ≥ 2 means there is at least one blank line between them
+        next_start_line.saturating_sub(prev_end_line) >= 2
+    }
+
+    /// Build the trivia Doc to prepend before a node whose first token is at
+    /// `token_idx`.  This combines:
+    ///  1. An optional extra blank line (if `has_blank_before` is true for the
+    ///     previous token index).
+    ///  2. Any leading comments.
+    ///
+    /// The caller is responsible for emitting the hardline that separates the
+    /// *previous* item from this one; `node_trivia` only adds the *extra*
+    /// blank line (if present) and the comments.
+    pub fn node_trivia(&self, prev_end_token_idx: usize, this_start_token_idx: usize) -> Doc<'a> {
+        let blank = if self.has_blank_before(prev_end_token_idx, this_start_token_idx) {
+            self.hardline()
+        } else {
+            self.nil()
+        };
+        let comments = self.leading_comments(this_start_token_idx);
+        blank.append(comments)
+    }
+
+    /// Trailing comment for the token at `token_idx`, formatted as
+    /// `"  -- text"` (two spaces before `--`).  Returns `nil()` if none.
+    pub fn trailing_comment(&self, token_idx: usize) -> Doc<'a> {
+        let token = match self.tokens.get(token_idx) {
+            Some(t) => t,
+            None => return self.nil(),
+        };
+        let comment = match token.comments.as_ref().and_then(|c| c.trailing.as_ref()) {
+            Some(c) => c,
+            None => return self.nil(),
+        };
+        self.arena
+            .text("  ")
+            .append(self.arena.text(format_comment_text(comment)))
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Operator → string
+// ---------------------------------------------------------------------------
+
+pub fn operator_str(op: &Operator) -> &'static str {
+    match op {
+        Operator::And => "and",
+        Operator::Or => "or",
+        Operator::Nand => "nand",
+        Operator::Nor => "nor",
+        Operator::Xor => "xor",
+        Operator::Xnor => "xnor",
+        Operator::Abs => "abs",
+        Operator::Not => "not",
+        Operator::Minus => "-",
+        Operator::Plus => "+",
+        Operator::QueQue => "??",
+        Operator::EQ => "=",
+        Operator::NE => "/=",
+        Operator::LT => "<",
+        Operator::LTE => "<=",
+        Operator::GT => ">",
+        Operator::GTE => ">=",
+        Operator::QueEQ => "?=",
+        Operator::QueNE => "?/=",
+        Operator::QueLT => "?<",
+        Operator::QueLTE => "?<=",
+        Operator::QueGT => "?>",
+        Operator::QueGTE => "?>=",
+        Operator::SLL => "sll",
+        Operator::SRL => "srl",
+        Operator::SLA => "sla",
+        Operator::SRA => "sra",
+        Operator::ROL => "rol",
+        Operator::ROR => "ror",
+        Operator::Concat => "&",
+        Operator::Times => "*",
+        Operator::Div => "/",
+        Operator::Mod => "mod",
+        Operator::Rem => "rem",
+        Operator::Pow => "**",
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Comment text formatting
+// ---------------------------------------------------------------------------
+
+fn format_comment_text(comment: &vhdl_lang::syntax::Comment) -> String {
+    if comment.multi_line {
+        format!("/*{}*/", comment.value)
+    } else {
+        // Single-line: value already contains everything after `--`
+        format!("--{}", comment.value)
+    }
+}
+
+
+./src/fmt/expression.rs:
+use pretty::DocAllocator;
+use vhdl_lang::ast::token_range::WithTokenSpan;
+use vhdl_lang::ast::{
+    AbstractLiteral, Allocator, AttributeName, Choice, DiscreteRange, ElementAssociation,
+    Expression, Literal, QualifiedExpression, Range, ResolutionIndication, SubtypeConstraint,
+    SubtypeIndication,
+};
+
+use crate::fmt::{Doc, Formatter};
+
+impl<'a> Formatter<'a> {
+    // -----------------------------------------------------------------------
+    // Expressions
+    // -----------------------------------------------------------------------
+
+    pub fn format_expression(&self, expr: WithTokenSpan<&Expression>) -> Doc<'a> {
+        match expr.item {
+            Expression::Binary(op, lhs, rhs) => {
+                let op_doc = self.ident(&op.item.item.to_string().to_lowercase());
+                // lhs/rhs are Box<WithTokenSpan<Expression>>; use &** to get
+                // &WithTokenSpan<Expression> then auto-deref calls WithTokenSpan::as_ref()
+                let lhs_doc = self.format_expression((&**lhs).as_ref());
+                let rhs_doc = self.format_expression((&**rhs).as_ref());
+                // Place a soft line before the operator so long binary chains
+                // wrap with the operator at the start of the continuation line.
+                lhs_doc
+                    .append(self.space())
+                    .append(op_doc)
+                    .append(self.line())
+                    .append(rhs_doc)
+                    .group()
+            }
+            Expression::Unary(op, rhs) => {
+                use vhdl_lang::ast::Operator;
+                let op_str = op.item.item.to_string().to_lowercase();
+                let op_doc = self.ident(&op_str);
+                let rhs_doc = self.format_expression((&**rhs).as_ref());
+                match op.item.item {
+                    // These bind tightly — no space after the operator.
+                    Operator::Minus | Operator::Plus | Operator::QueQue => op_doc.append(rhs_doc),
+                    _ => op_doc.append(self.space()).append(rhs_doc),
+                }
+            }
+            Expression::Aggregate(associations) => {
+                if associations.is_empty() {
+                    return self.punct("(").append(self.punct(")"));
+                }
+                let items: Vec<Doc<'a>> = associations
+                    .iter()
+                    .map(|a| self.format_element_association(a))
+                    .collect();
+                let inner = self.intersperse(items, self.punct(",").append(self.line()));
+                self.punct("(")
+                    .append(self.nest(self.line_().append(inner)))
+                    .append(self.line_())
+                    .append(self.punct(")"))
+                    .group()
+            }
+            Expression::Qualified(qualified) => self.format_qualified_expression(qualified),
+            Expression::Name(name) => self.format_name(name),
+            Expression::Literal(literal) => self.format_literal(literal),
+            Expression::New(allocator) => self.format_allocator(allocator),
+            Expression::Parenthesized(inner) => {
+                let inner_doc = self.format_expression((&**inner).as_ref());
+                self.punct("(").append(inner_doc).append(self.punct(")"))
+            }
+        }
+    }
+
+    fn format_literal(&self, literal: &Literal) -> Doc<'a> {
+        match literal {
+            Literal::AbstractLiteral(al) => match al {
+                AbstractLiteral::Integer(i) => self.arena.text(i.to_string()),
+                AbstractLiteral::Real(r) => self.arena.text(r.to_string()),
+            },
+            Literal::Character(c) => self.arena.text(format!("'{}'", *c as char)),
+            Literal::String(s) => {
+                let mut out = String::from('"');
+                for byte in &s.bytes {
+                    if *byte == b'"' {
+                        out.push('"');
+                    }
+                    out.push(*byte as char);
+                }
+                out.push('"');
+                self.arena.text(out)
+            }
+            Literal::BitString(bs) => self.arena.text(bs.to_string()),
+            // Physical(PhysicalLiteral) where unit is WithRef<Ident> = WithRef<WithToken<Symbol>>
+            Literal::Physical(phys) => {
+                let num = match &phys.value {
+                    AbstractLiteral::Integer(i) => i.to_string(),
+                    AbstractLiteral::Real(r) => r.to_string(),
+                };
+                // unit.item is WithToken<Symbol>; unit.item.item is Symbol
+                self.arena
+                    .text(num)
+                    .append(self.space())
+                    .append(self.ident(&phys.unit.item.item.name_utf8()))
+            }
+            Literal::Null => self.kw("null"),
+        }
+    }
+
+    pub fn format_qualified_expression(&self, expr: &QualifiedExpression) -> Doc<'a> {
+        // expr.expr is WithTokenSpan<Expression>; .as_ref() gives WithTokenSpan<&Expression>
+        self.format_name(&expr.type_mark.item)
+            .append(self.punct("'"))
+            .append(self.format_expression(expr.expr.as_ref()))
+    }
+
+    fn format_allocator(&self, allocator: &WithTokenSpan<Allocator>) -> Doc<'a> {
+        let inner = match &allocator.item {
+            // Allocator::Qualified holds Box<QualifiedExpression>
+            Allocator::Qualified(q) => self.format_qualified_expression(q),
+            Allocator::Subtype(s) => self.format_subtype_indication(s),
+        };
+        self.kw("new").append(self.space()).append(inner)
+    }
+
+    pub fn format_element_association(&self, assoc: &WithTokenSpan<ElementAssociation>) -> Doc<'a> {
+        match &assoc.item {
+            ElementAssociation::Positional(expr) => {
+                // expr is WithTokenSpan<Expression>; .as_ref() is correct
+                self.format_expression(expr.as_ref())
+            }
+            ElementAssociation::Named(choices, expr) => {
+                let choices_doc = self.intersperse(
+                    choices.iter().map(|c| self.format_choice(c)),
+                    self.space().append(self.punct("|")).append(self.space()),
+                );
+                choices_doc
+                    .append(self.space())
+                    .append(self.punct("=>"))
+                    .append(self.space())
+                    .append(self.format_expression(expr.as_ref()))
+            }
+        }
+    }
+
+    pub fn format_choice(&self, choice: &WithTokenSpan<Choice>) -> Doc<'a> {
+        match &choice.item {
+            Choice::Expression(expr) => {
+                self.format_expression(WithTokenSpan::new(expr, choice.span))
+            }
+            Choice::DiscreteRange(range) => self.format_discrete_range(range),
+            Choice::Others => self.kw("others"),
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Subtype indication and constraints
+    // -----------------------------------------------------------------------
+
+    pub fn format_subtype_indication(&self, indication: &SubtypeIndication) -> Doc<'a> {
+        let resolution = if let Some(res) = &indication.resolution {
+            self.format_resolution_indication(res).append(self.space())
+        } else {
+            self.nil()
+        };
+        let type_mark = self.format_name(&indication.type_mark.item);
+        let constraint = if let Some(c) = &indication.constraint {
+            self.format_subtype_constraint(c)
+        } else {
+            self.nil()
+        };
+        resolution.append(type_mark).append(constraint)
+    }
+
+    fn format_resolution_indication(&self, res: &ResolutionIndication) -> Doc<'a> {
+        match res {
+            ResolutionIndication::FunctionName(name) => self.format_name(&name.item),
+            ResolutionIndication::ArrayElement(name) => self
+                .punct("(")
+                .append(self.format_name(&name.item))
+                .append(self.punct(")")),
+            ResolutionIndication::Record(record) => {
+                let items: Vec<Doc<'a>> = record
+                    .item
+                    .iter()
+                    .map(|elem| {
+                        self.ident(&elem.ident.item.name_utf8())
+                            .append(self.space())
+                            .append(self.format_resolution_indication(&elem.resolution))
+                    })
+                    .collect();
+                self.punct("(")
+                    .append(self.intersperse(items, self.punct(",").append(self.space())))
+                    .append(self.punct(")"))
+            }
+        }
+    }
+
+    pub fn format_subtype_constraint(
+        &self,
+        constraint: &WithTokenSpan<SubtypeConstraint>,
+    ) -> Doc<'a> {
+        match &constraint.item {
+            SubtypeConstraint::Range(range) => self.space().append(self.format_range(range)),
+            SubtypeConstraint::Array(ranges, element) => {
+                let range_docs: Vec<Doc<'a>> = ranges
+                    .iter()
+                    .map(|r| self.format_discrete_range(&r.item))
+                    .collect();
+                let ranges_doc = self.intersperse(range_docs, self.punct(",").append(self.space()));
+                let elem_doc = if let Some(e) = element {
+                    self.format_subtype_constraint(e)
+                } else {
+                    self.nil()
+                };
+                self.punct("(")
+                    .append(ranges_doc)
+                    .append(self.punct(")"))
+                    .append(elem_doc)
+            }
+            SubtypeConstraint::Record(elements) => {
+                let items: Vec<Doc<'a>> = elements
+                    .iter()
+                    .map(|e| {
+                        self.ident(&e.ident.item.name_utf8())
+                            .append(self.format_subtype_constraint(&e.constraint))
+                    })
+                    .collect();
+                self.punct("(")
+                    .append(self.intersperse(items, self.punct(",").append(self.space())))
+                    .append(self.punct(")"))
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Ranges and discrete ranges
+    // -----------------------------------------------------------------------
+
+    pub fn format_range(&self, range: &Range) -> Doc<'a> {
+        match range {
+            Range::Range(constraint) => {
+                // left_expr/right_expr are Box<WithTokenSpan<Expression>>; use &* to get
+                // &WithTokenSpan<Expression> then auto-deref calls WithTokenSpan::as_ref()
+                let left = self.format_expression((&*constraint.left_expr).as_ref());
+                let dir = match constraint.direction {
+                    vhdl_lang::ast::Direction::Ascending => self.kw("to"),
+                    vhdl_lang::ast::Direction::Descending => self.kw("downto"),
+                };
+                let right = self.format_expression((&*constraint.right_expr).as_ref());
+                left.append(self.space())
+                    .append(dir)
+                    .append(self.space())
+                    .append(right)
+            }
+            // attr is Box<AttributeName>
+            Range::Attribute(attr) => self.format_range_attribute(attr),
+        }
+    }
+
+    fn format_range_attribute(&self, attr: &AttributeName) -> Doc<'a> {
+        // Delegate to the name formatter which handles AttributeName fully
+        self.format_attribute_name(attr)
+    }
+
+    pub fn format_discrete_range(&self, range: &DiscreteRange) -> Doc<'a> {
+        match range {
+            DiscreteRange::Discrete(type_mark, constraint) => {
+                let tm = self.format_name(&type_mark.item);
+                // constraint is Option<Range>, not Option<SubtypeConstraint>
+                if let Some(r) = constraint {
+                    tm.append(self.space()).append(self.format_range(r))
+                } else {
+                    tm
+                }
+            }
+            DiscreteRange::Range(range) => self.format_range(range),
+        }
+    }
+}
+
+
+./src/fmt/interface.rs:
+use pretty::DocAllocator;
+use vhdl_lang::ast::{
+    InterfaceDeclaration, InterfaceFileDeclaration, InterfaceList, InterfaceObjectDeclaration,
+    InterfacePackageDeclaration, InterfacePackageGenericMapAspect, InterfaceSubprogramDeclaration,
+    MapAspect, ModeIndication, ModeViewElement, ModeViewIndication, ModeViewIndicationKind,
+    ObjectClass, SimpleModeIndication, SubprogramDefault,
+};
+
+use crate::fmt::{Doc, Formatter};
+
+impl<'a> Formatter<'a> {
+    // -----------------------------------------------------------------------
+    // Interface lists  (port / generic / parameter clauses)
+    // -----------------------------------------------------------------------
+
+    /// Format a full interface list including the leading keyword and parens:
+    ///   `port (`
+    ///       `item;`
+    ///       `item`
+    ///   `);`
+    /// or for a bare parameter list just `( items )`.
+    pub fn format_interface_list(&self, list: &InterfaceList) -> Doc<'a> {
+        self.format_interface_list_inner(list, None)
+    }
+
+    /// Same as `format_interface_list` but appends a trailing `;` after the
+    /// closing `)`.  Used for generic/port clauses inside entity/component.
+    pub fn format_interface_list_semi(&self, list: &InterfaceList) -> Doc<'a> {
+        self.format_interface_list_inner(list, Some(";"))
+    }
+
+    fn format_interface_list_inner(
+        &self,
+        list: &InterfaceList,
+        trailing: Option<&'static str>,
+    ) -> Doc<'a> {
+        // The span's first token can be the keyword (`port`, `generic`,
+        // `parameter`) or directly a `(`.  We infer the keyword from the
+        // context where this is called; callers already prepend it if needed.
+        // Here we just emit the parenthesised body.
+        let items: Vec<Doc<'a>> = list
+            .items
+            .iter()
+            .enumerate()
+            .map(|(i, item)| {
+                let item_doc = self.format_interface_declaration(item);
+                // All items except the last get a trailing `;` separator.
+                if i < list.items.len() - 1 {
+                    item_doc.append(self.punct(";"))
+                } else {
+                    item_doc
+                }
+            })
+            .collect();
+
+        let inner = self.intersperse(items, self.hardline());
+        let body = self
+            .punct("(")
+            .append(self.nest(self.hardline().append(inner)))
+            .append(self.hardline())
+            .append(self.punct(")"));
+
+        if let Some(t) = trailing {
+            body.append(self.punct(t))
+        } else {
+            body
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Individual interface declarations
+    // -----------------------------------------------------------------------
+
+    pub fn format_interface_declaration(&self, decl: &InterfaceDeclaration) -> Doc<'a> {
+        match decl {
+            InterfaceDeclaration::Object(obj) => self.format_interface_object(obj),
+            InterfaceDeclaration::File(file) => self.format_interface_file_declaration(file),
+            InterfaceDeclaration::Type(type_decl) => self
+                .kw("type")
+                .append(self.space())
+                .append(self.ident(&type_decl.tree.item.name_utf8())),
+            InterfaceDeclaration::Subprogram(sub) => {
+                self.format_interface_subprogram_declaration(sub)
+            }
+            InterfaceDeclaration::Package(pkg) => self.format_interface_package_declaration(pkg),
+        }
+    }
+
+    pub fn format_interface_object(&self, obj: &InterfaceObjectDeclaration) -> Doc<'a> {
+        // The object class keyword (signal/variable/constant) lives inside
+        // SimpleModeIndication, not on InterfaceObjectDeclaration directly.
+        // Only emit it when it is explicitly present in the source (i.e. non-port
+        // generic/parameter lists or when the user wrote it explicitly).
+        // We derive it from the Simple mode's class field when present.
+        let class_doc = match &obj.mode {
+            ModeIndication::Simple(simple) => {
+                // Only emit the class keyword in non-port contexts where it adds meaning.
+                // For port lists the class is always signal (implicit); for generics it is
+                // always constant (implicit). We emit it unconditionally to be explicit.
+                let class_kw: Doc<'a> = match simple.class {
+                    ObjectClass::Signal => self.kw("signal"),
+                    ObjectClass::Variable => self.kw("variable"),
+                    ObjectClass::Constant => self.kw("constant"),
+                    ObjectClass::SharedVariable => self
+                        .kw("shared")
+                        .append(self.space())
+                        .append(self.kw("variable")),
+                };
+                Some(class_kw)
+            }
+            ModeIndication::View(_) => None,
+        };
+
+        // Identifier list  (e.g. `a, b, c`)
+        let idents_doc = self.intersperse(
+            obj.idents
+                .iter()
+                .map(|id| self.ident(&id.tree.item.name_utf8())),
+            self.arena.text(", "),
+        );
+
+        let colon = self.punct(":");
+
+        let mode_doc = self.format_mode_indication(&obj.mode);
+
+        let base = idents_doc
+            .append(colon)
+            .append(self.space())
+            .append(mode_doc);
+
+        if let Some(cls) = class_doc {
+            cls.append(self.space()).append(base)
+        } else {
+            base
+        }
+    }
+
+    fn format_interface_file_declaration(&self, decl: &InterfaceFileDeclaration) -> Doc<'a> {
+        let idents_doc = self.intersperse(
+            decl.idents
+                .iter()
+                .map(|id| self.ident(&id.tree.item.name_utf8())),
+            self.arena.text(", "), // DocAllocator in scope
+        );
+        self.kw("file")
+            .append(self.space())
+            .append(idents_doc)
+            .append(self.punct(":"))
+            .append(self.space())
+            .append(self.format_subtype_indication(&decl.subtype_indication))
+    }
+
+    fn format_interface_subprogram_declaration(
+        &self,
+        decl: &InterfaceSubprogramDeclaration,
+    ) -> Doc<'a> {
+        let spec = self.format_subprogram_specification(&decl.specification);
+        if let Some(default) = &decl.default {
+            let default_doc = match default {
+                SubprogramDefault::Name(name) => self.format_name(&name.item),
+                SubprogramDefault::Box => self.punct("<>"),
+            };
+            spec.append(self.space())
+                .append(self.kw("is"))
+                .append(self.space())
+                .append(default_doc)
+        } else {
+            spec
+        }
+    }
+
+    fn format_interface_package_declaration(&self, pkg: &InterfacePackageDeclaration) -> Doc<'a> {
+        let name = self.ident(&pkg.ident.tree.item.name_utf8());
+        let pkg_name = self.format_name(&pkg.package_name.item);
+        let generic_map = match &pkg.generic_map.item {
+            InterfacePackageGenericMapAspect::Map(list) => self
+                .kw("generic")
+                .append(self.space())
+                .append(self.kw("map"))
+                .append(self.space())
+                .append(self.format_association_list_parens(list)),
+            InterfacePackageGenericMapAspect::Box => self
+                .kw("generic")
+                .append(self.space())
+                .append(self.kw("map"))
+                .append(self.space())
+                .append(self.punct("(<>)")),
+            InterfacePackageGenericMapAspect::Default => self
+                .kw("generic")
+                .append(self.space())
+                .append(self.kw("map"))
+                .append(self.space())
+                .append(self.punct("("))
+                .append(self.kw("default"))
+                .append(self.punct(")")),
+        };
+        self.kw("package")
+            .append(self.space())
+            .append(name)
+            .append(self.space())
+            .append(self.kw("is"))
+            .append(self.space())
+            .append(self.kw("new"))
+            .append(self.space())
+            .append(pkg_name)
+            .append(self.space())
+            .append(generic_map)
+    }
+
+    // -----------------------------------------------------------------------
+    // Mode indications
+    // -----------------------------------------------------------------------
+
+    pub fn format_mode_indication(&self, mode: &ModeIndication) -> Doc<'a> {
+        match mode {
+            ModeIndication::Simple(s) => self.format_simple_mode_indication(s),
+            ModeIndication::View(v) => self.format_mode_view_indication(v),
+        }
+    }
+
+    fn format_simple_mode_indication(&self, mode: &SimpleModeIndication) -> Doc<'a> {
+        use vhdl_lang::ast::Mode;
+        let mode_doc = mode.mode.as_ref().map(|m| {
+            let s = match m.item {
+                Mode::In => "in",
+                Mode::Out => "out",
+                Mode::InOut => "inout",
+                Mode::Buffer => "buffer",
+                Mode::Linkage => "linkage",
+            };
+            self.kw(s).append(self.space())
+        });
+        let subtype = self.format_subtype_indication(&mode.subtype_indication);
+        let default = if let Some(expr) = &mode.expression {
+            self.space()
+                .append(self.punct(":="))
+                .append(self.space())
+                .append(self.format_expression(expr.as_ref()))
+        } else {
+            self.nil()
+        };
+
+        let base = subtype.append(default);
+        if let Some(m) = mode_doc {
+            m.append(base)
+        } else {
+            base
+        }
+    }
+
+    fn format_mode_view_indication(&self, mode: &ModeViewIndication) -> Doc<'a> {
+        let name_doc = self.format_name(&mode.name.item);
+        let name_wrapped = match &mode.kind {
+            ModeViewIndicationKind::Array => {
+                self.punct("(").append(name_doc).append(self.punct(")"))
+            }
+            ModeViewIndicationKind::Record => name_doc,
+        };
+        let subtype = if let Some((_tok, subtype)) = &mode.subtype_indication {
+            self.space()
+                .append(self.kw("of"))
+                .append(self.space())
+                .append(self.format_subtype_indication(subtype))
+        } else {
+            self.nil()
+        };
+        self.kw("view")
+            .append(self.space())
+            .append(name_wrapped)
+            .append(subtype)
+    }
+
+    pub fn format_mode_view_element(&self, elem: &ModeViewElement) -> Doc<'a> {
+        use vhdl_lang::ast::ElementMode;
+        // Identifier list  (e.g. `a, b, c`)
+        let idents_doc = self.intersperse(
+            elem.names
+                .iter()
+                .map(|id| self.ident(&id.tree.item.name_utf8())),
+            self.arena.text(", "), // DocAllocator in scope
+        );
+        let mode_doc = match &elem.mode {
+            ElementMode::Simple(m) => {
+                use vhdl_lang::ast::Mode;
+                let s = match m.item {
+                    Mode::In => "in",
+                    Mode::Out => "out",
+                    Mode::InOut => "inout",
+                    Mode::Buffer => "buffer",
+                    Mode::Linkage => "linkage",
+                };
+                self.kw(s)
+            }
+            ElementMode::Record(name) => self
+                .kw("view")
+                .append(self.space())
+                .append(self.format_name(&name.item)),
+            ElementMode::Array(name) => self
+                .kw("view")
+                .append(self.space())
+                .append(self.punct("("))
+                .append(self.format_name(&name.item))
+                .append(self.punct(")")),
+        };
+        idents_doc
+            .append(self.punct(":"))
+            .append(self.space())
+            .append(mode_doc)
+            .append(self.punct(";"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Map aspects (generic map / port map)
+    // -----------------------------------------------------------------------
+
+    /// Format `generic map ( … )` or `port map ( … )`.
+    pub fn format_named_map_aspect(&self, keyword: &'static str, aspect: &MapAspect) -> Doc<'a> {
+        self.kw(keyword)
+            .append(self.space())
+            .append(self.kw("map"))
+            .append(self.space())
+            .append(self.format_association_list_parens(&aspect.list))
+    }
+}
+
+
