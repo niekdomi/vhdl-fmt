@@ -1,5 +1,5 @@
 [package]
-name = "vhdl-fmt-rust"
+name = "vhdl-fmt"
 version = "0.1.0"
 edition = "2024"
 
