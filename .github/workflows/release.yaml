@@ -7,30 +7,19 @@ on:
 
 permissions:
   contents: write
-  pull-requests: read
 
 jobs:
-  release:
+  create-release:
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/niekdomi/vhdl-fmt/vhdlfmt-ci:latest
-    env:
-      CONAN_HOME: /root/.conan2
-
+    name: Create Release
+    outputs:
+      tag_name: ${{ steps.release-drafter.outputs.tag_name }}
+      upload_url: ${{ steps.release-drafter.outputs.upload_url }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Cache Conan packages
-        uses: actions/cache@v4
-        with:
-          path: /github/home/.conan2
-          key: conan-${{ runner.os }}-${{ hashFiles('conanfile.txt') }}-v1
-          restore-keys: |
-            conan-${{ runner.os }}-v1
-            conan-${{ runner.os }}-
-
-      - name: Create and Publish Release
+      - name: Create draft release
         uses: release-drafter/release-drafter@v6
         id: release-drafter
         with:
@@ -40,15 +29,70 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Release Binary
-        run: |
-          source venv/bin/activate
-          make BUILD_TYPE=Release
+  build:
+    name: Build — ${{ matrix.target }}
+    needs: create-release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            binary: vhdl-fmt
+            asset: vhdl-fmt-linux-x86_64
 
-      - name: Upload Binary to Release
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            binary: vhdl-fmt
+            asset: vhdl-fmt-linux-arm64
+            cross: true
+
+          - target: x86_64-apple-darwin
+            os: macos-13
+            binary: vhdl-fmt
+            asset: vhdl-fmt-macos-x86_64
+
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            binary: vhdl-fmt
+            asset: vhdl-fmt-macos-arm64
+
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            binary: vhdl-fmt.exe
+            asset: vhdl-fmt-windows-x86_64.exe
+
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+            binary: vhdl-fmt.exe
+            asset: vhdl-fmt-windows-arm64.exe
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Install cross
+        if: ${{ matrix.cross }}
+        uses: taiki-e/install-action@cross
+
+      - name: Build binary
+        run: ${{ matrix.cross && 'cross' || 'cargo' }} build --release --locked --target ${{ matrix.target }}
+
+      - name: Upload binary to release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.release-drafter.outputs.tag_name }}
-          files: build/Release/bin/vhdl_formatter
+          tag_name: ${{ needs.create-release.outputs.tag_name }}
+          files: ${{ matrix.asset }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

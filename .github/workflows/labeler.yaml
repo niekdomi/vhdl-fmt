@@ -16,7 +16,7 @@ jobs:
       pull-requests: write
 
     steps:
-      - uses: actions/github-script@v6
+      - uses: actions/github-script@v8
         with:
           script: |
             const patterns = {
@@ -76,4 +76,3 @@ jobs:
                 });
               }
             }
-          shell: bash

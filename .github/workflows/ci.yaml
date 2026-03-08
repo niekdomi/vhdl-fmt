@@ -4,313 +4,98 @@ on:
   pull_request:
     types:
       - opened
-      - synchronize
       - ready_for_review
       - reopened
+      - synchronize
 
 jobs:
-  dictionary:
-    runs-on: ubuntu-latest
-    name: Dictionary
-    timeout-minutes: 1
+  # spellcheck: # TODO: Add codebook here, there's no cli yet hence we can't use it in CI for now
+  #   runs-on: ubuntu-latest
+  #   name: Spellcheck
+  #   timeout-minutes: 1
 
-    if: ${{ !github.event.pull_request.draft }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Check if dictionary is sorted
-        run: |
-          BOLD_RED="\033[1;31m"
-          BOLD_YELLOW="\033[1;33m"
-          BOLD_GREEN="\033[1;32m"
-          RESET="\033[0m"
-
-          # Check if all ignored words are actually used
-          bash .github/scripts/check-cspell-ignored.sh
-
-          if [ ! -f ".cspell_ignored" ]; then
-            echo -e "${BOLD_RED}Error: .cspell_ignored not found${RESET}"
-            exit 1
-          fi
-
-          # Check if file is sorted (case-insensitive)
-          if sort -cf .cspell_ignored; then
-            echo -e "${BOLD_GREEN}✓ .cspell_ignored is properly sorted${RESET}"
-          else
-            echo -e "${BOLD_RED}Error: .cspell_ignored is not sorted alphabetically (case-insensitive)${RESET}"
-            echo -e "${BOLD_YELLOW}To fix this, run: make sort-dictionary{RESET}"
-            exit 1
-          fi
-        shell: bash
-
-  spellcheck:
-    runs-on: ubuntu-latest
-    name: Spellcheck
-    timeout-minutes: 1
-
-    if: ${{ !github.event.pull_request.draft }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Starting cspell
-        uses: streetsidesoftware/cspell-action@v7
-        with:
-          files: ""
-          root: "."
-          check_dot_files: false
-          inline: error
-          treat_flagged_words_as_errors: false
-          suggestions: true
-          strict: true
-          config: ".cspell.yaml"
-          incremental_files_only: ${{ env.ACT != 'true' }}
-          verbose: true
-          use_cspell_files: false
-
-  get-changed-cpp-files:
-    runs-on: ubuntu-latest
-    name: Get changed C++ files
-
-    if: ${{ !github.event.pull_request.draft }}
-
-    outputs:
-      any_cpp_changed: ${{ steps.changed-files-cpp.outputs.any_changed }}
-      any_cpp_source_changed: ${{ steps.changed-files-source.outputs.any_changed }}
-      any_cpp_header_changed: ${{ steps.changed-files-header.outputs.any_changed }}
-      changed_cpp_files: ${{ steps.changed-files-cpp.outputs.all_changed_files }}
-      changed_cpp_source_files: ${{ steps.changed-files-source.outputs.all_changed_files }}
-      changed_cpp_header_files: ${{ steps.changed-files-header.outputs.all_changed_files }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Get changed C++ files
-        id: changed-files-cpp
-        uses: tj-actions/changed-files@v47
-        with:
-          files: |
-            **/*.cpp
-            **/*.hpp
-
-      - name: Get changed C++ source files
-        id: changed-files-source
-        uses: tj-actions/changed-files@v47
-        with:
-          files: |
-            **/*.cpp
-
-      - name: Get changed C++ header files
-        id: changed-files-header
-        uses: tj-actions/changed-files@v47
-        with:
-          files: |
-            **/*.hpp
-
-      - name: Print changed files
-        run: |
-          echo "Changed C++ files:"
-          echo "${{ steps.changed-files-cpp.outputs.all_changed_files }}"
-          echo "Changed source files:"
-          echo "${{ steps.changed-files-source.outputs.all_changed_files }}"
-          echo "Changed header files:"
-          echo "${{ steps.changed-files-header.outputs.all_changed_files }}"
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v6
 
   build:
     runs-on: ubuntu-latest
     name: Build
-    timeout-minutes: 15
-
-    container:
-      image: ghcr.io/niekdomi/vhdl-fmt/vhdlfmt-ci:latest
-    env:
-      CONAN_HOME: /root/.conan2
-
-    if: ${{ !github.event.pull_request.draft }}
+    timeout-minutes: 5
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
-      - name: Cache Conan packages
-        uses: actions/cache@v5
-        with:
-          path: /root/.conan2
-          key: conan-${{ runner.os }}-${{ hashFiles('conanfile.txt') }}-v1
-          restore-keys: |
-            conan-${{ runner.os }}-v1
-            conan-${{ runner.os }}-
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache ccache
-        uses: actions/cache@v5
-        with:
-          path: /root/.ccache
-          key: ccache-build-${{ runner.os }}-${{ github.sha }}
-          restore-keys: |
-            ccache-build-${{ runner.os }}-
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
 
       - name: Build
-        run: make
+        run: cargo build --locked
 
-  formatter:
+  lint:
     runs-on: ubuntu-latest
-    name: Formatter Check
-    timeout-minutes: 2
-
-    container:
-      image: ghcr.io/niekdomi/vhdl-fmt/vhdlfmt-ci:latest
-    env:
-      CONAN_HOME: /root/.conan2
-
-    if: ${{ !github.event.pull_request.draft }}
+    name: Lint
+    timeout-minutes: 1
+    permissions:
+      contents: read
+      pull-requests: read
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
 
       - name: Check formatting
-        run: make check-format
+        run: cargo fmt --check
 
-  lint-source:
-    runs-on: ubuntu-latest
-    name: Lint Source
-    needs: [get-changed-cpp-files, build]
-    timeout-minutes: 30
+      - name: Run Clippy
+        run: cargo clippy # TODO: May need to adjust this command
 
-    container:
-      image: ghcr.io/niekdomi/vhdl-fmt/vhdlfmt-ci:latest
-    env:
-      CONAN_HOME: /root/.conan2
-      SOURCES_TO_LINT: ${{ needs.get-changed-cpp-files.outputs.changed_cpp_source_files }}
 
-    if: ${{ !github.event.pull_request.draft && needs.get-changed-cpp-files.outputs.any_cpp_source_changed == 'true' }}
+  # test:
+  #   runs-on: ubuntu-latest
+  #   name: Test & Coverage
+  #   timeout-minutes: 1
+  #   permissions:
+  #     contents: read
+  #     pull-requests: write
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+  #   if: ${{ !github.event.pull_request.draft }}
 
-      - name: Cache Conan packages
-        uses: actions/cache@v5
-        with:
-          path: /root/.conan2
-          key: conan-${{ runner.os }}-${{ hashFiles('conanfile.txt') }}-v1
-          restore-keys: |
-            conan-${{ runner.os }}-v1
-            conan-${{ runner.os }}-
-
-      - name: Cache ccache
-        uses: actions/cache@v5
-        with:
-          path: /root/.ccache
-          key: ccache-lint-${{ runner.os }}-${{ github.sha }}
-          restore-keys: |
-            ccache-lint-${{ runner.os }}-
-
-      - name: Build
-        run: make
-
-      - name: Run linter on source files
-        env:
-          SOURCES_TO_LINT: ${{ needs.get-changed-cpp-files.outputs.changed_cpp_source_files }}
-        run: make lint LINT_FILES=source
-
-  lint-header:
-    runs-on: ubuntu-latest
-    name: Lint Header
-    needs: [get-changed-cpp-files, build]
-    timeout-minutes: 20
-
-    container:
-      image: ghcr.io/niekdomi/vhdl-fmt/vhdlfmt-ci:latest
-    env:
-      CONAN_HOME: /root/.conan2
-      SOURCES_TO_LINT: ${{ needs.get-changed-cpp-files.outputs.changed_cpp_header_files }}
-
-    if: ${{ !github.event.pull_request.draft && needs.get-changed-cpp-files.outputs.any_cpp_header_changed == 'true' }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Cache Conan packages
-        uses: actions/cache@v5
-        with:
-          path: /root/.conan2
-          key: conan-${{ runner.os }}-${{ hashFiles('conanfile.txt') }}-v1
-          restore-keys: |
-            conan-${{ runner.os }}-v1
-            conan-${{ runner.os }}-
-
-      - name: Cache ccache
-        uses: actions/cache@v5
-        with:
-          path: /root/.ccache
-          key: ccache-lint-${{ runner.os }}-${{ github.sha }}
-          restore-keys: |
-            ccache-lint-${{ runner.os }}-
-
-      - name: Build
-        run: make
-
-      - name: Run linter on header files
-        env:
-          SOURCES_TO_LINT: ${{ needs.get-changed-cpp-files.outputs.changed_cpp_header_files }}
-        run: make lint LINT_FILES=header
-
-  test:
-    runs-on: ubuntu-latest
-    name: Test & Coverage
-    needs: build
-    timeout-minutes: 10
-
-    container:
-      image: ghcr.io/niekdomi/vhdl-fmt/vhdlfmt-ci:latest
-    env:
-      CONAN_HOME: /root/.conan2
-
-    permissions:
-      pull-requests: write
-
-    if: ${{ !github.event.pull_request.draft }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Cache Conan packages
-        uses: actions/cache@v5
-        with:
-          path: /root/.conan2
-          key: conan-${{ runner.os }}-${{ hashFiles('conanfile.txt') }}-v1
-          restore-keys: |
-            conan-${{ runner.os }}-v1
-            conan-${{ runner.os }}-
-
-      - name: Cache ccache
-        uses: actions/cache@v5
-        with:
-          path: /root/.ccache
-          key: ccache-test-${{ runner.os }}-${{ github.sha }}
-          restore-keys: |
-            ccache-test-${{ runner.os }}-
-
-      - name: Build and run tests with coverage
-        run: make coverage-report
-
-      - name: Generate coverage markdown
-        if: github.event_name == 'pull_request'
-        run: bash .github/scripts/generate-coverage-md.sh
-
-      - name: Post coverage comment
-        if: github.event_name == 'pull_request'
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: coverage-report
-          path: coverage.md
-
+  #   steps:
+  #     - name: Setup Rust toolchain
+  #       uses: dtolnay/rust-toolchain@stable
+  #       with:
+  #         components: llvm-tools-preview
+  #
+  #     - name: Cache dependencies
+  #       uses: Swatinem/rust-cache@v2
+  #
+  #     - name: Install cargo-llvm-cov
+  #       uses: taiki-e/install-action@cargo-llvm-cov
+  #
+  #     - name: Run tests with coverage
+  #       run: cargo llvm-cov --locked --lcov --output-path lcov.info
+  #
+  #     - name: Generate coverage markdown summary
+  #       run: cargo llvm-cov --locked --no-run --summary-only 2>&1 | tee coverage.md
+  #
+  #     - name: Post coverage comment
+  #       if: github.event_name == 'pull_request'
+  #       uses: marocchino/sticky-pull-request-comment@v2
+  #       with:
+  #         header: coverage-report
+  #         path: coverage.md
