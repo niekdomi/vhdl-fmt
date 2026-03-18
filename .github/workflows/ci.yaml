@@ -62,7 +62,7 @@ jobs:
         run: cargo fmt --check
 
       - name: Run Clippy
-        run: cargo clippy # TODO: May need to adjust this command
+        run: cargo clippy # TODO: May need to adjust this command so it exists with non zero status code
 
 
   # test:

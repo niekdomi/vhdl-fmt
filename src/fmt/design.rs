@@ -1,4 +1,3 @@
-use pretty::DocAllocator;
 use vhdl_lang::HasTokenSpan;
 use vhdl_lang::ast::{
     AnyDesignUnit, AnyPrimaryUnit, AnySecondaryUnit, ArchitectureBody, ConfigurationDeclaration,

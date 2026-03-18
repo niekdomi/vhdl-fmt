@@ -24,14 +24,6 @@ pub struct Formatter<'a> {
 }
 
 impl<'a> Formatter<'a> {
-    pub fn new(arena: &'a Arena<'a>, config: &'a FormatConfig) -> Self {
-        Self {
-            arena,
-            config,
-            tokens: &[],
-        }
-    }
-
     /// Create a formatter with a token slice for a specific design unit.
     pub fn with_tokens(
         arena: &'a Arena<'a>,
@@ -227,8 +219,19 @@ impl<'a> Formatter<'a> {
         blank.append(self.leading_comments(this_start))
     }
 
-    /// Trailing comment for `id`, formatted as `"  -- text"`.
-    /// Returns `nil()` if there is none.
+    /// Returns `true` when the token has leading comments.
+    pub fn has_leading_comments_on(&self, id: TokenId) -> bool {
+        if self.tokens.is_empty() {
+            return false;
+        }
+        match self.tokens.get_token(id) {
+            Some(t) => matches!(&t.comments, Some(c) if !c.leading.is_empty()),
+            None => false,
+        }
+    }
+
+    /// Emit the trailing comment of a token (if any).
+    /// Returns a space + comment text, or nil if there is no trailing comment.
     pub fn trailing_comment(&self, id: TokenId) -> Doc<'a> {
         if self.tokens.is_empty() {
             return self.nil();
@@ -237,16 +240,102 @@ impl<'a> Formatter<'a> {
             Some(t) => t,
             None => return self.nil(),
         };
-        let comment = match token.comments.as_ref().and_then(|c| c.trailing.as_ref()) {
-            Some(c) => c,
-            None => return self.nil(),
-        };
-        self.arena
-            .text("  ")
-            .append(self.arena.text(format_comment_text_parts(
-                &comment.value,
-                comment.multi_line,
-            )))
+        match &token.comments {
+            Some(c) => match &c.trailing {
+                Some(comment) => {
+                    let text = format_comment_text_parts(&comment.value, comment.multi_line);
+                    self.space().append(self.arena.text(text))
+                }
+                None => self.nil(),
+            },
+            None => self.nil(),
+        }
+    }
+
+    /// Scan all tokens in the range `[start_id, end_id]` (inclusive) and emit
+    /// any trailing comments found.  This is useful when a construct spans
+    /// multiple tokens (e.g. commas between list items) and we want to capture
+    /// trailing comments on intermediate tokens that we don't format individually.
+    pub fn trailing_comments_in_span(&self, start_id: TokenId, end_id: TokenId) -> Doc<'a> {
+        if self.tokens.is_empty() {
+            return self.nil();
+        }
+        let slice = self.tokens.get_token_slice(start_id, end_id);
+        let mut doc = self.nil();
+        for token in slice {
+            if let Some(comments) = &token.comments
+                && let Some(comment) = &comments.trailing
+            {
+                let text = format_comment_text_parts(&comment.value, comment.multi_line);
+                doc = doc.append(self.space()).append(self.arena.text(text));
+            }
+        }
+        doc
+    }
+
+    /// Measure the flat (single-line) width of a document.
+    pub fn doc_width(&self, doc: &Doc<'a>) -> usize {
+        let mut buf = Vec::new();
+        doc.clone().render(10000, &mut buf).unwrap();
+        buf.len()
+    }
+
+    // -----------------------------------------------------------------------
+    // Generic trivia-aware list formatting
+    // -----------------------------------------------------------------------
+
+    /// Format a list of items with trivia (comments, blank lines) and optional
+    /// alignment grouping.  This extracts the boilerplate shared by
+    /// `format_concurrent_statements`, `format_sequential_statements`, and
+    /// `format_declarations`.
+    ///
+    /// * `get_tokens` — extract `(start_token, end_token)` from an item.
+    /// * `try_group` — given the slice starting at index `i`, return how many
+    ///   consecutive items form an alignment group (0 = not groupable).
+    /// * `format_group` — format a group of `count` items starting at `i`.
+    /// * `format_single` — format a single item at index `i`.
+    pub fn format_item_list<T>(
+        &self,
+        items: &[T],
+        get_tokens: impl Fn(&T) -> (TokenId, TokenId),
+        try_group: impl Fn(&Self, &[T], usize) -> usize,
+        format_group: impl Fn(&Self, &[T], usize, usize) -> Vec<Doc<'a>>,
+        format_single: impl Fn(&Self, &T) -> Doc<'a>,
+    ) -> Doc<'a> {
+        if items.is_empty() {
+            return self.nil();
+        }
+        let mut body = self.nil();
+        let mut i = 0;
+        while i < items.len() {
+            let group_start = i;
+            let group_len = try_group(self, items, i);
+            let formatted: Vec<Doc<'a>> = if group_len > 1 {
+                format_group(self, items, i, group_len)
+            } else {
+                vec![format_single(self, &items[i])]
+            };
+            let count = formatted.len();
+            for (k, item_doc) in formatted.into_iter().enumerate() {
+                let idx = group_start + k;
+                let (start, end) = get_tokens(&items[idx]);
+                let tc = self.trailing_comment(end);
+                if idx == 0 {
+                    let trivia = self.leading_comments(start);
+                    body = body.append(trivia).append(item_doc).append(tc);
+                } else {
+                    let (_, prev_end) = get_tokens(&items[idx - 1]);
+                    let trivia = self.node_trivia(prev_end, start);
+                    body = body
+                        .append(self.hardline())
+                        .append(trivia)
+                        .append(item_doc)
+                        .append(tc);
+                }
+            }
+            i = group_start + count;
+        }
+        body
     }
 }
 

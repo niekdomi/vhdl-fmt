@@ -1,3 +1,4 @@
+use pretty::DocAllocator;
 use vhdl_lang::HasTokenSpan;
 use vhdl_lang::ast::token_range::WithTokenSpan;
 use vhdl_lang::ast::{
@@ -18,51 +19,133 @@ impl<'a> Formatter<'a> {
         &self,
         statements: &[LabeledConcurrentStatement],
     ) -> Doc<'a> {
-        if statements.is_empty() {
-            return self.nil();
-        }
-        let mut body = self.nil();
-        for (i, stmt) in statements.iter().enumerate() {
-            let stmt_doc = self.format_labeled_concurrent_statement(stmt);
-            if i == 0 {
-                let trivia = self.leading_comments(stmt.statement.get_start_token());
-                body = body.append(trivia).append(stmt_doc);
-            } else {
-                let prev = &statements[i - 1];
-                let trivia = self.node_trivia(
-                    prev.statement.get_end_token(),
-                    stmt.statement.get_start_token(),
-                );
-                body = body.append(self.hardline()).append(trivia).append(stmt_doc);
-            }
-        }
+        let body = self.format_item_list(
+            statements,
+            |s| (s.statement.get_start_token(), s.statement.get_end_token()),
+            |s, items, i| s.try_group_concurrent(items, i),
+            |s, items, start, len| s.format_concurrent_group(items, start, len),
+            |s, stmt| s.format_labeled_concurrent_statement(stmt),
+        );
         self.nest(self.hardline().append(body))
     }
 
+    fn try_group_concurrent(&self, stmts: &[LabeledConcurrentStatement], i: usize) -> usize {
+        if !self.is_alignable_concurrent_assignment(&stmts[i]) {
+            return 0;
+        }
+        let mut j = i + 1;
+        while j < stmts.len() {
+            if self.is_alignable_concurrent_assignment(&stmts[j]) {
+                let prev_end = stmts[j - 1].statement.get_end_token();
+                let next_start = stmts[j].statement.get_start_token();
+                if !self.has_blank_before(prev_end, next_start)
+                    && !self.has_leading_comments_on(next_start)
+                {
+                    j += 1;
+                    continue;
+                }
+            }
+            break;
+        }
+        j - i
+    }
+
+    fn format_concurrent_group(
+        &self,
+        stmts: &[LabeledConcurrentStatement],
+        start: usize,
+        len: usize,
+    ) -> Vec<Doc<'a>> {
+        let group: Vec<&ConcurrentSignalAssignment> = stmts[start..start + len]
+            .iter()
+            .filter_map(|s| {
+                if let ConcurrentStatement::Assignment(assign) = &s.statement.item {
+                    Some(assign)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        self.format_aligned_concurrent_assignments(&group)
+    }
+
+    fn is_alignable_concurrent_assignment(&self, stmt: &LabeledConcurrentStatement) -> bool {
+        if stmt.label.tree.is_some() {
+            return false;
+        }
+        if let ConcurrentStatement::Assignment(assign) = &stmt.statement.item {
+            !assign.postponed
+        } else {
+            false
+        }
+    }
+
+    fn format_aligned_concurrent_assignments(
+        &self,
+        stmts: &[&ConcurrentSignalAssignment],
+    ) -> Vec<Doc<'a>> {
+        let parts: Vec<_> = stmts
+            .iter()
+            .map(|assign| {
+                let target = self.format_target(&assign.assignment.target);
+                let target_width = self.doc_width(&target);
+                (target, target_width, *assign)
+            })
+            .collect();
+
+        let max_target = parts.iter().map(|p| p.1).max().unwrap_or(0);
+
+        parts
+            .into_iter()
+            .map(|(target, tw, assign)| {
+                let pad = " ".repeat(max_target - tw);
+                let delay_doc = if let Some(delay) = &assign.assignment.delay_mechanism {
+                    self.format_delay_mechanism(delay).append(self.space())
+                } else {
+                    self.nil()
+                };
+                let rhs = self.format_concurrent_rhs(&assign.assignment.rhs);
+                target
+                    .append(self.arena.text(pad))
+                    .append(self.space())
+                    .append(self.punct("<="))
+                    .append(self.space())
+                    .append(delay_doc)
+                    .append(rhs)
+                    .append(self.punct(";"))
+            })
+            .collect()
+    }
+
     fn format_labeled_concurrent_statement(&self, stmt: &LabeledConcurrentStatement) -> Doc<'a> {
-        let label_doc = if let Some(label) = &stmt.label.tree {
-            self.ident(&label.item.name_utf8())
+        let label = stmt.label.tree.as_ref().map(|l| l.item.name_utf8());
+        let label_doc = if let Some(ref name) = label {
+            self.ident(name)
                 .append(self.punct(":"))
                 .append(self.space())
         } else {
             self.nil()
         };
-        label_doc.append(self.format_concurrent_statement(&stmt.statement))
+        label_doc.append(self.format_concurrent_statement(&stmt.statement, label.as_deref()))
     }
 
-    fn format_concurrent_statement(&self, stmt: &WithTokenSpan<ConcurrentStatement>) -> Doc<'a> {
+    fn format_concurrent_statement(
+        &self,
+        stmt: &WithTokenSpan<ConcurrentStatement>,
+        label: Option<&str>,
+    ) -> Doc<'a> {
         match &stmt.item {
             ConcurrentStatement::ProcedureCall(call) => self.format_concurrent_procedure_call(call),
-            ConcurrentStatement::Block(block) => self.format_block_statement(block),
-            ConcurrentStatement::Process(process) => self.format_process_statement(process),
+            ConcurrentStatement::Block(block) => self.format_block_statement(block, label),
+            ConcurrentStatement::Process(process) => self.format_process_statement(process, label),
             ConcurrentStatement::Assert(assert) => self.format_concurrent_assert(assert),
             ConcurrentStatement::Assignment(assignment) => {
                 self.format_concurrent_signal_assignment(assignment)
             }
             ConcurrentStatement::Instance(inst) => self.format_instantiation_statement(inst),
-            ConcurrentStatement::ForGenerate(stmt) => self.format_for_generate(stmt),
-            ConcurrentStatement::IfGenerate(stmt) => self.format_if_generate(stmt),
-            ConcurrentStatement::CaseGenerate(stmt) => self.format_case_generate(stmt),
+            ConcurrentStatement::ForGenerate(stmt) => self.format_for_generate(stmt, label),
+            ConcurrentStatement::IfGenerate(stmt) => self.format_if_generate(stmt, label),
+            ConcurrentStatement::CaseGenerate(stmt) => self.format_case_generate(stmt, label),
         }
     }
 
@@ -85,7 +168,7 @@ impl<'a> Formatter<'a> {
     // Block statement
     // -----------------------------------------------------------------------
 
-    fn format_block_statement(&self, block: &BlockStatement) -> Doc<'a> {
+    fn format_block_statement(&self, block: &BlockStatement, label: Option<&str>) -> Doc<'a> {
         let guard_doc = if let Some(guard) = &block.guard_condition {
             self.punct("(")
                 .append(self.format_expression(guard.as_ref()))
@@ -154,6 +237,12 @@ impl<'a> Formatter<'a> {
 
         let stmts_doc = self.format_concurrent_statements(&block.statements);
 
+        let end_label_doc = if let Some(name) = label {
+            self.space().append(self.ident(name))
+        } else {
+            self.nil()
+        };
+
         self.kw("block")
             .append(guard_doc)
             .append(is_doc)
@@ -169,6 +258,7 @@ impl<'a> Formatter<'a> {
             .append(self.kw("end"))
             .append(self.space())
             .append(self.kw("block"))
+            .append(end_label_doc)
             .append(self.punct(";"))
     }
 
@@ -176,7 +266,11 @@ impl<'a> Formatter<'a> {
     // Process statement
     // -----------------------------------------------------------------------
 
-    pub fn format_process_statement(&self, process: &ProcessStatement) -> Doc<'a> {
+    pub fn format_process_statement(
+        &self,
+        process: &ProcessStatement,
+        label: Option<&str>,
+    ) -> Doc<'a> {
         let postponed_doc = if process.postponed {
             self.kw("postponed").append(self.space())
         } else {
@@ -210,9 +304,11 @@ impl<'a> Formatter<'a> {
 
         let stmts_doc = self.format_sequential_statements(&process.statements);
 
-        // end_label_pos is Option<SrcPos> — no identifier text available.
-        let end_label_doc = self.nil();
-        let _ = &process.end_label_pos;
+        let end_label_doc = if let Some(name) = label {
+            self.space().append(self.ident(name))
+        } else {
+            self.nil()
+        };
 
         postponed_doc
             .append(self.kw("process"))
@@ -298,6 +394,7 @@ impl<'a> Formatter<'a> {
         match rhs {
             AssignmentRightHand::Simple(waveform) => self.format_waveform(waveform),
             AssignmentRightHand::Conditional(conds) => {
+                // Build each "value when condition" fragment.
                 let mut parts: Vec<Doc<'a>> = Vec::new();
                 for cond in &conds.conditionals {
                     let val = self.format_waveform(&cond.item);
@@ -309,22 +406,23 @@ impl<'a> Formatter<'a> {
                             .append(cond_doc),
                     );
                 }
-                if let Some((else_waveform, _)) = &conds.else_item {
-                    let joined = self.intersperse(
-                        parts,
-                        self.space().append(self.kw("else")).append(self.space()),
-                    );
+                // Join with " else\n<align>" so that when the line breaks,
+                // each alternative aligns under the first value:
+                //   target <= value1 when cond1 else
+                //             value2 when cond2 else
+                //             value3;
+                let else_sep = self.space().append(self.kw("else")).append(self.line());
+                let joined = self.intersperse(parts, else_sep);
+                let result = if let Some((else_waveform, _)) = &conds.else_item {
                     joined
                         .append(self.space())
                         .append(self.kw("else"))
-                        .append(self.space())
+                        .append(self.line())
                         .append(self.format_waveform(else_waveform))
                 } else {
-                    self.intersperse(
-                        parts,
-                        self.space().append(self.kw("else")).append(self.space()),
-                    )
-                }
+                    joined
+                };
+                result.align().group()
             }
             AssignmentRightHand::Selected(sel) => {
                 let alternatives: Vec<Doc<'a>> = sel
@@ -407,14 +505,16 @@ impl<'a> Formatter<'a> {
     // Generate statements
     // -----------------------------------------------------------------------
 
-    fn format_for_generate(&self, stmt: &ForGenerateStatement) -> Doc<'a> {
+    fn format_for_generate(&self, stmt: &ForGenerateStatement, label: Option<&str>) -> Doc<'a> {
         let idx = self.ident(&stmt.index_name.tree.item.name_utf8());
         let range_doc = self.format_discrete_range(&stmt.discrete_range);
         let body_doc = self.format_generate_body(&stmt.body);
 
-        // end_label_pos is Option<SrcPos> — no identifier text available.
-        let end_label_doc = self.nil();
-        let _ = &stmt.end_label_pos;
+        let end_label_doc = if let Some(name) = label {
+            self.space().append(self.ident(name))
+        } else {
+            self.nil()
+        };
 
         self.kw("for")
             .append(self.space())
@@ -434,7 +534,7 @@ impl<'a> Formatter<'a> {
             .append(self.punct(";"))
     }
 
-    fn format_if_generate(&self, stmt: &IfGenerateStatement) -> Doc<'a> {
+    fn format_if_generate(&self, stmt: &IfGenerateStatement, label: Option<&str>) -> Doc<'a> {
         let mut parts: Vec<Doc<'a>> = Vec::new();
 
         for (i, cond) in stmt.conds.conditionals.iter().enumerate() {
@@ -481,9 +581,11 @@ impl<'a> Formatter<'a> {
             self.nil()
         };
 
-        // end_label_pos is Option<SrcPos> — no identifier text available.
-        let end_label_doc = self.nil();
-        let _ = &stmt.end_label_pos;
+        let end_label_doc = if let Some(name) = label {
+            self.space().append(self.ident(name))
+        } else {
+            self.nil()
+        };
 
         self.intersperse(parts, self.hardline())
             .append(else_doc)
@@ -495,7 +597,7 @@ impl<'a> Formatter<'a> {
             .append(self.punct(";"))
     }
 
-    fn format_case_generate(&self, stmt: &CaseGenerateStatement) -> Doc<'a> {
+    fn format_case_generate(&self, stmt: &CaseGenerateStatement, label: Option<&str>) -> Doc<'a> {
         let expr_doc = self.format_expression(stmt.sels.expression.as_ref());
 
         let alternatives: Vec<Doc<'a>> = stmt
@@ -527,9 +629,11 @@ impl<'a> Formatter<'a> {
 
         let alts_doc = self.nest(self.hardline().append(self.join_hardline(alternatives)));
 
-        // end_label_pos is Option<SrcPos> — no identifier text available.
-        let end_label_doc = self.nil();
-        let _ = &stmt.end_label_pos;
+        let end_label_doc = if let Some(name) = label {
+            self.space().append(self.ident(name))
+        } else {
+            self.nil()
+        };
 
         self.kw("case")
             .append(self.space())

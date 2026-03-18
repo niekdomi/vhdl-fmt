@@ -4,9 +4,11 @@ mod fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use clap::{Arg, ArgAction, Command};
 use pretty::Arena;
+use rayon::prelude::*;
 use vhdl_lang::{VHDLParser, VHDLStandard};
 
 use config::FormatConfig;
@@ -18,7 +20,7 @@ fn main() {
         .about("A fast, opinionated VHDL code formatter")
         .arg(
             Arg::new("files")
-                .help("VHDL files to format")
+                .help("VHDL files or directories to format (directories are searched recursively for .vhd/.vhdl)")
                 .num_args(1..)
                 .required(true),
         )
@@ -47,50 +49,124 @@ fn main() {
 
     let config = load_config(matches.get_one::<String>("location").map(Path::new));
 
-    let files: Vec<&String> = matches.get_many("files").unwrap().collect();
+    let args: Vec<&String> = matches.get_many("files").unwrap().collect();
     let write = matches.get_flag("write");
     let check = matches.get_flag("check");
 
-    let mut any_unformatted = false;
+    let files = resolve_paths(&args);
+    if files.is_empty() {
+        eprintln!("error: no .vhd or .vhdl files found");
+        process::exit(1);
+    }
 
-    for file_path in files {
-        let path = Path::new(file_path);
+    if write || check {
+        // Parallel: each file is independent when writing in-place or checking.
+        let had_error = AtomicBool::new(false);
+        let any_unformatted = AtomicBool::new(false);
 
-        let source = match fs::read_to_string(path) {
-            Ok(s) => s,
-            Err(e) => {
-                eprintln!("error: could not read {}: {}", file_path, e);
-                process::exit(1);
+        files.par_iter().for_each(|path| {
+            let source = match fs::read_to_string(path) {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!("error: could not read {}: {}", path.display(), e);
+                    had_error.store(true, Ordering::Relaxed);
+                    return;
+                }
+            };
+            let formatted = match format_source(&source, &config) {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!("error: could not parse {}: {}", path.display(), e);
+                    had_error.store(true, Ordering::Relaxed);
+                    return;
+                }
+            };
+            if source == formatted {
+                return;
             }
-        };
-
-        let formatted = match format_source(&source, &config) {
-            Ok(s) => s,
-            Err(e) => {
-                eprintln!("error: could not parse {}: {}", file_path, e);
-                process::exit(1);
+            if check {
+                eprintln!("{} is not formatted", path.display());
+                any_unformatted.store(true, Ordering::Relaxed);
+            } else if let Err(e) = fs::write(path, &formatted) {
+                eprintln!("error: could not write {}: {}", path.display(), e);
+                had_error.store(true, Ordering::Relaxed);
             }
-        };
+        });
 
-        if check {
-            if source != formatted {
-                eprintln!("{} is not formatted", file_path);
-                any_unformatted = true;
-            }
-        } else if write {
-            if source != formatted {
-                if let Err(e) = fs::write(path, &formatted) {
-                    eprintln!("error: could not write {}: {}", file_path, e);
+        if had_error.load(Ordering::Relaxed) || any_unformatted.load(Ordering::Relaxed) {
+            process::exit(1);
+        }
+    } else {
+        // Sequential: stdout output must preserve file order.
+        for path in &files {
+            let source = match fs::read_to_string(path) {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!("error: could not read {}: {}", path.display(), e);
                     process::exit(1);
                 }
-            }
-        } else {
+            };
+            let formatted = match format_source(&source, &config) {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!("error: could not parse {}: {}", path.display(), e);
+                    process::exit(1);
+                }
+            };
             print!("{}", formatted);
         }
     }
+}
 
-    if any_unformatted {
-        process::exit(1);
+// ---------------------------------------------------------------------------
+// Path resolution (files + recursive directory traversal)
+// ---------------------------------------------------------------------------
+
+fn resolve_paths(args: &[&String]) -> Vec<PathBuf> {
+    let mut files = Vec::new();
+    for arg in args {
+        let path = Path::new(arg);
+        if path.is_dir() {
+            collect_vhdl_files(path, &mut files);
+        } else if let Some(ext) = path.extension() {
+            if ext == "vhd" || ext == "vhdl" {
+                files.push(path.to_path_buf());
+            } else {
+                eprintln!(
+                    "error: {} is not a VHDL file (expected .vhd or .vhdl extension)",
+                    path.display()
+                );
+                process::exit(1);
+            }
+        } else {
+            eprintln!(
+                "error: {} is not a VHDL file (expected .vhd or .vhdl extension)",
+                path.display()
+            );
+            process::exit(1);
+        }
+    }
+    files.sort();
+    files
+}
+
+fn collect_vhdl_files(dir: &Path, out: &mut Vec<PathBuf>) {
+    let entries = match fs::read_dir(dir) {
+        Ok(e) => e,
+        Err(e) => {
+            eprintln!("warning: could not read directory {}: {}", dir.display(), e);
+            return;
+        }
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            collect_vhdl_files(&path, out);
+        } else if let Some(ext) = path.extension() {
+            if ext == "vhd" || ext == "vhdl" {
+                out.push(path);
+            }
+        }
     }
 }
 
@@ -111,23 +187,18 @@ fn load_config(location: Option<&Path>) -> FormatConfig {
     };
 
     if let Some(path) = config_path {
-        match fs::read_to_string(&path) {
-            Ok(content) => match toml::from_str(&content) {
-                Ok(cfg) => return cfg,
-                Err(e) => {
-                    eprintln!(
-                        "warning: could not parse config {}: {} — using defaults",
-                        path.display(),
-                        e
-                    );
-                }
-            },
+        let content = match fs::read_to_string(&path) {
+            Ok(c) => c,
             Err(e) => {
-                eprintln!(
-                    "warning: could not read config {}: {} — using defaults",
-                    path.display(),
-                    e
-                );
+                eprintln!("error: could not read config {}: {}", path.display(), e);
+                process::exit(1);
+            }
+        };
+        match toml::from_str(&content) {
+            Ok(cfg) => return cfg,
+            Err(e) => {
+                eprintln!("error: could not parse config {}: {}", path.display(), e);
+                process::exit(1);
             }
         }
     }

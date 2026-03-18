@@ -17,25 +17,53 @@ impl<'a> Formatter<'a> {
     // -----------------------------------------------------------------------
 
     pub fn format_declarations(&self, decls: &[WithTokenSpan<Declaration>]) -> Doc<'a> {
-        if decls.is_empty() {
-            return self.nil();
+        self.format_item_list(
+            decls,
+            |d| (d.get_start_token(), d.get_end_token()),
+            |s, items, i| s.try_group_declarations(items, i),
+            |s, items, start, len| s.format_declaration_group(items, start, len),
+            |s, d| s.format_declaration(d),
+        )
+    }
+
+    fn try_group_declarations(&self, decls: &[WithTokenSpan<Declaration>], i: usize) -> usize {
+        if !matches!(decls[i].item, Declaration::Object(_)) {
+            return 0;
         }
-        let mut doc = self.nil();
-        for (i, decl) in decls.iter().enumerate() {
-            if i == 0 {
-                // Leading comments on the very first declaration.
-                let trivia = self.leading_comments(decl.get_start_token());
-                doc = doc.append(trivia).append(self.format_declaration(decl));
-            } else {
-                let prev = &decls[i - 1];
-                let trivia = self.node_trivia(prev.get_end_token(), decl.get_start_token());
-                doc = doc
-                    .append(self.hardline())
-                    .append(trivia)
-                    .append(self.format_declaration(decl));
+        let mut j = i + 1;
+        while j < decls.len() {
+            if matches!(decls[j].item, Declaration::Object(_)) {
+                let prev_end = decls[j - 1].get_end_token();
+                let next_start = decls[j].get_start_token();
+                if !self.has_blank_before(prev_end, next_start)
+                    && !self.has_leading_comments_on(next_start)
+                {
+                    j += 1;
+                    continue;
+                }
             }
+            break;
         }
-        doc
+        j - i
+    }
+
+    fn format_declaration_group(
+        &self,
+        decls: &[WithTokenSpan<Declaration>],
+        start: usize,
+        len: usize,
+    ) -> Vec<Doc<'a>> {
+        let group: Vec<&ObjectDeclaration> = decls[start..start + len]
+            .iter()
+            .filter_map(|d| {
+                if let Declaration::Object(obj) = &d.item {
+                    Some(obj)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        self.format_aligned_object_group(&group)
     }
 
     pub fn format_declaration(&self, decl: &WithTokenSpan<Declaration>) -> Doc<'a> {
@@ -94,11 +122,81 @@ impl<'a> Formatter<'a> {
         class_kw
             .append(self.space())
             .append(idents_doc)
+            .append(self.space())
             .append(self.punct(":"))
             .append(self.space())
             .append(subtype_doc)
             .append(default_doc)
             .append(self.punct(";"))
+    }
+
+    /// Format a group of consecutive object declarations with aligned `:` and `:=`.
+    fn format_aligned_object_group(&self, objs: &[&ObjectDeclaration]) -> Vec<Doc<'a>> {
+        let parts: Vec<_> = objs
+            .iter()
+            .map(|obj| {
+                let prefix = self.format_obj_decl_prefix(obj);
+                let prefix_width = self.doc_width(&prefix);
+                let subtype = self.format_subtype_indication(&obj.subtype_indication);
+                let subtype_width = self.doc_width(&subtype);
+                let default = obj
+                    .expression
+                    .as_ref()
+                    .map(|expr| self.format_expression(expr.as_ref()));
+                (prefix, prefix_width, subtype, subtype_width, default)
+            })
+            .collect();
+
+        let max_prefix = parts.iter().map(|p| p.1).max().unwrap_or(0);
+        let has_any_default = parts.iter().any(|p| p.4.is_some());
+        let max_subtype = if has_any_default {
+            parts.iter().map(|p| p.3).max().unwrap_or(0)
+        } else {
+            0
+        };
+
+        parts
+            .into_iter()
+            .map(|(prefix, pw, subtype, sw, default)| {
+                let pad1 = " ".repeat(max_prefix - pw);
+                let mut d = prefix
+                    .append(self.arena.text(pad1))
+                    .append(self.space())
+                    .append(self.punct(":"))
+                    .append(self.space())
+                    .append(subtype);
+                if let Some(default_expr) = default {
+                    let pad2 = " ".repeat(max_subtype - sw);
+                    d = d
+                        .append(self.arena.text(pad2))
+                        .append(self.space())
+                        .append(self.punct(":="))
+                        .append(self.space())
+                        .append(default_expr);
+                }
+                d.append(self.punct(";"))
+            })
+            .collect()
+    }
+
+    /// Build the prefix part of an object declaration: `<class> <idents>`.
+    fn format_obj_decl_prefix(&self, obj: &ObjectDeclaration) -> Doc<'a> {
+        let class_kw = match obj.class {
+            ObjectClass::Signal => self.kw("signal"),
+            ObjectClass::Variable => self.kw("variable"),
+            ObjectClass::Constant => self.kw("constant"),
+            ObjectClass::SharedVariable => self
+                .kw("shared")
+                .append(self.space())
+                .append(self.kw("variable")),
+        };
+        let idents_doc = self.intersperse(
+            obj.idents
+                .iter()
+                .map(|id| self.ident(&id.tree.item.name_utf8())),
+            self.arena.text(", "),
+        );
+        class_kw.append(self.space()).append(idents_doc)
     }
 
     // -----------------------------------------------------------------------
@@ -299,10 +397,14 @@ impl<'a> Formatter<'a> {
     }
 
     fn format_record_type(&self, elements: &[ElementDeclaration], type_name: &str) -> Doc<'a> {
-        let elems: Vec<Doc<'a>> = elements
-            .iter()
-            .map(|e| self.format_element_declaration(e))
-            .collect();
+        let elems: Vec<Doc<'a>> = if elements.len() > 1 {
+            self.format_aligned_record_elements(elements)
+        } else {
+            elements
+                .iter()
+                .map(|e| self.format_element_declaration(e))
+                .collect()
+        };
         let body = self.join_hardline(elems);
         self.kw("record")
             .append(self.nest(self.hardline().append(body)))
@@ -322,10 +424,44 @@ impl<'a> Formatter<'a> {
             self.arena.text(", "),
         );
         idents_doc
+            .append(self.space())
             .append(self.punct(":"))
             .append(self.space())
             .append(self.format_subtype_indication(&elem.subtype))
             .append(self.punct(";"))
+    }
+
+    fn format_aligned_record_elements(&self, elements: &[ElementDeclaration]) -> Vec<Doc<'a>> {
+        let parts: Vec<_> = elements
+            .iter()
+            .map(|elem| {
+                let idents_doc = self.intersperse(
+                    elem.idents
+                        .iter()
+                        .map(|id| self.ident(&id.tree.item.name_utf8())),
+                    self.arena.text(", "),
+                );
+                let idents_width = self.doc_width(&idents_doc);
+                let subtype_doc = self.format_subtype_indication(&elem.subtype);
+                (idents_doc, idents_width, subtype_doc)
+            })
+            .collect();
+
+        let max_idents = parts.iter().map(|p| p.1).max().unwrap_or(0);
+
+        parts
+            .into_iter()
+            .map(|(idents_doc, iw, subtype_doc)| {
+                let pad = " ".repeat(max_idents - iw);
+                idents_doc
+                    .append(self.arena.text(pad))
+                    .append(self.space())
+                    .append(self.punct(":"))
+                    .append(self.space())
+                    .append(subtype_doc)
+                    .append(self.punct(";"))
+            })
+            .collect()
     }
 
     fn format_protected_type_declaration(

@@ -48,9 +48,9 @@ line_length = 100
 size = 4
 
 [casing]
-keywords = "preserve"    # | "lower_case" | "UPPER_CASE"
-identifiers = "preserve" # | "lower_case" | "UPPER_CASE"
-constants = "preserve"   # | "lower_case" | "UPPER_CASE"
+keywords = "preserve"    # | "lower_case" | "upper_case"
+identifiers = "preserve" # | "lower_case" | "upper_case"
+constants = "preserve"   # | "lower_case" | "upper_case"
 ```
 
 The formatter preserves the original casing by default.
@@ -61,9 +61,7 @@ The formatter deliberately enforces a specific style. The following behaviors
 are **not configurable**:
 
 - Indentation **always** uses spaces. Tabs are automatically converted to spaces.
-
 - Multiple consecutive blank lines are collapsed into a single empty line.
-
 - Lines exceeding the maximum length are wrapped, for example:
 
 **Input:**
@@ -129,11 +127,13 @@ also provides formatting capabilities.
 
 A brief comparison highlights the differences:
 
-- **vhdl-style-guide**
+**vhdl-style-guide**
+
 - Highly configurable
 - Includes certain style guide and linting features that are not provided by `vhdl-fmt`
 
-- **vhdl-fmt**
+**vhdl-fmt**
+
 - Strongly opinionated, enforces a consistent style
-- Significantly faster. A 2300lines VHDL file (116kB) takes ~15ms to format,
+- Significantly faster. A 2300lines VHDL file (116kB) takes <15ms to format,
   making it well suited for editor _format-on-save_ workflows

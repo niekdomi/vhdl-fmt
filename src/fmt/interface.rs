@@ -2,8 +2,8 @@ use pretty::DocAllocator;
 use vhdl_lang::ast::{
     InterfaceDeclaration, InterfaceFileDeclaration, InterfaceList, InterfaceObjectDeclaration,
     InterfacePackageDeclaration, InterfacePackageGenericMapAspect, InterfaceSubprogramDeclaration,
-    MapAspect, ModeIndication, ModeViewElement, ModeViewIndication, ModeViewIndicationKind,
-    ObjectClass, SimpleModeIndication, SubprogramDefault,
+    InterfaceType, MapAspect, ModeIndication, ModeViewElement, ModeViewIndication,
+    ModeViewIndicationKind, ObjectClass, SimpleModeIndication, SubprogramDefault,
 };
 
 use crate::fmt::{Doc, Formatter};
@@ -34,17 +34,47 @@ impl<'a> Formatter<'a> {
         list: &InterfaceList,
         trailing: Option<&'static str>,
     ) -> Doc<'a> {
-        // The span's first token can be the keyword (`port`, `generic`,
-        // `parameter`) or directly a `(`.  We infer the keyword from the
-        // context where this is called; callers already prepend it if needed.
-        // Here we just emit the parenthesised body.
+        // Check which items are interface objects (candidates for alignment).
+        let obj_count = list
+            .items
+            .iter()
+            .filter(|item| matches!(item, InterfaceDeclaration::Object(_)))
+            .count();
+
+        // Build aligned docs for all interface objects if there are 2+.
+        let aligned: Option<Vec<Doc<'a>>> = if obj_count > 1 {
+            let objs: Vec<&InterfaceObjectDeclaration> = list
+                .items
+                .iter()
+                .filter_map(|item| {
+                    if let InterfaceDeclaration::Object(obj) = item {
+                        Some(obj)
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            Some(self.format_aligned_interface_objects(&objs))
+        } else {
+            None
+        };
+
+        let mut aligned_iter = aligned.as_ref().map(|v| v.iter());
+
         let items: Vec<Doc<'a>> = list
             .items
             .iter()
             .enumerate()
             .map(|(i, item)| {
-                let item_doc = self.format_interface_declaration(item);
-                // All items except the last get a trailing `;` separator.
+                let item_doc = if matches!(item, InterfaceDeclaration::Object(_)) {
+                    if let Some(ref mut iter) = aligned_iter {
+                        iter.next().unwrap().clone()
+                    } else {
+                        self.format_interface_declaration(item)
+                    }
+                } else {
+                    self.format_interface_declaration(item)
+                };
                 if i < list.items.len() - 1 {
                     item_doc.append(self.punct(";"))
                 } else {
@@ -64,6 +94,86 @@ impl<'a> Formatter<'a> {
             body.append(self.punct(t))
         } else {
             body
+        }
+    }
+
+    /// Format a group of interface objects with aligned `:`.
+    fn format_aligned_interface_objects(
+        &self,
+        objs: &[&InterfaceObjectDeclaration],
+    ) -> Vec<Doc<'a>> {
+        let parts: Vec<_> = objs
+            .iter()
+            .map(|obj| {
+                let prefix = self.format_interface_obj_prefix(obj);
+                let prefix_width = self.doc_width(&prefix);
+                let mode_doc = self.format_mode_indication(&obj.mode);
+                (prefix, prefix_width, mode_doc)
+            })
+            .collect();
+
+        let max_prefix = parts.iter().map(|p| p.1).max().unwrap_or(0);
+
+        parts
+            .into_iter()
+            .map(|(prefix, pw, mode_doc)| {
+                let pad = " ".repeat(max_prefix - pw);
+                prefix
+                    .append(self.arena.text(pad))
+                    .append(self.space())
+                    .append(self.punct(":"))
+                    .append(self.space())
+                    .append(mode_doc)
+            })
+            .collect()
+    }
+
+    /// Returns true if the class keyword is the implicit default for the
+    /// interface context and should be omitted.
+    fn is_implicit_class(list_type: &InterfaceType, class: &ObjectClass) -> bool {
+        matches!(
+            (list_type, class),
+            (InterfaceType::Port, ObjectClass::Signal)
+                | (InterfaceType::Generic, ObjectClass::Constant)
+        )
+    }
+
+    /// Build an optional class keyword doc for an interface object.
+    /// Returns `None` when the class is implicit for the context.
+    fn interface_class_doc(&self, obj: &InterfaceObjectDeclaration) -> Option<Doc<'a>> {
+        match &obj.mode {
+            ModeIndication::Simple(simple) => {
+                if Self::is_implicit_class(&obj.list_type, &simple.class) {
+                    return None;
+                }
+                let class_kw: Doc<'a> = match simple.class {
+                    ObjectClass::Signal => self.kw("signal"),
+                    ObjectClass::Variable => self.kw("variable"),
+                    ObjectClass::Constant => self.kw("constant"),
+                    ObjectClass::SharedVariable => self
+                        .kw("shared")
+                        .append(self.space())
+                        .append(self.kw("variable")),
+                };
+                Some(class_kw)
+            }
+            ModeIndication::View(_) => None,
+        }
+    }
+
+    /// Build the prefix of an interface object: `[class] idents`.
+    fn format_interface_obj_prefix(&self, obj: &InterfaceObjectDeclaration) -> Doc<'a> {
+        let class_doc = self.interface_class_doc(obj);
+        let idents_doc = self.intersperse(
+            obj.idents
+                .iter()
+                .map(|id| self.ident(&id.tree.item.name_utf8())),
+            self.arena.text(", "),
+        );
+        if let Some(cls) = class_doc {
+            cls.append(self.space()).append(idents_doc)
+        } else {
+            idents_doc
         }
     }
 
@@ -87,29 +197,7 @@ impl<'a> Formatter<'a> {
     }
 
     pub fn format_interface_object(&self, obj: &InterfaceObjectDeclaration) -> Doc<'a> {
-        // The object class keyword (signal/variable/constant) lives inside
-        // SimpleModeIndication, not on InterfaceObjectDeclaration directly.
-        // Only emit it when it is explicitly present in the source (i.e. non-port
-        // generic/parameter lists or when the user wrote it explicitly).
-        // We derive it from the Simple mode's class field when present.
-        let class_doc = match &obj.mode {
-            ModeIndication::Simple(simple) => {
-                // Only emit the class keyword in non-port contexts where it adds meaning.
-                // For port lists the class is always signal (implicit); for generics it is
-                // always constant (implicit). We emit it unconditionally to be explicit.
-                let class_kw: Doc<'a> = match simple.class {
-                    ObjectClass::Signal => self.kw("signal"),
-                    ObjectClass::Variable => self.kw("variable"),
-                    ObjectClass::Constant => self.kw("constant"),
-                    ObjectClass::SharedVariable => self
-                        .kw("shared")
-                        .append(self.space())
-                        .append(self.kw("variable")),
-                };
-                Some(class_kw)
-            }
-            ModeIndication::View(_) => None,
-        };
+        let class_doc = self.interface_class_doc(obj);
 
         // Identifier list  (e.g. `a, b, c`)
         let idents_doc = self.intersperse(
@@ -119,12 +207,11 @@ impl<'a> Formatter<'a> {
             self.arena.text(", "),
         );
 
-        let colon = self.punct(":");
-
         let mode_doc = self.format_mode_indication(&obj.mode);
 
         let base = idents_doc
-            .append(colon)
+            .append(self.space())
+            .append(self.punct(":"))
             .append(self.space())
             .append(mode_doc);
 

@@ -15,45 +15,31 @@ impl<'a> Formatter<'a> {
 
     pub fn format_expression(&self, expr: WithTokenSpan<&Expression>) -> Doc<'a> {
         match expr.item {
-            Expression::Binary(op, lhs, rhs) => {
-                let op_doc = self.arena.text(
-                    self.config
-                        .casing
-                        .keywords
-                        .apply(&op.item.item.to_string().to_lowercase()),
-                );
-                // lhs/rhs are Box<WithTokenSpan<Expression>>; use &** to get
-                // &WithTokenSpan<Expression> then auto-deref calls WithTokenSpan::as_ref()
-                let lhs_doc = self.format_expression((&**lhs).as_ref());
-                let rhs_doc = self.format_expression((&**rhs).as_ref());
+            Expression::Binary(op, _lhs, _rhs) => {
+                // For chains of the same operator (e.g. a or b or c or d),
+                // flatten into a single group so they break uniformly:
+                // either all on one line, or one operand per line.
+                let op_str = op.item.item.to_string().to_lowercase();
+                let mut operands: Vec<Doc<'a>> = Vec::new();
+                self.collect_binary_chain(&op_str, expr, &mut operands);
 
-                // Operator-trailing layout with align():
-                //   flat:   "lhs op rhs"
-                //   broken: "lhs op\n<aligned>rhs"
-                // align() pins the indentation to the column of `lhs`, so
-                // continuation lines start directly below the first operand,
-                // not at the surrounding nest level.  This is exactly what
-                // produces the desired:
-                //
-                //   if (a = '1') and
-                //      (b = '1') and
-                //      (c = '1')
-                //
-                // when embedded inside `if` (which adds "if " before the
-                // align'd group, placing the continuation at col 3).
-                lhs_doc
-                    .append(self.space())
-                    .append(op_doc)
-                    .append(self.line())
-                    .append(rhs_doc)
-                    .align()
-                    .group()
+                let op_doc = self.arena.text(self.config.casing.keywords.apply(&op_str));
+                let first = operands.remove(0);
+                let mut doc = first;
+                for operand in operands {
+                    doc = doc
+                        .append(self.space())
+                        .append(op_doc.clone())
+                        .append(self.line())
+                        .append(operand);
+                }
+                doc.align().group()
             }
             Expression::Unary(op, rhs) => {
                 use vhdl_lang::ast::Operator;
                 let op_str = op.item.item.to_string().to_lowercase();
                 let op_doc = self.ident(&op_str);
-                let rhs_doc = self.format_expression((&**rhs).as_ref());
+                let rhs_doc = self.format_expression((**rhs).as_ref());
                 match op.item.item {
                     // These bind tightly — no space after the operator.
                     Operator::Minus | Operator::Plus | Operator::QueQue => op_doc.append(rhs_doc),
@@ -80,10 +66,34 @@ impl<'a> Formatter<'a> {
             Expression::Literal(literal) => self.format_literal(literal),
             Expression::New(allocator) => self.format_allocator(allocator),
             Expression::Parenthesized(inner) => {
-                let inner_doc = self.format_expression((&**inner).as_ref());
+                let inner_doc = self.format_expression((**inner).as_ref());
                 self.punct("(").append(inner_doc).append(self.punct(")"))
             }
         }
+    }
+
+    /// Flatten a left-associative chain of the same binary operator into a
+    /// list of operands. For `((a or b) or c) or d` with target_op="or",
+    /// produces `[a, b, c, d]`. Operands that use a different operator are
+    /// formatted as complete sub-expressions.
+    fn collect_binary_chain(
+        &self,
+        target_op: &str,
+        expr: WithTokenSpan<&Expression>,
+        operands: &mut Vec<Doc<'a>>,
+    ) {
+        if let Expression::Binary(op, lhs, _rhs) = expr.item {
+            let op_str = op.item.item.to_string().to_lowercase();
+            if op_str == target_op {
+                // Recurse into LHS (left-associative chain)
+                self.collect_binary_chain(target_op, (**lhs).as_ref(), operands);
+                // RHS is always a leaf of the chain
+                operands.push(self.format_expression((**_rhs).as_ref()));
+                return;
+            }
+        }
+        // Not the same operator — format as a complete expression
+        operands.push(self.format_expression(expr));
     }
 
     fn format_literal(&self, literal: &Literal) -> Doc<'a> {
@@ -256,12 +266,12 @@ impl<'a> Formatter<'a> {
             Range::Range(constraint) => {
                 // left_expr/right_expr are Box<WithTokenSpan<Expression>>; use &* to get
                 // &WithTokenSpan<Expression> then auto-deref calls WithTokenSpan::as_ref()
-                let left = self.format_expression((&*constraint.left_expr).as_ref());
+                let left = self.format_expression((*constraint.left_expr).as_ref());
                 let dir = match constraint.direction {
                     vhdl_lang::ast::Direction::Ascending => self.kw("to"),
                     vhdl_lang::ast::Direction::Descending => self.kw("downto"),
                 };
-                let right = self.format_expression((&*constraint.right_expr).as_ref());
+                let right = self.format_expression((*constraint.right_expr).as_ref());
                 left.append(self.space())
                     .append(dir)
                     .append(self.space())

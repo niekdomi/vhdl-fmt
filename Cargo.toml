@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 clap = { version = "4.5.60", features = ["derive"] }
 pretty = "0.12.5"
+rayon = "1.10"
 serde = { version = "1.0", features = ["derive"] }
 toml = "1.0.6"
 vhdl_lang = "0.86.0"

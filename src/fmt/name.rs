@@ -2,7 +2,7 @@ use pretty::DocAllocator;
 use vhdl_lang::ast::token_range::WithTokenSpan;
 use vhdl_lang::ast::{
     ActualPart, AssociationElement, AttributeDesignator, AttributeName, CallOrIndexed,
-    ExternalName, ExternalPath, MapAspect, Name, RangeAttribute, SeparatedList, SignalAttribute,
+    ExternalName, ExternalPath, Name, RangeAttribute, SeparatedList, SignalAttribute,
     TypeAttribute,
 };
 
@@ -63,7 +63,7 @@ impl<'a> Formatter<'a> {
             self.punct("(")
                 // expr is Box<WithTokenSpan<Expression>>; use &** to get
                 // &WithTokenSpan<Expression> then auto-deref calls WithTokenSpan::as_ref()
-                .append(self.format_expression((&**expr).as_ref()))
+                .append(self.format_expression((**expr).as_ref()))
                 .append(self.punct(")"))
         } else {
             self.nil()
@@ -192,10 +192,6 @@ impl<'a> Formatter<'a> {
         } else {
             actual
         }
-    }
-
-    pub fn format_map_aspect(&self, aspect: &MapAspect) -> Doc<'a> {
-        self.format_association_list_parens(&aspect.list)
     }
 
     /// Format an association list already wrapped in `(…)` with one-per-line
