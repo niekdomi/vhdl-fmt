@@ -4,11 +4,11 @@
 > readability and enforce consistency across your projects.
 
 > [!IMPORTANT]
-> The VHDL language specification is quite complex, and I'm not deeply familiar
-> with all its nuances. As a result, some code may not be formatted correctly,
-> or in rare cases, parts of the code might be unintentionally altered or
-> omitted by the formatter. If you encounter any such issues, please feel free
-> to open an issue or submit a pull request with a fix.
+> The formatter is still a **work in progress**. Given the complexity of the VHDL
+> language specification and my limited familiarity with all its nuances, some
+> code may not be formatted correctly. In rare cases, parts of the code might be
+> unintentionally altered or omitted. If you run into any issues, please feel
+> free to open an issue or submit a pull request with a fix.
 
 ## Installation
 
@@ -106,18 +106,9 @@ output_value <= input_operand_left +
 - Declarations (`:`, `:=`), assignments (`<=`, `:=`), and similar constructs
   within the same logical block (not separated by comments or blank lines) are
   aligned.
-
 - If a label is used (e.g. `my_proc: process`), the corresponding end label is
   enforced (`end process my_proc;`).
-
-- Certain blocks always use explicit end keywords:
-- `end architecture`
-- `end case`
-- `end entity`
-- `end if`
-- `end loop`
-- `end process`
-
+- Blocks always use explicit end keywords.
 - Line endings (`\n` vs. `\r\n`) are preserved. This should be controlled via
   `.editorconfig` or `.gitattributes`.
 
