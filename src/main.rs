@@ -17,7 +17,7 @@ use fmt::Formatter;
 fn main() {
     let matches = Command::new("vhdl-fmt")
         .version(env!("CARGO_PKG_VERSION"))
-        .about("A fast, opinionated VHDL code formatter")
+        .about("A fast and opinionated VHDL code formatter")
         .arg(
             Arg::new("files")
                 .help("VHDL files or directories to format (directories are searched recursively for .vhd/.vhdl)")

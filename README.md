@@ -1,10 +1,14 @@
 # vhdl-fmt
 
-> A fast, modern, and opinionated VHDL code formatter designed to improve
+> A fast and opinionated VHDL code formatter designed to improve
 > readability and enforce consistency across your projects.
 
-**NOTE:** The formatter is still under active development and not all features
-are fully implemented yet.
+> [!IMPORTANT]
+> The VHDL language specification is quite complex, and I'm not deeply familiar
+> with all its nuances. As a result, some code may not be formatted correctly,
+> or in rare cases, parts of the code might be unintentionally altered or
+> omitted by the formatter. If you encounter any such issues, please feel free
+> to open an issue or submit a pull request with a fix.
 
 ## Installation
 
@@ -130,7 +134,8 @@ A brief comparison highlights the differences:
 **vhdl-style-guide**
 
 - Highly configurable
-- Includes certain style guide and linting features that are not provided by `vhdl-fmt`
+- Includes certain style guide and linting features that are not provided by
+  `vhdl-fmt`
 
 **vhdl-fmt**
 

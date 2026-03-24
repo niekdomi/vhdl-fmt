@@ -4,6 +4,8 @@ words = [
     "assocs",
     "colour",
     "downto",
+    "editorconfig",
+    "gitattributes",
     "groupable",
     "hardline",
     "idents",
@@ -29,6 +31,7 @@ words = [
 ]
 include_paths = [
     "**/*.rs",
+    "**/*.md"
 ]
 use_global = false
 min_word_length = 0
