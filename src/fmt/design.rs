@@ -107,10 +107,7 @@ impl<'a> Formatter<'a> {
         let decls_doc = if entity.decl.is_empty() {
             self.nil()
         } else {
-            self.nest(
-                self.hardline()
-                    .append(self.format_declarations(&entity.decl)),
-            )
+            self.nest(self.hardline().append(self.format_declarations(&entity.decl)))
         };
 
         let begin_stmts_doc = if entity.statements.is_empty() {
@@ -281,11 +278,8 @@ impl<'a> Formatter<'a> {
     pub fn format_context(&self, ctx: &ContextDeclaration) -> Doc<'a> {
         let name = self.ident(&ctx.ident.tree.item.name_utf8());
         // ctx.items is ContextClause = Vec<ContextItem>; iterate directly
-        let items: Vec<Doc<'a>> = ctx
-            .items
-            .iter()
-            .map(|item| self.format_context_item(item))
-            .collect();
+        let items: Vec<Doc<'a>> =
+            ctx.items.iter().map(|item| self.format_context_item(item)).collect();
 
         let body_doc = if items.is_empty() {
             self.nil()
@@ -320,11 +314,8 @@ impl<'a> Formatter<'a> {
         let decls_doc = if config.decl.is_empty() {
             self.nil()
         } else {
-            let items: Vec<Doc<'a>> = config
-                .decl
-                .iter()
-                .map(|d| self.format_declaration(d))
-                .collect();
+            let items: Vec<Doc<'a>> =
+                config.decl.iter().map(|d| self.format_declaration(d)).collect();
             self.nest(self.hardline().append(self.join_hardline(items)))
         };
 
@@ -375,22 +366,16 @@ impl<'a> Formatter<'a> {
         // block_spec is WithTokenSpan<Name>; format as a name
         let spec_doc = self.format_name(&block.block_spec.item);
 
-        let use_clauses: Vec<Doc<'a>> = block
-            .use_clauses
-            .iter()
-            .map(|u| self.format_use_clause(u))
-            .collect();
+        let use_clauses: Vec<Doc<'a>> =
+            block.use_clauses.iter().map(|u| self.format_use_clause(u)).collect();
         let use_doc = if use_clauses.is_empty() {
             self.nil()
         } else {
             self.nest(self.hardline().append(self.join_hardline(use_clauses)))
         };
 
-        let items: Vec<Doc<'a>> = block
-            .items
-            .iter()
-            .map(|item| self.format_configuration_item(item))
-            .collect();
+        let items: Vec<Doc<'a>> =
+            block.items.iter().map(|item| self.format_configuration_item(item)).collect();
         let items_doc = if items.is_empty() {
             self.nil()
         } else {
@@ -423,10 +408,7 @@ impl<'a> Formatter<'a> {
         let spec = self.format_component_specification(&comp.spec);
 
         let binding_doc = if let Some(binding) = &comp.bind_ind {
-            self.nest(
-                self.hardline()
-                    .append(self.format_binding_indication(binding)),
-            )
+            self.nest(self.hardline().append(self.format_binding_indication(binding)))
         } else {
             self.nil()
         };
@@ -451,10 +433,7 @@ impl<'a> Formatter<'a> {
         };
 
         let block_config_doc = if let Some(block) = &comp.block_config {
-            self.nest(
-                self.hardline()
-                    .append(self.format_block_configuration(block)),
-            )
+            self.nest(self.hardline().append(self.format_block_configuration(block)))
         } else {
             self.nil()
         };

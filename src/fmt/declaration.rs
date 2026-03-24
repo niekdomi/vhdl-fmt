@@ -55,13 +55,7 @@ impl<'a> Formatter<'a> {
     ) -> Vec<Doc<'a>> {
         let group: Vec<&ObjectDeclaration> = decls[start..start + len]
             .iter()
-            .filter_map(|d| {
-                if let Declaration::Object(obj) = &d.item {
-                    Some(obj)
-                } else {
-                    None
-                }
-            })
+            .filter_map(|d| if let Declaration::Object(obj) = &d.item { Some(obj) } else { None })
             .collect();
         self.format_aligned_object_group(&group)
     }
@@ -95,16 +89,13 @@ impl<'a> Formatter<'a> {
             ObjectClass::Signal => self.kw("signal"),
             ObjectClass::Variable => self.kw("variable"),
             ObjectClass::Constant => self.kw("constant"),
-            ObjectClass::SharedVariable => self
-                .kw("shared")
-                .append(self.space())
-                .append(self.kw("variable")),
+            ObjectClass::SharedVariable => {
+                self.kw("shared").append(self.space()).append(self.kw("variable"))
+            }
         };
 
         let idents_doc = self.intersperse(
-            obj.idents
-                .iter()
-                .map(|id| self.ident(&id.tree.item.name_utf8())),
+            obj.idents.iter().map(|id| self.ident(&id.tree.item.name_utf8())),
             self.arena.text(", "),
         );
 
@@ -139,21 +130,16 @@ impl<'a> Formatter<'a> {
                 let prefix_width = self.doc_width(&prefix);
                 let subtype = self.format_subtype_indication(&obj.subtype_indication);
                 let subtype_width = self.doc_width(&subtype);
-                let default = obj
-                    .expression
-                    .as_ref()
-                    .map(|expr| self.format_expression(expr.as_ref()));
+                let default =
+                    obj.expression.as_ref().map(|expr| self.format_expression(expr.as_ref()));
                 (prefix, prefix_width, subtype, subtype_width, default)
             })
             .collect();
 
         let max_prefix = parts.iter().map(|p| p.1).max().unwrap_or(0);
         let has_any_default = parts.iter().any(|p| p.4.is_some());
-        let max_subtype = if has_any_default {
-            parts.iter().map(|p| p.3).max().unwrap_or(0)
-        } else {
-            0
-        };
+        let max_subtype =
+            if has_any_default { parts.iter().map(|p| p.3).max().unwrap_or(0) } else { 0 };
 
         parts
             .into_iter()
@@ -185,15 +171,12 @@ impl<'a> Formatter<'a> {
             ObjectClass::Signal => self.kw("signal"),
             ObjectClass::Variable => self.kw("variable"),
             ObjectClass::Constant => self.kw("constant"),
-            ObjectClass::SharedVariable => self
-                .kw("shared")
-                .append(self.space())
-                .append(self.kw("variable")),
+            ObjectClass::SharedVariable => {
+                self.kw("shared").append(self.space()).append(self.kw("variable"))
+            }
         };
         let idents_doc = self.intersperse(
-            obj.idents
-                .iter()
-                .map(|id| self.ident(&id.tree.item.name_utf8())),
+            obj.idents.iter().map(|id| self.ident(&id.tree.item.name_utf8())),
             self.arena.text(", "),
         );
         class_kw.append(self.space()).append(idents_doc)
@@ -205,9 +188,7 @@ impl<'a> Formatter<'a> {
 
     fn format_file_declaration(&self, file: &FileDeclaration) -> Doc<'a> {
         let idents_doc = self.intersperse(
-            file.idents
-                .iter()
-                .map(|id| self.ident(&id.tree.item.name_utf8())),
+            file.idents.iter().map(|id| self.ident(&id.tree.item.name_utf8())),
             self.arena.text(", "),
         );
         let subtype_doc = self.format_subtype_indication(&file.subtype_indication);
@@ -248,11 +229,9 @@ impl<'a> Formatter<'a> {
     pub fn format_type_declaration(&self, decl: &TypeDeclaration) -> Doc<'a> {
         let name = self.ident(&decl.ident.tree.item.name_utf8());
         match &decl.def {
-            TypeDefinition::Incomplete(_) => self
-                .kw("type")
-                .append(self.space())
-                .append(name)
-                .append(self.punct(";")),
+            TypeDefinition::Incomplete(_) => {
+                self.kw("type").append(self.space()).append(name).append(self.punct(";"))
+            }
             def => {
                 let def_doc = self.format_type_definition(def, &decl.ident.tree.item.name_utf8());
                 self.kw("type")
@@ -278,10 +257,9 @@ impl<'a> Formatter<'a> {
                     .append(self.intersperse(lits, self.arena.text(", ")))
                     .append(self.punct(")"))
             }
-            TypeDefinition::Numeric(range) => self
-                .kw("range")
-                .append(self.space())
-                .append(self.format_range(range)),
+            TypeDefinition::Numeric(range) => {
+                self.kw("range").append(self.space()).append(self.format_range(range))
+            }
             TypeDefinition::Physical(phys) => self.format_physical_type(phys),
             TypeDefinition::Array(indices, _of_tok, subtype) => {
                 self.format_array_type(indices, subtype)
@@ -400,10 +378,7 @@ impl<'a> Formatter<'a> {
         let elems: Vec<Doc<'a>> = if elements.len() > 1 {
             self.format_aligned_record_elements(elements)
         } else {
-            elements
-                .iter()
-                .map(|e| self.format_element_declaration(e))
-                .collect()
+            elements.iter().map(|e| self.format_element_declaration(e)).collect()
         };
         let body = self.join_hardline(elems);
         self.kw("record")
@@ -418,9 +393,7 @@ impl<'a> Formatter<'a> {
 
     fn format_element_declaration(&self, elem: &ElementDeclaration) -> Doc<'a> {
         let idents_doc = self.intersperse(
-            elem.idents
-                .iter()
-                .map(|id| self.ident(&id.tree.item.name_utf8())),
+            elem.idents.iter().map(|id| self.ident(&id.tree.item.name_utf8())),
             self.arena.text(", "),
         );
         idents_doc
@@ -436,9 +409,7 @@ impl<'a> Formatter<'a> {
             .iter()
             .map(|elem| {
                 let idents_doc = self.intersperse(
-                    elem.idents
-                        .iter()
-                        .map(|id| self.ident(&id.tree.item.name_utf8())),
+                    elem.idents.iter().map(|id| self.ident(&id.tree.item.name_utf8())),
                     self.arena.text(", "),
                 );
                 let idents_width = self.doc_width(&idents_doc);
@@ -689,16 +660,10 @@ impl<'a> Formatter<'a> {
         // name_list is Vec<WithRef<Ident>> = Vec<WithRef<WithToken<Symbol>>>
         // WithRef<T>.item gives T; WithToken<Symbol>.item gives Symbol
         let names = self.intersperse(
-            clause
-                .name_list
-                .iter()
-                .map(|id| self.ident(&id.item.item.name_utf8())),
+            clause.name_list.iter().map(|id| self.ident(&id.item.item.name_utf8())),
             self.arena.text(", "),
         );
-        self.kw("library")
-            .append(self.space())
-            .append(names)
-            .append(self.punct(";"))
+        self.kw("library").append(self.space()).append(names).append(self.punct(";"))
     }
 
     // -----------------------------------------------------------------------
@@ -709,8 +674,7 @@ impl<'a> Formatter<'a> {
         let name = self.ident(&pkg.ident.tree.item.name_utf8());
         let pkg_name = self.format_name(&pkg.package_name.item);
         let generic_map_doc = if let Some(gm) = &pkg.generic_map {
-            self.space()
-                .append(self.format_named_map_aspect("generic", gm))
+            self.space().append(self.format_named_map_aspect("generic", gm))
         } else {
             self.nil()
         };
@@ -781,10 +745,7 @@ impl<'a> Formatter<'a> {
             InstantiationList::All => self.kw("all"),
         };
         let comp_name = self.format_name(&spec.component_name.item);
-        list_doc
-            .append(self.punct(":"))
-            .append(self.space())
-            .append(comp_name)
+        list_doc.append(self.punct(":")).append(self.space()).append(comp_name)
     }
 
     pub fn format_binding_indication(&self, bind: &vhdl_lang::ast::BindingIndication) -> Doc<'a> {
@@ -800,10 +761,7 @@ impl<'a> Formatter<'a> {
                     } else {
                         self.nil()
                     };
-                    self.kw("entity")
-                        .append(self.space())
-                        .append(name_doc)
-                        .append(arch_doc)
+                    self.kw("entity").append(self.space()).append(name_doc).append(arch_doc)
                 }
                 EntityAspect::Configuration(name) => self
                     .kw("configuration")
@@ -811,10 +769,7 @@ impl<'a> Formatter<'a> {
                     .append(self.format_name(&name.item)),
                 EntityAspect::Open => self.kw("open"),
             };
-            self.kw("use")
-                .append(self.space())
-                .append(aspect_doc)
-                .append(self.punct(";"))
+            self.kw("use").append(self.space()).append(aspect_doc).append(self.punct(";"))
         } else {
             self.nil()
         };
@@ -835,9 +790,7 @@ impl<'a> Formatter<'a> {
             self.nil()
         };
 
-        entity_aspect_doc
-            .append(generic_map_doc)
-            .append(port_map_doc)
+        entity_aspect_doc.append(generic_map_doc).append(port_map_doc)
     }
 
     fn format_vunit_binding_indication(
@@ -860,11 +813,8 @@ impl<'a> Formatter<'a> {
     fn format_view_declaration(&self, view: &ModeViewDeclaration) -> Doc<'a> {
         let name = self.ident(&view.ident.tree.item.name_utf8());
         let subtype_doc = self.format_subtype_indication(&view.typ);
-        let elems: Vec<Doc<'a>> = view
-            .elements
-            .iter()
-            .map(|e| self.format_mode_view_element(e))
-            .collect();
+        let elems: Vec<Doc<'a>> =
+            view.elements.iter().map(|e| self.format_mode_view_element(e)).collect();
         let body = if elems.is_empty() {
             self.nil()
         } else {

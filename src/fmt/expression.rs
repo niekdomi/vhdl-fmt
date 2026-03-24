@@ -50,10 +50,8 @@ impl<'a> Formatter<'a> {
                 if associations.is_empty() {
                     return self.punct("(").append(self.punct(")"));
                 }
-                let items: Vec<Doc<'a>> = associations
-                    .iter()
-                    .map(|a| self.format_element_association(a))
-                    .collect();
+                let items: Vec<Doc<'a>> =
+                    associations.iter().map(|a| self.format_element_association(a)).collect();
                 let inner = self.intersperse(items, self.punct(",").append(self.line()));
                 self.punct("(")
                     .append(self.nest(self.line_().append(inner)))
@@ -199,10 +197,9 @@ impl<'a> Formatter<'a> {
     fn format_resolution_indication(&self, res: &ResolutionIndication) -> Doc<'a> {
         match res {
             ResolutionIndication::FunctionName(name) => self.format_name(&name.item),
-            ResolutionIndication::ArrayElement(name) => self
-                .punct("(")
-                .append(self.format_name(&name.item))
-                .append(self.punct(")")),
+            ResolutionIndication::ArrayElement(name) => {
+                self.punct("(").append(self.format_name(&name.item)).append(self.punct(")"))
+            }
             ResolutionIndication::Record(record) => {
                 let items: Vec<Doc<'a>> = record
                     .item
@@ -227,20 +224,15 @@ impl<'a> Formatter<'a> {
         match &constraint.item {
             SubtypeConstraint::Range(range) => self.space().append(self.format_range(range)),
             SubtypeConstraint::Array(ranges, element) => {
-                let range_docs: Vec<Doc<'a>> = ranges
-                    .iter()
-                    .map(|r| self.format_discrete_range(&r.item))
-                    .collect();
+                let range_docs: Vec<Doc<'a>> =
+                    ranges.iter().map(|r| self.format_discrete_range(&r.item)).collect();
                 let ranges_doc = self.intersperse(range_docs, self.punct(",").append(self.space()));
                 let elem_doc = if let Some(e) = element {
                     self.format_subtype_constraint(e)
                 } else {
                     self.nil()
                 };
-                self.punct("(")
-                    .append(ranges_doc)
-                    .append(self.punct(")"))
-                    .append(elem_doc)
+                self.punct("(").append(ranges_doc).append(self.punct(")")).append(elem_doc)
             }
             SubtypeConstraint::Record(elements) => {
                 let items: Vec<Doc<'a>> = elements
@@ -272,10 +264,7 @@ impl<'a> Formatter<'a> {
                     vhdl_lang::ast::Direction::Descending => self.kw("downto"),
                 };
                 let right = self.format_expression((*constraint.right_expr).as_ref());
-                left.append(self.space())
-                    .append(dir)
-                    .append(self.space())
-                    .append(right)
+                left.append(self.space()).append(dir).append(self.space()).append(right)
             }
             // attr is Box<AttributeName>
             Range::Attribute(attr) => self.format_range_attribute(attr),

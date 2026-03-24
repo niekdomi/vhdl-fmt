@@ -113,7 +113,7 @@ fn main() {
                     process::exit(1);
                 }
             };
-            print!("{}", formatted);
+            print!("{formatted}");
         }
     }
 }
@@ -162,10 +162,10 @@ fn collect_vhdl_files(dir: &Path, out: &mut Vec<PathBuf>) {
         let path = entry.path();
         if path.is_dir() {
             collect_vhdl_files(&path, out);
-        } else if let Some(ext) = path.extension() {
-            if ext == "vhd" || ext == "vhdl" {
-                out.push(path);
-            }
+        } else if let Some(ext) = path.extension()
+            && (ext == "vhd" || ext == "vhdl")
+        {
+            out.push(path);
         }
     }
 }
@@ -179,11 +179,7 @@ fn load_config(location: Option<&Path>) -> FormatConfig {
         Some(p.to_path_buf())
     } else {
         let candidate = Path::new("vhdl-fmt.toml");
-        if candidate.exists() {
-            Some(candidate.to_path_buf())
-        } else {
-            None
-        }
+        candidate.exists().then(|| candidate.to_path_buf())
     };
 
     if let Some(path) = config_path {
@@ -234,8 +230,7 @@ pub fn format_source(source: &str, config: &FormatConfig) -> Result<String, Stri
         }
         let formatter = Formatter::with_tokens(&arena, config, tokens.as_slice());
         let doc = formatter.format_design_unit(unit);
-        doc.render_fmt(config.line_length, &mut output)
-            .map_err(|e| e.to_string())?;
+        doc.render_fmt(config.line_length, &mut output).map_err(|e| e.to_string())?;
         output.push('\n');
     }
 

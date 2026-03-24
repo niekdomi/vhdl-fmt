@@ -18,10 +18,9 @@ impl<'a> Formatter<'a> {
                 .format_name(&prefix.item)
                 .append(self.punct("."))
                 .append(self.designator(&suffix.item.item)),
-            Name::SelectedAll(prefix) => self
-                .format_name(&prefix.item)
-                .append(self.punct("."))
-                .append(self.kw("all")),
+            Name::SelectedAll(prefix) => {
+                self.format_name(&prefix.item).append(self.punct(".")).append(self.kw("all"))
+            }
             Name::Slice(prefix, range) => self
                 .format_name(&prefix.item)
                 .append(self.punct("("))
@@ -34,19 +33,13 @@ impl<'a> Formatter<'a> {
     }
 
     pub fn format_name_list(&self, names: &[WithTokenSpan<Name>]) -> Doc<'a> {
-        self.intersperse(
-            names.iter().map(|n| self.format_name(&n.item)),
-            self.arena.text(", "),
-        )
+        self.intersperse(names.iter().map(|n| self.format_name(&n.item)), self.arena.text(", "))
     }
 
     pub fn format_call_or_indexed(&self, call: &CallOrIndexed) -> Doc<'a> {
         let prefix = self.format_name(&call.name.item);
         let assocs = self.format_association_list(&call.parameters);
-        prefix
-            .append(self.punct("("))
-            .append(assocs)
-            .append(self.punct(")"))
+        prefix.append(self.punct("(")).append(assocs).append(self.punct(")"))
     }
 
     pub fn format_attribute_name(&self, attr: &AttributeName) -> Doc<'a> {
@@ -68,11 +61,7 @@ impl<'a> Formatter<'a> {
         } else {
             self.nil()
         };
-        prefix
-            .append(sig)
-            .append(self.punct("'"))
-            .append(attr_id)
-            .append(expr_part)
+        prefix.append(sig).append(self.punct("'")).append(attr_id).append(expr_part)
     }
 
     fn format_attribute_designator(&self, attr: &AttributeDesignator) -> Doc<'a> {
@@ -164,16 +153,11 @@ impl<'a> Formatter<'a> {
         if list.items.is_empty() {
             return self.nil();
         }
-        let items: Vec<Doc<'a>> = list
-            .items
-            .iter()
-            .map(|el| self.format_association_element(el))
-            .collect();
+        let items: Vec<Doc<'a>> =
+            list.items.iter().map(|el| self.format_association_element(el)).collect();
         // Try to fit all on one line; if not, one per line with trailing indent.
         let inner = self.intersperse(items, self.punct(",").append(self.line()));
-        self.nest(self.line_().append(inner))
-            .append(self.line_())
-            .group()
+        self.nest(self.line_().append(inner)).append(self.line_()).group()
     }
 
     pub fn format_association_element(&self, element: &AssociationElement) -> Doc<'a> {
@@ -203,11 +187,8 @@ impl<'a> Formatter<'a> {
         if list.items.is_empty() {
             return self.punct("(").append(self.punct(")"));
         }
-        let items: Vec<Doc<'a>> = list
-            .items
-            .iter()
-            .map(|el| self.format_association_element(el))
-            .collect();
+        let items: Vec<Doc<'a>> =
+            list.items.iter().map(|el| self.format_association_element(el)).collect();
         let inner = self.intersperse(items, self.punct(",").append(self.line()));
         self.punct("(")
             .append(self.nest(self.line_().append(inner)))
@@ -260,11 +241,7 @@ impl<'a> Formatter<'a> {
                         .append(self.punct("=>"))
                         .append(self.space())
                         .append(actual);
-                    if i < list.items.len() - 1 {
-                        item.append(self.punct(","))
-                    } else {
-                        item
-                    }
+                    if i < list.items.len() - 1 { item.append(self.punct(",")) } else { item }
                 })
                 .collect();
 

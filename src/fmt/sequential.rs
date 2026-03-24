@@ -116,11 +116,7 @@ impl<'a> Formatter<'a> {
             .collect();
 
         let max_target = parts.iter().map(|p| p.1).max().unwrap_or(0);
-        let op = if kind == SeqAssignKind::Signal {
-            "<="
-        } else {
-            ":="
-        };
+        let op = if kind == SeqAssignKind::Signal { "<=" } else { ":=" };
 
         parts
             .into_iter()
@@ -153,10 +149,8 @@ impl<'a> Formatter<'a> {
 
     fn format_labeled_sequential_statement(&self, stmt: &LabeledSequentialStatement) -> Doc<'a> {
         let label = stmt.label.tree.as_ref().map(|l| l.item.name_utf8());
-        let label_doc = if let Some(ref name) = label {
-            self.ident(name)
-                .append(self.punct(":"))
-                .append(self.space())
+        let label_doc = if let Some(name) = &label {
+            self.ident(name).append(self.punct(":")).append(self.space())
         } else {
             self.nil()
         };
@@ -182,9 +176,9 @@ impl<'a> Formatter<'a> {
             SequentialStatement::SignalReleaseAssignment(a) => {
                 self.format_signal_release_assignment(a)
             }
-            SequentialStatement::ProcedureCall(call) => self
-                .format_call_or_indexed(&call.item)
-                .append(self.punct(";")),
+            SequentialStatement::ProcedureCall(call) => {
+                self.format_call_or_indexed(&call.item).append(self.punct(";"))
+            }
             SequentialStatement::If(s) => self.format_if_statement(s, label),
             SequentialStatement::Case(s) => self.format_case_statement(s, label),
             SequentialStatement::Loop(s) => self.format_loop_statement(s, label),
@@ -391,10 +385,8 @@ impl<'a> Formatter<'a> {
         match &target.item {
             Target::Name(name) => self.format_name(name),
             Target::Aggregate(associations) => {
-                let items: Vec<Doc<'a>> = associations
-                    .iter()
-                    .map(|a| self.format_element_association(a))
-                    .collect();
+                let items: Vec<Doc<'a>> =
+                    associations.iter().map(|a| self.format_element_association(a)).collect();
                 self.punct("(")
                     .append(self.intersperse(items, self.arena.text(", ")))
                     .append(self.punct(")"))
@@ -436,9 +428,7 @@ impl<'a> Formatter<'a> {
                     let end_id = pair[0].get_end_token();
                     let start_id = pair[1].get_start_token();
                     let slice = self.tokens.get_token_slice(end_id, start_id);
-                    slice
-                        .iter()
-                        .any(|t| matches!(&t.comments, Some(c) if c.trailing.is_some()))
+                    slice.iter().any(|t| matches!(&t.comments, Some(c) if c.trailing.is_some()))
                 });
 
                 if has_trailing {
@@ -456,21 +446,15 @@ impl<'a> Formatter<'a> {
                             let end_id = elem.get_end_token();
                             let start_id = elements[i + 1].get_start_token();
                             let comment = self.trailing_comments_in_span(end_id, start_id);
-                            doc = doc
-                                .append(self.punct(","))
-                                .append(comment)
-                                .append(self.hardline());
+                            doc =
+                                doc.append(self.punct(",")).append(comment).append(self.hardline());
                         }
                     }
                     doc.align()
                 } else {
-                    let items: Vec<Doc<'a>> = elements
-                        .iter()
-                        .map(|e| self.format_waveform_element(e))
-                        .collect();
-                    self.intersperse(items, self.punct(",").append(self.line()))
-                        .align()
-                        .group()
+                    let items: Vec<Doc<'a>> =
+                        elements.iter().map(|e| self.format_waveform_element(e)).collect();
+                    self.intersperse(items, self.punct(",").append(self.line())).align().group()
                 }
             }
             Waveform::Unaffected(_) => self.kw("unaffected"),
@@ -606,12 +590,7 @@ impl<'a> Formatter<'a> {
 
             let cond_then = cond_aligned.append(then_sep).group();
 
-            parts.push(
-                self.kw(kw)
-                    .append(self.space())
-                    .append(cond_then)
-                    .append(body),
-            );
+            parts.push(self.kw(kw).append(self.space()).append(cond_then).append(body));
         }
 
         let else_doc = if let Some((else_stmts, _)) = &stmt.conds.else_item {
@@ -644,11 +623,7 @@ impl<'a> Formatter<'a> {
     fn format_case_statement(&self, stmt: &CaseStatement, label: Option<&str>) -> Doc<'a> {
         let expr_doc = self.format_expression(stmt.expression.as_ref());
 
-        let matching = if stmt.is_matching {
-            self.punct("?")
-        } else {
-            self.nil()
-        };
+        let matching = if stmt.is_matching { self.punct("?") } else { self.nil() };
 
         // Build choices docs and measure widths for => alignment.
         let alt_parts: Vec<_> = stmt
@@ -690,9 +665,7 @@ impl<'a> Formatter<'a> {
                 // Single statement without leading comments: try inline.
                 if is_one_liner {
                     let stmt_doc = self.format_labeled_sequential_statement(&stmts[0]);
-                    prefix
-                        .append(self.nest(self.line().append(stmt_doc)))
-                        .group()
+                    prefix.append(self.nest(self.line().append(stmt_doc))).group()
                 } else {
                     let body = self.format_sequential_statements(stmts);
                     prefix.append(body)
@@ -708,11 +681,7 @@ impl<'a> Formatter<'a> {
             self.nil()
         };
 
-        let end_matching = if stmt.is_matching {
-            self.punct("?")
-        } else {
-            self.nil()
-        };
+        let end_matching = if stmt.is_matching { self.punct("?") } else { self.nil() };
 
         self.kw("case")
             .append(matching)
@@ -781,8 +750,7 @@ impl<'a> Formatter<'a> {
 
     fn format_next_statement(&self, stmt: &NextStatement) -> Doc<'a> {
         let label_doc = if let Some(label) = &stmt.loop_label {
-            self.space()
-                .append(self.ident(&label.item.item.name_utf8()))
+            self.space().append(self.ident(&label.item.item.name_utf8()))
         } else {
             self.nil()
         };
@@ -794,16 +762,12 @@ impl<'a> Formatter<'a> {
         } else {
             self.nil()
         };
-        self.kw("next")
-            .append(label_doc)
-            .append(cond_doc)
-            .append(self.punct(";"))
+        self.kw("next").append(label_doc).append(cond_doc).append(self.punct(";"))
     }
 
     fn format_exit_statement(&self, stmt: &ExitStatement) -> Doc<'a> {
         let label_doc = if let Some(label) = &stmt.loop_label {
-            self.space()
-                .append(self.ident(&label.item.item.name_utf8()))
+            self.space().append(self.ident(&label.item.item.name_utf8()))
         } else {
             self.nil()
         };
@@ -815,9 +779,6 @@ impl<'a> Formatter<'a> {
         } else {
             self.nil()
         };
-        self.kw("exit")
-            .append(label_doc)
-            .append(cond_doc)
-            .append(self.punct(";"))
+        self.kw("exit").append(label_doc).append(cond_doc).append(self.punct(";"))
     }
 }

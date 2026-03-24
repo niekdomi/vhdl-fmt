@@ -53,11 +53,7 @@ impl<'a> Formatter<'a> {
 
     fn format_function_specification(&self, spec: &FunctionSpecification) -> Doc<'a> {
         // Optional purity keyword: `pure` / `impure`
-        let purity_doc = if spec.pure {
-            self.kw("pure").append(self.space())
-        } else {
-            self.nil()
-        };
+        let purity_doc = if spec.pure { self.kw("pure").append(self.space()) } else { self.nil() };
 
         let name = self.subprogram_designator(&spec.designator.tree.item);
 
@@ -101,8 +97,7 @@ impl<'a> Formatter<'a> {
         );
 
         let map_doc = if let Some(map) = &header.map_aspect {
-            self.space()
-                .append(self.format_named_map_aspect("generic", map))
+            self.space().append(self.format_named_map_aspect("generic", map))
         } else {
             self.nil()
         };
@@ -120,10 +115,7 @@ impl<'a> Formatter<'a> {
         let decls_doc = if body.declarations.is_empty() {
             self.nil()
         } else {
-            self.nest(
-                self.hardline()
-                    .append(self.format_declarations(&body.declarations)),
-            )
+            self.nest(self.hardline().append(self.format_declarations(&body.declarations)))
         };
 
         let stmts_doc = if body.statements.is_empty() {
@@ -210,8 +202,7 @@ impl<'a> Formatter<'a> {
         };
 
         let generic_map_doc = if let Some(gm) = &inst.generic_map {
-            self.space()
-                .append(self.format_named_map_aspect("generic", gm))
+            self.space().append(self.format_named_map_aspect("generic", gm))
         } else {
             self.nil()
         };

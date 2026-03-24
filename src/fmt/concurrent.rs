@@ -126,10 +126,8 @@ impl<'a> Formatter<'a> {
 
     fn format_labeled_concurrent_statement(&self, stmt: &LabeledConcurrentStatement) -> Doc<'a> {
         let label = stmt.label.tree.as_ref().map(|l| l.item.name_utf8());
-        let label_doc = if let Some(ref name) = label {
-            self.ident(name)
-                .append(self.punct(":"))
-                .append(self.space())
+        let label_doc = if let Some(name) = &label {
+            self.ident(name).append(self.punct(":")).append(self.space())
         } else {
             self.nil()
         };
@@ -236,10 +234,7 @@ impl<'a> Formatter<'a> {
         let decls_doc = if block.decl.is_empty() {
             self.nil()
         } else {
-            self.nest(
-                self.hardline()
-                    .append(self.format_declarations(&block.decl)),
-            )
+            self.nest(self.hardline().append(self.format_declarations(&block.decl)))
         };
 
         let stmts_doc = self.format_concurrent_statements(&block.statements);
@@ -303,10 +298,7 @@ impl<'a> Formatter<'a> {
         let decls_doc = if process.decl.is_empty() {
             self.nil()
         } else {
-            self.nest(
-                self.hardline()
-                    .append(self.format_declarations(&process.decl)),
-            )
+            self.nest(self.hardline().append(self.format_declarations(&process.decl)))
         };
 
         let stmts_doc = self.format_sequential_statements(&process.statements);
@@ -458,10 +450,9 @@ impl<'a> Formatter<'a> {
 
     fn format_instantiation_statement(&self, inst: &InstantiationStatement) -> Doc<'a> {
         let unit_doc = match &inst.unit {
-            InstantiatedUnit::Component(name) => self
-                .kw("component")
-                .append(self.space())
-                .append(self.format_name(&name.item)),
+            InstantiatedUnit::Component(name) => {
+                self.kw("component").append(self.space()).append(self.format_name(&name.item))
+            }
             InstantiatedUnit::Entity(name, arch) => {
                 let name_doc = self.format_name(&name.item);
                 // arch is Option<WithRef<Ident>> = Option<WithRef<WithToken<Symbol>>>
@@ -473,10 +464,7 @@ impl<'a> Formatter<'a> {
                 } else {
                     self.nil()
                 };
-                self.kw("entity")
-                    .append(self.space())
-                    .append(name_doc)
-                    .append(arch_doc)
+                self.kw("entity").append(self.space()).append(name_doc).append(arch_doc)
             }
             InstantiatedUnit::Configuration(name) => self
                 .kw("configuration")
@@ -485,27 +473,18 @@ impl<'a> Formatter<'a> {
         };
 
         let generic_map_doc = if let Some(gm) = &inst.generic_map {
-            self.nest(
-                self.hardline()
-                    .append(self.format_named_map_aspect("generic", gm)),
-            )
+            self.nest(self.hardline().append(self.format_named_map_aspect("generic", gm)))
         } else {
             self.nil()
         };
 
         let port_map_doc = if let Some(pm) = &inst.port_map {
-            self.nest(
-                self.hardline()
-                    .append(self.format_named_map_aspect("port", pm)),
-            )
+            self.nest(self.hardline().append(self.format_named_map_aspect("port", pm)))
         } else {
             self.nil()
         };
 
-        unit_doc
-            .append(generic_map_doc)
-            .append(port_map_doc)
-            .append(self.punct(";"))
+        unit_doc.append(generic_map_doc).append(port_map_doc).append(self.punct(";"))
     }
 
     // -----------------------------------------------------------------------
@@ -677,9 +656,7 @@ impl<'a> Formatter<'a> {
         // Optional inner `end [label] ;`
         // body.end_label is Option<TokenId> — no text available without token access.
         let inner_end_doc = if body.end_token.is_some() {
-            self.hardline()
-                .append(self.kw("end"))
-                .append(self.punct(";"))
+            self.hardline().append(self.kw("end")).append(self.punct(";"))
         } else {
             self.nil()
         };

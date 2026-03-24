@@ -148,7 +148,7 @@ impl<'a> Formatter<'a> {
         let Some(token) = self.tokens.get_token(id) else {
             return self.nil();
         };
-        let Some(comments) = &token.comments.as_ref().filter(|c| !c.leading.is_empty()) else {
+        let Some(comments) = token.comments.as_ref().filter(|c| !c.leading.is_empty()) else {
             return self.nil();
         };
 
@@ -321,11 +321,7 @@ impl<'a> Formatter<'a> {
                 } else {
                     let (_, prev_end) = get_tokens(&items[idx - 1]);
                     let trivia = self.node_trivia(prev_end, start);
-                    body = body
-                        .append(self.hardline())
-                        .append(trivia)
-                        .append(item_doc)
-                        .append(tc);
+                    body = body.append(self.hardline()).append(trivia).append(item_doc).append(tc);
                 }
             }
             i = group_start + count;
@@ -385,9 +381,5 @@ pub const fn operator_str(op: Operator) -> &'static str {
 /// Format a comment's text.  We accept the two fields directly so we never
 /// have to name the private `vhdl_lang::syntax::Comment` type.
 fn format_comment_text_parts(value: &str, multi_line: bool) -> String {
-    if multi_line {
-        format!("/*{value}*/")
-    } else {
-        format!("--{value}")
-    }
+    if multi_line { format!("/*{value}*/") } else { format!("--{value}") }
 }

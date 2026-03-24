@@ -48,11 +48,7 @@ impl<'a> Formatter<'a> {
                 .items
                 .iter()
                 .filter_map(|item| {
-                    if let InterfaceDeclaration::Object(obj) = item {
-                        Some(obj)
-                    } else {
-                        None
-                    }
+                    if let InterfaceDeclaration::Object(obj) = item { Some(obj) } else { None }
                 })
                 .collect();
             Some(self.format_aligned_interface_objects(&objs))
@@ -97,11 +93,7 @@ impl<'a> Formatter<'a> {
             } else {
                 let prev_end = list.items[i - 1].get_end_token();
                 let trivia = self.node_trivia(prev_end, item.get_start_token());
-                inner = inner
-                    .append(self.hardline())
-                    .append(trivia)
-                    .append(item_doc)
-                    .append(tc);
+                inner = inner.append(self.hardline()).append(trivia).append(item_doc).append(tc);
             }
         }
 
@@ -111,11 +103,7 @@ impl<'a> Formatter<'a> {
             .append(self.hardline())
             .append(self.punct(")"));
 
-        if let Some(t) = trailing {
-            body.append(self.punct(t))
-        } else {
-            body
-        }
+        if let Some(t) = trailing { body.append(self.punct(t)) } else { body }
     }
 
     /// Format a group of interface objects with aligned `:`, mode keywords, and types.
@@ -154,13 +142,7 @@ impl<'a> Formatter<'a> {
                             self.nil()
                         };
 
-                        (
-                            prefix,
-                            prefix_width,
-                            mode_kw,
-                            mode_kw_width,
-                            subtype.append(default),
-                        )
+                        (prefix, prefix_width, mode_kw, mode_kw_width, subtype.append(default))
                     }
                     ModeIndication::View(_) => {
                         let mode_doc = self.format_mode_indication(&obj.mode);
@@ -193,9 +175,7 @@ impl<'a> Formatter<'a> {
                 } else if max_mode_kw > 0 {
                     // No mode keyword but others have one — add padding.
                     let mode_pad = " ".repeat(max_mode_kw + 1);
-                    doc = doc
-                        .append(self.arena.text(mode_pad))
-                        .append(subtype_default);
+                    doc = doc.append(self.arena.text(mode_pad)).append(subtype_default);
                 } else {
                     doc = doc.append(subtype_default);
                 }
@@ -227,10 +207,9 @@ impl<'a> Formatter<'a> {
                     ObjectClass::Signal => self.kw("signal"),
                     ObjectClass::Variable => self.kw("variable"),
                     ObjectClass::Constant => self.kw("constant"),
-                    ObjectClass::SharedVariable => self
-                        .kw("shared")
-                        .append(self.space())
-                        .append(self.kw("variable")),
+                    ObjectClass::SharedVariable => {
+                        self.kw("shared").append(self.space()).append(self.kw("variable"))
+                    }
                 };
                 Some(class_kw)
             }
@@ -242,9 +221,7 @@ impl<'a> Formatter<'a> {
     fn format_interface_obj_prefix(&self, obj: &InterfaceObjectDeclaration) -> Doc<'a> {
         let class_doc = self.interface_class_doc(obj);
         let idents_doc = self.intersperse(
-            obj.idents
-                .iter()
-                .map(|id| self.ident(&id.tree.item.name_utf8())),
+            obj.idents.iter().map(|id| self.ident(&id.tree.item.name_utf8())),
             self.arena.text(", "),
         );
         if let Some(cls) = class_doc {
@@ -278,9 +255,7 @@ impl<'a> Formatter<'a> {
 
         // Identifier list  (e.g. `a, b, c`)
         let idents_doc = self.intersperse(
-            obj.idents
-                .iter()
-                .map(|id| self.ident(&id.tree.item.name_utf8())),
+            obj.idents.iter().map(|id| self.ident(&id.tree.item.name_utf8())),
             self.arena.text(", "),
         );
 
@@ -301,9 +276,7 @@ impl<'a> Formatter<'a> {
 
     fn format_interface_file_declaration(&self, decl: &InterfaceFileDeclaration) -> Doc<'a> {
         let idents_doc = self.intersperse(
-            decl.idents
-                .iter()
-                .map(|id| self.ident(&id.tree.item.name_utf8())),
+            decl.idents.iter().map(|id| self.ident(&id.tree.item.name_utf8())),
             self.arena.text(", "), // DocAllocator in scope
         );
         self.kw("file")
@@ -405,11 +378,7 @@ impl<'a> Formatter<'a> {
         };
 
         let base = subtype.append(default);
-        if let Some(m) = mode_doc {
-            m.append(base)
-        } else {
-            base
-        }
+        if let Some(m) = mode_doc { m.append(base) } else { base }
     }
 
     fn format_mode_view_indication(&self, mode: &ModeViewIndication) -> Doc<'a> {
@@ -428,19 +397,14 @@ impl<'a> Formatter<'a> {
         } else {
             self.nil()
         };
-        self.kw("view")
-            .append(self.space())
-            .append(name_wrapped)
-            .append(subtype)
+        self.kw("view").append(self.space()).append(name_wrapped).append(subtype)
     }
 
     pub fn format_mode_view_element(&self, elem: &ModeViewElement) -> Doc<'a> {
         use vhdl_lang::ast::ElementMode;
         // Identifier list  (e.g. `a, b, c`)
         let idents_doc = self.intersperse(
-            elem.names
-                .iter()
-                .map(|id| self.ident(&id.tree.item.name_utf8())),
+            elem.names.iter().map(|id| self.ident(&id.tree.item.name_utf8())),
             self.arena.text(", "), // DocAllocator in scope
         );
         let mode_doc = match &elem.mode {
@@ -455,10 +419,9 @@ impl<'a> Formatter<'a> {
                 };
                 self.kw(s)
             }
-            ElementMode::Record(name) => self
-                .kw("view")
-                .append(self.space())
-                .append(self.format_name(&name.item)),
+            ElementMode::Record(name) => {
+                self.kw("view").append(self.space()).append(self.format_name(&name.item))
+            }
             ElementMode::Array(name) => self
                 .kw("view")
                 .append(self.space())
