@@ -5,6 +5,7 @@ use vhdl_lang::ast::{
     InterfaceType, MapAspect, ModeIndication, ModeViewElement, ModeViewIndication,
     ModeViewIndicationKind, ObjectClass, SimpleModeIndication, SubprogramDefault,
 };
+use vhdl_lang::HasTokenSpan;
 
 use crate::fmt::{Doc, Formatter};
 
@@ -61,29 +62,49 @@ impl<'a> Formatter<'a> {
 
         let mut aligned_iter = aligned.as_ref().map(|v| v.iter());
 
-        let items: Vec<Doc<'a>> = list
-            .items
-            .iter()
-            .enumerate()
-            .map(|(i, item)| {
-                let item_doc = if matches!(item, InterfaceDeclaration::Object(_)) {
-                    if let Some(ref mut iter) = aligned_iter {
-                        iter.next().unwrap().clone()
-                    } else {
-                        self.format_interface_declaration(item)
-                    }
+        // Build items with trailing comments and blank line preservation.
+        let mut inner = self.nil();
+        for (i, item) in list.items.iter().enumerate() {
+            let item_doc = if matches!(item, InterfaceDeclaration::Object(_)) {
+                if let Some(ref mut iter) = aligned_iter {
+                    iter.next().unwrap().clone()
                 } else {
                     self.format_interface_declaration(item)
-                };
-                if i < list.items.len() - 1 {
-                    item_doc.append(self.punct(";"))
-                } else {
-                    item_doc
                 }
-            })
-            .collect();
+            } else {
+                self.format_interface_declaration(item)
+            };
 
-        let inner = self.intersperse(items, self.hardline());
+            // Add semicolon for all but last item.
+            let item_doc = if i < list.items.len() - 1 {
+                item_doc.append(self.punct(";"))
+            } else {
+                item_doc
+            };
+
+            // Add trailing comment(s).
+            let item_end = item.get_end_token();
+            let tc = if i < list.items.len() - 1 {
+                let next_start = list.items[i + 1].get_start_token();
+                self.trailing_comments_in_span(item_end, next_start)
+            } else {
+                self.trailing_comment(item_end)
+            };
+
+            if i == 0 {
+                let trivia = self.leading_comments(item.get_start_token());
+                inner = inner.append(trivia).append(item_doc).append(tc);
+            } else {
+                let prev_end = list.items[i - 1].get_end_token();
+                let trivia = self.node_trivia(prev_end, item.get_start_token());
+                inner = inner
+                    .append(self.hardline())
+                    .append(trivia)
+                    .append(item_doc)
+                    .append(tc);
+            }
+        }
+
         let body = self
             .punct("(")
             .append(self.nest(self.hardline().append(inner)))
@@ -97,33 +118,81 @@ impl<'a> Formatter<'a> {
         }
     }
 
-    /// Format a group of interface objects with aligned `:`.
+    /// Format a group of interface objects with aligned `:`, mode keywords, and types.
     fn format_aligned_interface_objects(
         &self,
         objs: &[&InterfaceObjectDeclaration],
     ) -> Vec<Doc<'a>> {
+        use vhdl_lang::ast::Mode;
+
+        // Collect parts: (prefix, prefix_width, mode_kw, mode_kw_width, subtype_default_doc)
         let parts: Vec<_> = objs
             .iter()
             .map(|obj| {
                 let prefix = self.format_interface_obj_prefix(obj);
                 let prefix_width = self.doc_width(&prefix);
-                let mode_doc = self.format_mode_indication(&obj.mode);
-                (prefix, prefix_width, mode_doc)
+
+                match &obj.mode {
+                    ModeIndication::Simple(simple) => {
+                        let mode_str = simple.mode.as_ref().map(|m| match m.item {
+                            Mode::In => "in",
+                            Mode::Out => "out",
+                            Mode::InOut => "inout",
+                            Mode::Buffer => "buffer",
+                            Mode::Linkage => "linkage",
+                        });
+                        let mode_kw: Option<Doc<'a>> = mode_str.map(|s| self.kw(s));
+                        let mode_kw_width = mode_str.map_or(0, |s| s.len());
+
+                        let subtype = self.format_subtype_indication(&simple.subtype_indication);
+                        let default = if let Some(expr) = &simple.expression {
+                            self.space()
+                                .append(self.punct(":="))
+                                .append(self.space())
+                                .append(self.format_expression(expr.as_ref()))
+                        } else {
+                            self.nil()
+                        };
+
+                        (prefix, prefix_width, mode_kw, mode_kw_width, subtype.append(default))
+                    }
+                    ModeIndication::View(_) => {
+                        let mode_doc = self.format_mode_indication(&obj.mode);
+                        (prefix, prefix_width, None, 0, mode_doc)
+                    }
+                }
             })
             .collect();
 
         let max_prefix = parts.iter().map(|p| p.1).max().unwrap_or(0);
+        let max_mode_kw = parts.iter().map(|p| p.3).max().unwrap_or(0);
 
         parts
             .into_iter()
-            .map(|(prefix, pw, mode_doc)| {
-                let pad = " ".repeat(max_prefix - pw);
-                prefix
-                    .append(self.arena.text(pad))
+            .map(|(prefix, pw, mode_kw, mkw, subtype_default)| {
+                let prefix_pad = " ".repeat(max_prefix - pw);
+                let mut doc = prefix
+                    .append(self.arena.text(prefix_pad))
                     .append(self.space())
                     .append(self.punct(":"))
-                    .append(self.space())
-                    .append(mode_doc)
+                    .append(self.space());
+
+                if let Some(kw) = mode_kw {
+                    let mode_pad = " ".repeat(max_mode_kw - mkw);
+                    doc = doc
+                        .append(kw)
+                        .append(self.arena.text(mode_pad))
+                        .append(self.space())
+                        .append(subtype_default);
+                } else if max_mode_kw > 0 {
+                    // No mode keyword but others have one — add padding.
+                    let mode_pad = " ".repeat(max_mode_kw + 1);
+                    doc = doc.append(self.arena.text(mode_pad)).append(subtype_default);
+                } else {
+                    doc = doc.append(subtype_default);
+                }
+
+                doc
             })
             .collect()
     }
@@ -406,6 +475,6 @@ impl<'a> Formatter<'a> {
             .append(self.space())
             .append(self.kw("map"))
             .append(self.space())
-            .append(self.format_association_list_parens(&aspect.list))
+            .append(self.format_map_association_list_parens(&aspect.list))
     }
 }

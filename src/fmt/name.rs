@@ -215,4 +215,67 @@ impl<'a> Formatter<'a> {
             .append(self.punct(")"))
             .group()
     }
+
+    /// Format a map association list (generic map / port map) with aligned `=>`
+    /// and always multiline when there are 2+ named items.
+    pub fn format_map_association_list_parens(
+        &self,
+        list: &SeparatedList<AssociationElement>,
+    ) -> Doc<'a> {
+        if list.items.is_empty() {
+            return self.punct("(").append(self.punct(")"));
+        }
+
+        // Check if all elements are named (have formal => actual).
+        let all_named = list.items.iter().all(|el| el.formal.is_some());
+
+        if all_named && list.items.len() > 1 {
+            // Measure formal widths for => alignment.
+            let parts: Vec<_> = list
+                .items
+                .iter()
+                .map(|el| {
+                    let formal = self.format_name(&el.formal.as_ref().unwrap().item);
+                    let formal_width = self.doc_width(&formal);
+                    let actual = match &el.actual.item {
+                        ActualPart::Expression(expr) => {
+                            self.format_expression(WithTokenSpan::new(expr, el.actual.span))
+                        }
+                        ActualPart::Open => self.kw("open"),
+                    };
+                    (formal, formal_width, actual)
+                })
+                .collect();
+
+            let max_formal = parts.iter().map(|p| p.1).max().unwrap_or(0);
+
+            let items: Vec<Doc<'a>> = parts
+                .into_iter()
+                .enumerate()
+                .map(|(i, (formal, fw, actual))| {
+                    let pad = " ".repeat(max_formal - fw);
+                    let item = formal
+                        .append(self.arena.text(pad))
+                        .append(self.space())
+                        .append(self.punct("=>"))
+                        .append(self.space())
+                        .append(actual);
+                    if i < list.items.len() - 1 {
+                        item.append(self.punct(","))
+                    } else {
+                        item
+                    }
+                })
+                .collect();
+
+            let inner = self.join_hardline(items);
+            self.punct("(")
+                .append(self.nest(self.hardline().append(inner)))
+                .append(self.hardline())
+                .append(self.punct(")"))
+        } else {
+            // Single item or positional — use standard formatting.
+            self.format_association_list_parens(list)
+        }
+    }
 }

@@ -9,14 +9,22 @@ on:
       - synchronize
 
 jobs:
-  # spellcheck: # TODO: Add codebook here, there's no cli yet hence we can't use it in CI for now
-  #   runs-on: ubuntu-latest
-  #   name: Spellcheck
-  #   timeout-minutes: 1
+  spellcheck:
+    runs-on: ubuntu-latest
+    name: Spellcheck
+    timeout-minutes: 1
 
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v6
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install typstyle
+        uses: taiki-e/install-action@v2
+        with:
+          tool: codebook-lsp
+
+      - name: Check Formatting
+        run: codebook-lsp lint .
 
   build:
     runs-on: ubuntu-latest

@@ -21,7 +21,15 @@ impl<'a> Formatter<'a> {
     ) -> Doc<'a> {
         let body = self.format_item_list(
             statements,
-            |s| (s.statement.get_start_token(), s.statement.get_end_token()),
+            |s| {
+                let start = s
+                    .label
+                    .tree
+                    .as_ref()
+                    .map(|l| l.token)
+                    .unwrap_or_else(|| s.statement.get_start_token());
+                (start, s.statement.get_end_token())
+            },
             |s, items, i| s.try_group_concurrent(items, i),
             |s, items, start, len| s.format_concurrent_group(items, start, len),
             |s, stmt| s.format_labeled_concurrent_statement(stmt),

@@ -28,7 +28,15 @@ impl<'a> Formatter<'a> {
     ) -> Doc<'a> {
         let body = self.format_item_list(
             statements,
-            |s| (s.statement.get_start_token(), s.statement.get_end_token()),
+            |s| {
+                let start = s
+                    .label
+                    .tree
+                    .as_ref()
+                    .map(|l| l.token)
+                    .unwrap_or_else(|| s.statement.get_start_token());
+                (start, s.statement.get_end_token())
+            },
             |s, items, i| s.try_group_sequential(items, i),
             |s, items, start, len| s.format_sequential_group(items, start, len),
             |s, stmt| s.format_labeled_sequential_statement(stmt),
@@ -651,16 +659,28 @@ impl<'a> Formatter<'a> {
             .map(|alt| {
                 let choices = self.format_choices(&alt.choices);
                 let choices_width = self.doc_width(&choices);
-                (choices, choices_width, &alt.item)
+                let is_one_liner = alt.item.len() == 1
+                    && !self.has_leading_comments_on(alt.item[0].statement.get_start_token());
+                (choices, choices_width, &alt.item, is_one_liner)
             })
             .collect();
 
-        let max_choices_width = alt_parts.iter().map(|p| p.1).max().unwrap_or(0);
+        // Only align => when ALL alternatives are one-liners.
+        let all_one_liners = alt_parts.iter().all(|p| p.3);
+        let max_choices_width = if all_one_liners {
+            alt_parts.iter().map(|p| p.1).max().unwrap_or(0)
+        } else {
+            0
+        };
 
         let alternatives: Vec<Doc<'a>> = alt_parts
             .into_iter()
-            .map(|(choices, cw, stmts)| {
-                let pad = " ".repeat(max_choices_width - cw);
+            .map(|(choices, cw, stmts, is_one_liner)| {
+                let pad = if max_choices_width > 0 {
+                    " ".repeat(max_choices_width - cw)
+                } else {
+                    String::new()
+                };
                 let prefix = self
                     .kw("when")
                     .append(self.space())
@@ -670,9 +690,7 @@ impl<'a> Formatter<'a> {
                     .append(self.punct("=>"));
 
                 // Single statement without leading comments: try inline.
-                if stmts.len() == 1
-                    && !self.has_leading_comments_on(stmts[0].statement.get_start_token())
-                {
+                if is_one_liner {
                     let stmt_doc = self.format_labeled_sequential_statement(&stmts[0]);
                     prefix
                         .append(self.nest(self.line().append(stmt_doc)))

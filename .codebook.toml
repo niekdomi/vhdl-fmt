@@ -1,9 +1,34 @@
 dictionaries = ["en_us"]
-words = []
-ignore_paths = [
-    "**/*.yaml",
-    "target/**/*",
-    ".git/**/*",
+words = [
+    "alignable",
+    "assocs",
+    "colour",
+    "downto",
+    "groupable",
+    "hardline",
+    "idents",
+    "inout",
+    "leftof",
+    "lits",
+    "nand",
+    "nthen",
+    "objs",
+    "punct",
+    "rightof",
+    "rol",
+    "ror",
+    "sev",
+    "sll",
+    "srl",
+    "stmts",
+    "succ",
+    "unformatted",
+    "vunit",
+    "vunits",
+    "xnor"
+]
+include_paths = [
+    "**/*.rs",
 ]
 use_global = false
 min_word_length = 0

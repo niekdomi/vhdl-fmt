@@ -121,6 +121,10 @@ impl<'a> Formatter<'a> {
             self.nil()
         };
 
+        // Leading comments on the `end` keyword.
+        let end_leading = self.leading_comments(entity.end_token);
+        let end_trailing = self.trailing_comment(entity.get_end_token());
+
         // Always emit `end entity <name>`
         context_doc
             .append(self.kw("entity"))
@@ -133,12 +137,14 @@ impl<'a> Formatter<'a> {
             .append(decls_doc)
             .append(begin_stmts_doc)
             .append(self.hardline())
+            .append(end_leading)
             .append(self.kw("end"))
             .append(self.space())
             .append(self.kw("entity"))
             .append(self.space())
             .append(name)
             .append(self.punct(";"))
+            .append(end_trailing)
     }
 
     // -----------------------------------------------------------------------
@@ -160,6 +166,12 @@ impl<'a> Formatter<'a> {
 
         let stmts_doc = self.format_concurrent_statements(&arch.statements);
 
+        // Leading comments on the `end` keyword (e.g. separator lines).
+        let end_leading = self.leading_comments(arch.end_token);
+
+        // Trailing comment after the closing `;`.
+        let end_trailing = self.trailing_comment(arch.get_end_token());
+
         // Always emit `end architecture <name>`
         context_doc
             .append(self.kw("architecture"))
@@ -176,12 +188,14 @@ impl<'a> Formatter<'a> {
             .append(self.kw("begin"))
             .append(stmts_doc)
             .append(self.hardline())
+            .append(end_leading)
             .append(self.kw("end"))
             .append(self.space())
             .append(self.kw("architecture"))
             .append(self.space())
             .append(arch_name)
             .append(self.punct(";"))
+            .append(end_trailing)
     }
 
     // -----------------------------------------------------------------------
