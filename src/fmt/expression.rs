@@ -73,7 +73,7 @@ impl<'a> Formatter<'a> {
     }
 
     /// Flatten a left-associative chain of the same binary operator into a
-    /// list of operands. For `((a or b) or c) or d` with target_op="or",
+    /// list of operands. For `((a or b) or c) or d` with `target_op="or"`,
     /// produces `[a, b, c, d]`. Operands that use a different operator are
     /// formatted as complete sub-expressions.
     fn collect_binary_chain(

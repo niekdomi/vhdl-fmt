@@ -33,13 +33,12 @@ impl<'a> Formatter<'a> {
                     .label
                     .tree
                     .as_ref()
-                    .map(|l| l.token)
-                    .unwrap_or_else(|| s.statement.get_start_token());
+                    .map_or_else(|| s.statement.get_start_token(), |l| l.token);
                 (start, s.statement.get_end_token())
             },
-            |s, items, i| s.try_group_sequential(items, i),
-            |s, items, start, len| s.format_sequential_group(items, start, len),
-            |s, stmt| s.format_labeled_sequential_statement(stmt),
+            Self::try_group_sequential,
+            Self::format_sequential_group,
+            Self::format_labeled_sequential_statement,
         );
         self.nest(self.hardline().append(body))
     }
@@ -78,7 +77,7 @@ impl<'a> Formatter<'a> {
     }
 
     /// Classify a sequential statement for alignment grouping.
-    fn seq_assignment_kind(&self, stmt: &LabeledSequentialStatement) -> SeqAssignKind {
+    const fn seq_assignment_kind(&self, stmt: &LabeledSequentialStatement) -> SeqAssignKind {
         // Only align unlabeled simple assignments.
         if stmt.label.tree.is_some() {
             return SeqAssignKind::None;
@@ -134,8 +133,7 @@ impl<'a> Formatter<'a> {
                         } else {
                             self.nil()
                         };
-                        delay_doc
-                            .append(self.format_assignment_rhs(&a.rhs, |f, w| f.format_waveform(w)))
+                        delay_doc.append(self.format_assignment_rhs(&a.rhs, Self::format_waveform))
                     }
                     SequentialStatement::VariableAssignment(a) => {
                         self.format_assignment_rhs(&a.rhs, |f, e| f.format_expression(e.as_ref()))
@@ -341,7 +339,7 @@ impl<'a> Formatter<'a> {
             self.nil()
         };
 
-        let rhs = self.format_assignment_rhs(&stmt.rhs, |f, w| f.format_waveform(w));
+        let rhs = self.format_assignment_rhs(&stmt.rhs, Self::format_waveform);
 
         target
             .append(self.space())

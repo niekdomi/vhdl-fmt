@@ -1,11 +1,11 @@
 use pretty::DocAllocator;
+use vhdl_lang::HasTokenSpan;
 use vhdl_lang::ast::{
     InterfaceDeclaration, InterfaceFileDeclaration, InterfaceList, InterfaceObjectDeclaration,
     InterfacePackageDeclaration, InterfacePackageGenericMapAspect, InterfaceSubprogramDeclaration,
     InterfaceType, MapAspect, ModeIndication, ModeViewElement, ModeViewIndication,
     ModeViewIndicationKind, ObjectClass, SimpleModeIndication, SubprogramDefault,
 };
-use vhdl_lang::HasTokenSpan;
 
 use crate::fmt::{Doc, Formatter};
 
@@ -142,7 +142,7 @@ impl<'a> Formatter<'a> {
                             Mode::Linkage => "linkage",
                         });
                         let mode_kw: Option<Doc<'a>> = mode_str.map(|s| self.kw(s));
-                        let mode_kw_width = mode_str.map_or(0, |s| s.len());
+                        let mode_kw_width = mode_str.map_or(0, str::len);
 
                         let subtype = self.format_subtype_indication(&simple.subtype_indication);
                         let default = if let Some(expr) = &simple.expression {
@@ -154,7 +154,13 @@ impl<'a> Formatter<'a> {
                             self.nil()
                         };
 
-                        (prefix, prefix_width, mode_kw, mode_kw_width, subtype.append(default))
+                        (
+                            prefix,
+                            prefix_width,
+                            mode_kw,
+                            mode_kw_width,
+                            subtype.append(default),
+                        )
                     }
                     ModeIndication::View(_) => {
                         let mode_doc = self.format_mode_indication(&obj.mode);
@@ -187,7 +193,9 @@ impl<'a> Formatter<'a> {
                 } else if max_mode_kw > 0 {
                     // No mode keyword but others have one — add padding.
                     let mode_pad = " ".repeat(max_mode_kw + 1);
-                    doc = doc.append(self.arena.text(mode_pad)).append(subtype_default);
+                    doc = doc
+                        .append(self.arena.text(mode_pad))
+                        .append(subtype_default);
                 } else {
                     doc = doc.append(subtype_default);
                 }
@@ -199,7 +207,7 @@ impl<'a> Formatter<'a> {
 
     /// Returns true if the class keyword is the implicit default for the
     /// interface context and should be omitted.
-    fn is_implicit_class(list_type: &InterfaceType, class: &ObjectClass) -> bool {
+    const fn is_implicit_class(list_type: &InterfaceType, class: &ObjectClass) -> bool {
         matches!(
             (list_type, class),
             (InterfaceType::Port, ObjectClass::Signal)

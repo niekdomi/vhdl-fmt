@@ -113,12 +113,12 @@ impl<'a> Formatter<'a> {
             )
         };
 
-        let begin_stmts_doc = if !entity.statements.is_empty() {
+        let begin_stmts_doc = if entity.statements.is_empty() {
+            self.nil()
+        } else {
             self.hardline()
                 .append(self.kw("begin"))
                 .append(self.format_concurrent_statements(&entity.statements))
-        } else {
-            self.nil()
         };
 
         // Leading comments on the `end` keyword.

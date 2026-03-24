@@ -20,9 +20,9 @@ impl<'a> Formatter<'a> {
         self.format_item_list(
             decls,
             |d| (d.get_start_token(), d.get_end_token()),
-            |s, items, i| s.try_group_declarations(items, i),
-            |s, items, start, len| s.format_declaration_group(items, start, len),
-            |s, d| s.format_declaration(d),
+            super::Formatter::try_group_declarations,
+            super::Formatter::format_declaration_group,
+            Self::format_declaration,
         )
     }
 

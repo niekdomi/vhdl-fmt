@@ -18,14 +18,14 @@ pub type Doc<'a> = DocBuilder<'a, Arena<'a>>;
 pub struct Formatter<'a> {
     pub arena: &'a Arena<'a>,
     pub config: &'a FormatConfig,
-    /// Token list for the current design unit (from DesignFile::design_units).
+    /// Token list for the current design unit (from `DesignFile::design_units`).
     /// Empty slice when no token context is available.
     pub tokens: &'a [Token],
 }
 
 impl<'a> Formatter<'a> {
     /// Create a formatter with a token slice for a specific design unit.
-    pub fn with_tokens(
+    pub const fn with_tokens(
         arena: &'a Arena<'a>,
         config: &'a FormatConfig,
         tokens: &'a [Token],
@@ -116,7 +116,7 @@ impl<'a> Formatter<'a> {
     pub fn designator(&self, d: &Designator) -> Doc<'a> {
         match d {
             Designator::Identifier(sym) => self.ident(&sym.name_utf8()),
-            Designator::OperatorSymbol(op) => self.arena.text(format!("\"{}\"", operator_str(op))),
+            Designator::OperatorSymbol(op) => self.arena.text(format!("\"{}\"", operator_str(*op))),
             Designator::Character(c) => self.arena.text(format!("'{}'", *c as char)),
             Designator::Anonymous(_) => self.nil(),
         }
@@ -127,7 +127,7 @@ impl<'a> Formatter<'a> {
         match d {
             SubprogramDesignator::Identifier(sym) => self.ident(&sym.name_utf8()),
             SubprogramDesignator::OperatorSymbol(op) => {
-                self.arena.text(format!("\"{}\"", operator_str(op)))
+                self.arena.text(format!("\"{}\"", operator_str(*op)))
             }
         }
     }
@@ -145,13 +145,11 @@ impl<'a> Formatter<'a> {
         if self.tokens.is_empty() {
             return self.nil();
         }
-        let token = match self.tokens.get_token(id) {
-            Some(t) => t,
-            None => return self.nil(),
+        let Some(token) = self.tokens.get_token(id) else {
+            return self.nil();
         };
-        let comments = match &token.comments {
-            Some(c) if !c.leading.is_empty() => c,
-            _ => return self.nil(),
+        let Some(comments) = &token.comments.as_ref().filter(|c| !c.leading.is_empty()) else {
+            return self.nil();
         };
 
         let mut doc = self.nil();
@@ -182,13 +180,11 @@ impl<'a> Formatter<'a> {
         if self.tokens.is_empty() {
             return false;
         }
-        let prev = match self.tokens.get_token(prev_id) {
-            Some(t) => t,
-            None => return false,
+        let Some(prev) = self.tokens.get_token(prev_id) else {
+            return false;
         };
-        let next = match self.tokens.get_token(next_id) {
-            Some(t) => t,
-            None => return false,
+        let Some(next) = self.tokens.get_token(next_id) else {
+            return false;
         };
 
         // The "visual start" of the next item includes its first leading comment.
@@ -236,9 +232,8 @@ impl<'a> Formatter<'a> {
         if self.tokens.is_empty() {
             return self.nil();
         }
-        let token = match self.tokens.get_token(id) {
-            Some(t) => t,
-            None => return self.nil(),
+        let Some(token) = self.tokens.get_token(id) else {
+            return self.nil();
         };
         match &token.comments {
             Some(c) => match &c.trailing {
@@ -343,7 +338,7 @@ impl<'a> Formatter<'a> {
 // Operator → string
 // ---------------------------------------------------------------------------
 
-pub fn operator_str(op: &Operator) -> &'static str {
+pub const fn operator_str(op: Operator) -> &'static str {
     match op {
         Operator::And => "and",
         Operator::Or => "or",
@@ -391,8 +386,8 @@ pub fn operator_str(op: &Operator) -> &'static str {
 /// have to name the private `vhdl_lang::syntax::Comment` type.
 fn format_comment_text_parts(value: &str, multi_line: bool) -> String {
     if multi_line {
-        format!("/*{}*/", value)
+        format!("/*{value}*/")
     } else {
-        format!("--{}", value)
+        format!("--{value}")
     }
 }

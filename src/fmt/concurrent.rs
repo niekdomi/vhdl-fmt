@@ -26,13 +26,12 @@ impl<'a> Formatter<'a> {
                     .label
                     .tree
                     .as_ref()
-                    .map(|l| l.token)
-                    .unwrap_or_else(|| s.statement.get_start_token());
+                    .map_or_else(|| s.statement.get_start_token(), |l| l.token);
                 (start, s.statement.get_end_token())
             },
-            |s, items, i| s.try_group_concurrent(items, i),
-            |s, items, start, len| s.format_concurrent_group(items, start, len),
-            |s, stmt| s.format_labeled_concurrent_statement(stmt),
+            super::Formatter::try_group_concurrent,
+            super::Formatter::format_concurrent_group,
+            super::Formatter::format_labeled_concurrent_statement,
         );
         self.nest(self.hardline().append(body))
     }
@@ -77,7 +76,7 @@ impl<'a> Formatter<'a> {
         self.format_aligned_concurrent_assignments(&group)
     }
 
-    fn is_alignable_concurrent_assignment(&self, stmt: &LabeledConcurrentStatement) -> bool {
+    const fn is_alignable_concurrent_assignment(&self, stmt: &LabeledConcurrentStatement) -> bool {
         if stmt.label.tree.is_some() {
             return false;
         }
