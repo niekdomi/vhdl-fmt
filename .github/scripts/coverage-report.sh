@@ -1,41 +1,42 @@
 #!/usr/bin/env bash
-# Generates a markdown coverage report from cargo-llvm-cov JSON output.
-# Usage: ./coverage-report.sh [output-file]
 set -euo pipefail
 
-OUTPUT_FILE="${1:-code-coverage-results.md}"
+OUTPUT_FILE=${1:-"code-coverage-results.md"}
+JSON_DATA="coverage.json"
 
-cargo llvm-cov --json --output-path /tmp/coverage.json
+# 1. Generate the JSON data if it doesn't exist
+if [ ! -f "$JSON_DATA" ]; then
+    cargo llvm-cov --locked --workspace --json --output-path "$JSON_DATA"
+fi
 
-python3 -c "
-import json, sys
+# 2. Extract Totals and determine badge color
+# Note: JSON structure is .data[0].totals
+TOTAL_LINES_PCT=$(jq -r '(.data[0].totals.lines.percent * 100 | round) / 100' "$JSON_DATA")
+TOTAL_FUNCTIONS_PCT=$(jq -r '(.data[0].totals.functions.percent * 100 | round) / 100' "$JSON_DATA")
+TOTAL_REGIONS=$(jq -r '.data[0].totals.regions.count' "$JSON_DATA")
 
-with open('/tmp/coverage.json') as f:
-    d = json.load(f)['data'][0]
+COLOR="red"
+if (( $(echo "$TOTAL_LINES_PCT >= 80" | bc -l) )); then COLOR="success"
+elif (( $(echo "$TOTAL_LINES_PCT >= 50" | bc -l) )); then COLOR="yellow"
+fi
 
-totals = d['totals']
-overall = int(totals['lines']['percent'])
-color = 'success' if overall >= 80 else 'yellow' if overall >= 50 else 'critical'
+# 3. Start building the Markdown
+echo "![Code Coverage](https://img.shields.io/badge/Code%20Coverage-${TOTAL_LINES_PCT}%25-${COLOR}?style=flat)" > "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "Package | Function Coverage | Line Coverage | Region Coverage | " >> "$OUTPUT_FILE"
+echo "-------- | --------- | ----------- | ---------- | ---" >> "$OUTPUT_FILE"
 
-lines = [
-    f'![Code Coverage](https://img.shields.io/badge/Code%20Coverage-{overall}%25-{color}?style=flat)',
-    '',
-    '| File | Line Coverage | Function Coverage | Region Coverage |',
-    '|:-----|:-------------|:-----------------|:----------------|',
-]
+# 4. Process individual files/packages
+# We use a threshold of 50% for the ❌ icon
+jq -r '.data[0].files[] |
+    "\(.filename) | \((.summary.functions.percent * 100 | round) / 100)% | \((.summary.lines.percent * 100 | round) / 100)% | \(.summary.regions.count) | \(if .summary.lines.percent >= 50 then "✔" else "❌" end)"' \
+    "$JSON_DATA" >> "$OUTPUT_FILE"
 
-for f in sorted(d['files'], key=lambda x: x['filename']):
-    p = f['filename']
-    name = p[p.index('src/') + 4:] if 'src/' in p else p.split('/')[-1]
-    s = f['summary']
-    lp, fp, rp = s['lines']['percent'], s['functions']['percent'], s['regions']['percent']
-    lines.append(f'| \`{name}\` | {lp:.0f}% | {fp:.0f}% | {rp:.0f}% |')
+# 5. Add the Summary row
+SUMMARY_ICON=$( [ "$(echo "$TOTAL_LINES_PCT >= 50" | bc -l)" -eq 1 ] && echo "✔" || echo "❌" )
+TOTAL_LINES_COUNT=$(jq -r '.data[0].totals.lines.count' "$JSON_DATA")
+TOTAL_LINES_COVERED=$(jq -r '.data[0].totals.lines.covered' "$JSON_DATA")
+TOTAL_FUNC_COUNT=$(jq -r '.data[0].totals.functions.count' "$JSON_DATA")
+TOTAL_FUNC_COVERED=$(jq -r '.data[0].totals.functions.covered' "$JSON_DATA")
 
-tl, tf, tr = totals['lines'], totals['functions'], totals['regions']
-lines.append(f'| **Summary** | **{tl[\"percent\"]:.0f}%** ({tl[\"covered\"]}/{tl[\"count\"]}) | **{tf[\"percent\"]:.0f}%** ({tf[\"covered\"]}/{tf[\"count\"]}) | **{tr[\"percent\"]:.0f}%** ({tr[\"covered\"]}/{tr[\"count\"]}) |')
-
-with open('$OUTPUT_FILE', 'w') as out:
-    out.write('\n'.join(lines) + '\n')
-
-print(f'Coverage report written to $OUTPUT_FILE')
-"
+echo "**Summary** | **${TOTAL_FUNCTIONS_PCT}%** (${TOTAL_FUNC_COVERED} / ${TOTAL_FUNC_COUNT}) | **${TOTAL_LINES_PCT}%** (${TOTAL_LINES_COVERED} / ${TOTAL_LINES_COUNT}) | ${TOTAL_REGIONS} | ${SUMMARY_ICON}" >> "$OUTPUT_FILE"
