@@ -26,30 +26,10 @@ jobs:
       - name: Check Formatting
         run: codebook-lsp lint .
 
-  build:
-    runs-on: ubuntu-latest
-    name: Build
-    timeout-minutes: 5
-    permissions:
-      contents: read
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v2
-
-      - name: Build
-        run: cargo build --locked
-
   lint:
     runs-on: ubuntu-latest
     name: Lint
-    timeout-minutes: 1
+    timeout-minutes: 5
     permissions:
       contents: read
       pull-requests: read
@@ -67,10 +47,10 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Check formatting
-        run: cargo fmt --check
+        run: cargo fmt --all --check
 
       - name: Run Clippy
-        run: cargo clippy
+        run: cargo clippy --locked
 
   test:
     runs-on: ubuntu-latest
@@ -96,28 +76,7 @@ jobs:
         uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: Generate Coverage Markdown
-        run: |
-          # 1. Generate JSON data
-          cargo llvm-cov --locked --workspace --json --output-path coverage.json
-
-          # 2. Extract Total Percentage (rounded to 2 decimals)
-          TOTAL_PCT=$(jq -r '(.data[0].totals.lines.percent * 100 | round) / 100' coverage.json)
-
-          # 3. Determine Color
-          COLOR=$(awk -v pct="$TOTAL_PCT" 'BEGIN {if (pct >= 80) print "green"; else if (pct >= 50) print "yellow"; else print "red"}')
-
-          # 4. Build the Markdown file
-          echo "### 📊 Code Coverage Summary" > coverage.md
-          echo "![Coverage](https://img.shields.io/badge/coverage-${TOTAL_PCT}%25-${COLOR})" >> coverage.md
-          echo "" >> coverage.md
-          echo "| Filename | Regions | Functions | Lines |" >> coverage.md
-          echo "|:---|:---:|:---:|:---:|" >> coverage.md
-
-          # 5. Fixed jq logic for the table rows
-          jq -r '.data[0].files[] | "| \(.filename) | \( (.summary.regions.percent * 100 | round) / 100 )% | \( (.summary.functions.percent * 100 | round) / 100 )% | \( (.summary.lines.percent * 100 | round) / 100 )% |"' coverage.json >> coverage.md
-
-          # 6. Add Totals Row
-          echo "| **TOTAL** | | | **${TOTAL_PCT}%** |" >> coverage.md
+        run: .github/scripts/coverage-report.sh code-coverage-results.md
 
       - name: Post coverage comment
         if: github.event_name == 'pull_request'
