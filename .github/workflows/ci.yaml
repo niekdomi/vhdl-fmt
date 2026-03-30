@@ -76,7 +76,9 @@ jobs:
         uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: Generate Coverage Markdown
-        run: .github/scripts/coverage_report.py code-coverage-results.md
+        run: |
+          cargo llvm-cov --locked --workspace --json --output-path coverage.json
+          python3 .github/scripts/coverage_report.py coverage.json code-coverage-results.md
 
       - name: Post coverage comment
         if: github.event_name == 'pull_request'
