@@ -29,7 +29,7 @@ def generate_report(json_path: Path | str, output_path: Path | str) -> None:
         data = json.load(f)["data"][0]
 
     totals: dict[str, Any] = data["totals"]
-    line_pct: float = float(totals["lines"]["percent"])
+    line_pct: float = float(totals["region"]["percent"])
 
     # Determine badge color
     if line_pct >= MIN_SUCCESS_PCT:
