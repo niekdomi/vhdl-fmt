@@ -30,6 +30,36 @@ end entity foo;"#,
     );
 }
 
+#[test]
+fn entity_with_ports() {
+    assert_format(
+        r#"entity foo is port (a : in std_logic; b : out std_logic); end foo;"#,
+        r#"entity foo is
+    port (
+        a : in  std_logic;
+        b : out std_logic
+    );
+end entity foo;"#,
+    );
+}
+
+#[test]
+fn entity_with_comments() {
+    assert_format(
+        r#"-- leading comment
+entity foo is -- entity comment
+port (a : in std_logic; b : out std_logic); -- port comment
+end foo; -- end comment"#,
+        r#"-- leading comment
+entity foo is
+    port (
+        a : in  std_logic;
+        b : out std_logic
+    );
+end entity foo; -- end comment -- entity comment -- port comment"#,
+    );
+}
+
 //===---------------------------------------------------------------------===//
 // Architecture body
 //===---------------------------------------------------------------------===//
@@ -42,6 +72,35 @@ fn architecture_empty() {
 begin
 
 end architecture rtl;"#,
+    );
+}
+
+#[test]
+fn architecture_with_signal() {
+    assert_format(
+        r#"architecture rtl of foo is signal s : std_logic; begin end rtl;"#,
+        r#"architecture rtl of foo is
+    signal s : std_logic;
+begin
+
+end architecture rtl;"#,
+    );
+}
+
+#[test]
+fn architecture_with_comments() {
+    assert_format(
+        r#"-- arch leading
+architecture rtl of foo is -- arch comment
+signal s : std_logic; -- signal comment
+begin -- begin comment
+end rtl; -- end comment"#,
+        r#"-- arch leading
+architecture rtl of foo is
+    signal s : std_logic; -- signal comment
+begin -- begin comment
+
+end architecture rtl; -- end comment -- arch comment"#,
     );
 }
 
@@ -58,6 +117,30 @@ end package pkg;"#,
     );
 }
 
+#[test]
+fn package_with_constant() {
+    assert_format(
+        r#"package pkg is constant c : integer := 42; end pkg;"#,
+        r#"package pkg is
+    constant c : integer := 42;
+end package pkg;"#,
+    );
+}
+
+#[test]
+fn package_with_comments() {
+    assert_format(
+        r#"-- package leading
+package pkg is -- package comment
+constant c : integer := 42; -- const comment
+end pkg; -- end comment"#,
+        r#"-- package leading
+package pkg is
+    constant c : integer := 42; -- const comment
+end package pkg; -- end comment -- package comment"#,
+    );
+}
+
 //===---------------------------------------------------------------------===//
 // Package body
 //===---------------------------------------------------------------------===//
@@ -68,6 +151,37 @@ fn package_body_empty() {
         r#"package body pkg is end pkg;"#,
         r#"package body pkg is
 end package body pkg;"#,
+    );
+}
+
+#[test]
+fn package_body_with_function() {
+    assert_format(
+        r#"package body pkg is function f return integer is begin return 1; end f; end pkg;"#,
+        r#"package body pkg is
+    pure function f return integer is
+    begin
+        return 1;
+    end function f;
+end package body pkg;"#,
+    );
+}
+
+#[test]
+fn package_body_with_comments() {
+    assert_format(
+        r#"-- body leading
+package body pkg is -- body comment
+function f return integer is -- func comment
+begin return 1; end f; -- end func
+end pkg; -- end body"#,
+        r#"-- body leading
+package body pkg is
+    pure function f return integer is
+    begin
+        return 1;
+    end function f; -- func comment -- end func
+end package body pkg; -- end body -- body comment"#,
     );
 }
 
@@ -86,6 +200,22 @@ end context ctx;"#,
     );
 }
 
+#[test]
+fn context_declaration_with_comments() {
+    assert_format(
+        r#"-- context leading
+context ctx is -- context comment
+library ieee; -- lib comment
+use ieee.std_logic_1164.all; -- use comment
+end ctx; -- end comment"#,
+        r#"-- context leading
+context ctx is
+    library ieee;
+    use ieee.std_logic_1164.all;
+end context ctx; -- context comment -- lib comment -- use comment -- end comment"#,
+    );
+}
+
 //===---------------------------------------------------------------------===//
 // Configuration declaration
 //===---------------------------------------------------------------------===//
@@ -98,5 +228,39 @@ fn configuration_simple() {
     for rtl
     end for;
 end configuration cfg;"#,
+    );
+}
+
+#[test]
+fn configuration_with_binding() {
+    assert_format(
+        r#"configuration cfg of ent is for rtl for inst : comp use entity work.comp; end for; end for; end cfg;"#,
+        r#"configuration cfg of ent is
+    for rtl
+        for inst: comp
+            use entity work.comp;
+        end for;
+    end for;
+end configuration cfg;"#,
+    );
+}
+
+#[test]
+fn configuration_with_comments() {
+    assert_format(
+        r#"-- config leading
+configuration cfg of ent is -- config comment
+for rtl -- for comment
+for inst : comp use entity work.comp; end for; -- inner end
+end for; -- outer end
+end cfg; -- end config"#,
+        r#"-- config leading
+configuration cfg of ent is
+    for rtl
+        for inst: comp
+            use entity work.comp;
+        end for;
+    end for;
+end configuration cfg; -- config comment -- for comment -- inner end -- outer end -- end config"#,
     );
 }

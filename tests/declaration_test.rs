@@ -40,6 +40,17 @@ end package p;"#,
     );
 }
 
+#[test]
+fn signal_declaration_with_comments() {
+    assert_format(
+        &wrap("-- leading comment\nsignal clk : std_logic; -- trailing comment"),
+        r#"package p is
+    -- leading comment
+    signal clk : std_logic; -- trailing comment
+end package p;"#,
+    );
+}
+
 //===---------------------------------------------------------------------===//
 // Type declarations
 //===---------------------------------------------------------------------===//
@@ -50,6 +61,39 @@ fn enumeration_type() {
         &wrap("type state is (idle, running, done);"),
         r#"package p is
     type state is (idle, running, done);
+end package p;"#,
+    );
+}
+
+#[test]
+fn record_type() {
+    assert_format(
+        &wrap("type rec is record a : integer; b : bit; end record;"),
+        r#"package p is
+    type rec is record
+        a : integer;
+        b : bit;
+    end record rec;
+end package p;"#,
+    );
+}
+
+#[test]
+fn array_type() {
+    assert_format(
+        &wrap("type arr is array (0 to 7) of bit;"),
+        r#"package p is
+    type arr is array (0 to 7) of bit;
+end package p;"#,
+    );
+}
+
+#[test]
+fn subtype_declaration() {
+    assert_format(
+        &wrap("subtype small_int is integer range 0 to 255;"),
+        r#"package p is
+    subtype small_int is integer range 0 to 255;
 end package p;"#,
     );
 }

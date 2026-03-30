@@ -25,6 +25,16 @@ end package p;"#,
     );
 }
 
+#[test]
+fn impure_function() {
+    assert_format(
+        &wrap("impure function f return integer;"),
+        r#"package p is
+    function f return integer;
+end package p;"#,
+    );
+}
+
 //===---------------------------------------------------------------------===//
 // Subprogram specifications
 //===---------------------------------------------------------------------===//
@@ -76,6 +86,39 @@ fn function_body() {
         return x + 1;
     end function inc;
 end package body p;"#,
+    );
+}
+
+#[test]
+fn procedure_body() {
+    assert_format(
+        r#"package body p is procedure proc is begin null; end proc; end p;"#,
+        r#"package body p is
+    procedure proc is
+    begin
+        null;
+    end procedure proc;
+end package body p;"#,
+    );
+}
+
+#[test]
+fn procedure_body_with_comments() {
+    assert_format(
+        r#"-- proc body leading
+package body p is -- body comment
+procedure proc is -- proc comment
+begin -- begin comment
+null; -- null comment
+end proc; -- end proc
+end p; -- end body"#,
+        r#"-- proc body leading
+package body p is
+    procedure proc is
+    begin -- begin comment
+        null; -- null comment
+    end procedure proc; -- proc comment -- end proc
+end package body p; -- end body -- body comment"#,
     );
 }
 

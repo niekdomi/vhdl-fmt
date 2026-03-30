@@ -44,3 +44,39 @@ begin
 end architecture rtl;"#,
     );
 }
+
+//===---------------------------------------------------------------------===//
+// Indexed names
+//===---------------------------------------------------------------------===//
+
+#[test]
+fn indexed_name() {
+    assert_format(
+        &wrap("arr(5)"),
+        r#"architecture rtl of e is
+begin
+    process
+    begin
+        v := arr(5);
+    end process;
+end architecture rtl;"#,
+    );
+}
+
+//===---------------------------------------------------------------------===//
+// Sliced names
+//===---------------------------------------------------------------------===//
+
+#[test]
+fn sliced_name() {
+    assert_format(
+        &wrap("vec(7 downto 0)"),
+        r#"architecture rtl of e is
+begin
+    process
+    begin
+        v := vec(7 downto 0);
+    end process;
+end architecture rtl;"#,
+    );
+}

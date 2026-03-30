@@ -123,6 +123,27 @@ end architecture rtl;"#,
     );
 }
 
+#[test]
+fn if_then_else_with_comments() {
+    assert_format(
+        &wrap(
+            "-- leading comment\nif cond then -- then comment\nv := 1; -- assignment comment\nelse -- else comment\nv := 0; -- else assignment\nend if; -- end comment",
+        ),
+        r#"architecture rtl of e is
+begin
+    process
+    begin
+        -- leading comment
+        if cond then
+            v := 1; -- assignment comment
+        else
+            v := 0; -- else assignment
+        end if; -- then comment -- else comment -- end comment
+    end process;
+end architecture rtl;"#,
+    );
+}
+
 //===---------------------------------------------------------------------===//
 // Case statement
 //===---------------------------------------------------------------------===//
@@ -158,6 +179,22 @@ begin
     begin
         while running loop
             null;
+        end loop;
+    end process;
+end architecture rtl;"#,
+    );
+}
+
+#[test]
+fn for_loop() {
+    assert_format(
+        &wrap("for i in 0 to 10 loop v := i; end loop;"),
+        r#"architecture rtl of e is
+begin
+    process
+    begin
+        for i in 0 to 10 loop
+            v := i;
         end loop;
     end process;
 end architecture rtl;"#,

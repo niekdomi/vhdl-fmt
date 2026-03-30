@@ -93,6 +93,41 @@ end architecture rtl;"#,
     )
 }
 
+#[test]
+fn concurrent_signal_assignment_conditional() {
+    assert_format(
+        &wrap("y <= a when sel else b;"),
+        r#"architecture rtl of e is
+begin
+    y <= a when sel else b;
+end architecture rtl;"#,
+    )
+}
+
+#[test]
+fn concurrent_signal_assignment_selected() {
+    assert_format(
+        &wrap("with sel select y <= a when '0', b when '1';"),
+        r#"architecture rtl of e is
+begin
+    with sel select y <= a when '0',
+    b when '1';
+end architecture rtl;"#,
+    )
+}
+
+#[test]
+fn concurrent_signal_assignment_with_comments() {
+    assert_format(
+        &wrap("-- leading comment\ny <= a and b; -- trailing comment"),
+        r#"architecture rtl of e is
+begin
+    -- leading comment
+    y <= a and b; -- trailing comment
+end architecture rtl;"#,
+    )
+}
+
 //===---------------------------------------------------------------------===//
 // Instantiation statement
 //===---------------------------------------------------------------------===//
