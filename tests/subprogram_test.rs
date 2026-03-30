@@ -75,8 +75,7 @@ fn function_body() {
     begin
         return x + 1;
     end function inc;
-end package body p;
-"#,
+end package body p;"#,
     );
 }
 

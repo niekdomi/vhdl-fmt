@@ -342,10 +342,8 @@ impl<'a> Formatter<'a> {
     }
 
     fn format_simple_mode_indication(&self, mode: &SimpleModeIndication) -> Doc<'a> {
-        let mode_doc = mode
-            .mode
-            .as_ref()
-            .map(|m| self.kw(Self::mode_str(m.item)).append(self.space()));
+        let mode_doc =
+            mode.mode.as_ref().map(|m| self.kw(Self::mode_str(m.item)).append(self.space()));
         let subtype = self.format_subtype_indication(&mode.subtype_indication);
         let default = if let Some(expr) = &mode.expression {
             self.space()

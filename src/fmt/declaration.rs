@@ -4,8 +4,8 @@ use vhdl_lang::ast::token_range::WithTokenSpan;
 use vhdl_lang::ast::{
     AliasDeclaration, ArrayIndex, Attribute, AttributeDeclaration, AttributeSpecification,
     ComponentDeclaration, Declaration, ElementDeclaration, EntityName, EnumerationLiteral,
-    FileDeclaration, LibraryClause, ModeViewDeclaration, ObjectDeclaration,
-    PackageInstantiation, PhysicalTypeDeclaration, ProtectedTypeBody, ProtectedTypeDeclaration,
+    FileDeclaration, LibraryClause, ModeViewDeclaration, ObjectDeclaration, PackageInstantiation,
+    PhysicalTypeDeclaration, ProtectedTypeBody, ProtectedTypeDeclaration,
     ProtectedTypeDeclarativeItem, SubtypeIndication, TypeDeclaration, TypeDefinition, UseClause,
 };
 
@@ -509,7 +509,7 @@ impl<'a> Formatter<'a> {
             .append(generics_doc)
             .append(ports_doc)
             .append(self.hardline())
-            .append(self.kw_tok("end",comp.end_token))
+            .append(self.kw_tok("end", comp.end_token))
             .append(self.space())
             .append(self.kw("component"))
             .append(self.space())
@@ -687,7 +687,7 @@ impl<'a> Formatter<'a> {
         let binding = self.format_binding_indication(&config.bind_ind);
         let end_for = if let Some(end_tok) = config.end_token {
             self.hardline()
-                .append(self.kw_tok("end",end_tok))
+                .append(self.kw_tok("end", end_tok))
                 .append(self.space())
                 .append(self.kw("for"))
                 .append(self.punct(";"))
@@ -815,7 +815,7 @@ impl<'a> Formatter<'a> {
             .append(self.kw("is"))
             .append(body)
             .append(self.hardline())
-            .append(self.kw_tok("end",view.end_token))
+            .append(self.kw_tok("end", view.end_token))
             .append(self.space())
             .append(self.kw("view"))
             .append(self.space())

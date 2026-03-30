@@ -10,7 +10,11 @@ use vhdl_lang::{Token, VHDLParser, VHDLStandard};
 use config::FormatConfig;
 use fmt::Formatter;
 
-pub fn format_source(source: &str, config: &FormatConfig, standard: VHDLStandard) -> Result<String, String> {
+pub fn format_source(
+    source: &str,
+    config: &FormatConfig,
+    standard: VHDLStandard,
+) -> Result<String, String> {
     let parser = VHDLParser::new(standard);
     let vhdl_source = vhdl_lang::Source::inline(Path::new("<stdin>"), source);
     let mut diagnostics = Vec::new();
@@ -21,12 +25,7 @@ pub fn format_source(source: &str, config: &FormatConfig, standard: VHDLStandard
             .iter()
             .map(|d| {
                 let pos = d.pos.range();
-                format!(
-                    "{}:{}: {}",
-                    pos.start.line + 1,
-                    pos.start.character + 1,
-                    d.message
-                )
+                format!("{}:{}: {}", pos.start.line + 1, pos.start.character + 1, d.message)
             })
             .collect();
         return Err(errors.join("\n"));
@@ -45,15 +44,9 @@ pub fn format_source(source: &str, config: &FormatConfig, standard: VHDLStandard
         output.push('\n');
     }
 
-    output = output
-        .lines()
-        .map(str::trim_end)
-        .collect::<Vec<_>>()
-        .join("\n");
+    output = output.lines().map(str::trim_end).collect::<Vec<_>>().join("\n");
 
-    if !output.ends_with('\n') {
-        output.push('\n');
-    }
+    output = output.trim_end().to_string();
 
     Ok(output)
 }
@@ -74,18 +67,10 @@ pub fn verify_formatting(
             .iter()
             .map(|d| {
                 let pos = d.pos.range();
-                format!(
-                    "{}:{}: {}",
-                    pos.start.line + 1,
-                    pos.start.character + 1,
-                    d.message
-                )
+                format!("{}:{}: {}", pos.start.line + 1, pos.start.character + 1, d.message)
             })
             .collect();
-        return Err(format!(
-            "formatted output has parse errors:\n{}",
-            errors.join("\n")
-        ));
+        return Err(format!("formatted output has parse errors:\n{}", errors.join("\n")));
     }
 
     let mut stable = formatted.to_string();
@@ -97,8 +82,8 @@ pub fn verify_formatting(
         }
         stable = reformatted;
     }
-    let final_check = format_source(&stable, config, standard)
-        .map_err(|e| format!("re-format failed: {e}"))?;
+    let final_check =
+        format_source(&stable, config, standard).map_err(|e| format!("re-format failed: {e}"))?;
     if stable != final_check {
         return Err("formatting does not converge after 5 passes".into());
     }
@@ -116,16 +101,15 @@ pub fn verify_formatting(
 
     let missing: BTreeSet<_> = in_comments.difference(&out_comments).collect();
     if !missing.is_empty() {
-        return Err(format!(
-            "{} comment(s) lost during formatting",
-            missing.len()
-        ));
+        return Err(format!("{} comment(s) lost during formatting", missing.len()));
     }
 
     Ok(stable)
 }
 
-fn collect_comments(design_units: &[(Vec<Token>, vhdl_lang::ast::AnyDesignUnit)]) -> BTreeSet<String> {
+fn collect_comments(
+    design_units: &[(Vec<Token>, vhdl_lang::ast::AnyDesignUnit)],
+) -> BTreeSet<String> {
     let mut comments = BTreeSet::new();
     for (tokens, _) in design_units {
         for token in tokens {

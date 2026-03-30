@@ -502,7 +502,7 @@ impl<'a> Formatter<'a> {
             .append(self.kw("generate"))
             .append(body_doc)
             .append(self.hardline())
-            .append(self.kw_tok("end",stmt.end_token))
+            .append(self.kw_tok("end", stmt.end_token))
             .append(self.space())
             .append(self.kw("generate"))
             .append(end_label_doc)
@@ -617,7 +617,7 @@ impl<'a> Formatter<'a> {
             .append(self.kw("generate"))
             .append(alts_doc)
             .append(self.hardline())
-            .append(self.kw_tok("end",stmt.end_token))
+            .append(self.kw_tok("end", stmt.end_token))
             .append(self.space())
             .append(self.kw("generate"))
             .append(end_label_doc)
@@ -645,7 +645,7 @@ impl<'a> Formatter<'a> {
         // Optional inner `end [label] ;`
         // body.end_label is Option<TokenId> — no text available without token access.
         let inner_end_doc = if let Some(end_tok) = body.end_token {
-            self.hardline().append(self.kw_tok("end",end_tok)).append(self.punct(";"))
+            self.hardline().append(self.kw_tok("end", end_tok)).append(self.punct(";"))
         } else {
             self.nil()
         };

@@ -139,8 +139,7 @@ fn configuration_specification() {
     end for;
 begin
 
-end architecture a;
-"#,
+end architecture a;"#,
     );
 }
 

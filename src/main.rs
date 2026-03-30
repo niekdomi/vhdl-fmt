@@ -107,11 +107,7 @@ fn main() {
                 match verify_formatting(&source, &formatted, &config, standard) {
                     Ok(stable) => stable,
                     Err(e) => {
-                        eprintln!(
-                            "error: verification failed for {}: {}",
-                            path.display(),
-                            e
-                        );
+                        eprintln!("error: verification failed for {}: {}", path.display(), e);
                         had_error.store(true, Ordering::Relaxed);
                         return;
                     }
@@ -239,4 +235,3 @@ fn load_config(location: Option<&Path>) -> FormatConfig {
 
     FormatConfig::default()
 }
-
