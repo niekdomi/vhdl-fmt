@@ -80,8 +80,6 @@ jobs:
       contents: read
       pull-requests: write
 
-    if: ${{ !github.event.pull_request.draft }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
