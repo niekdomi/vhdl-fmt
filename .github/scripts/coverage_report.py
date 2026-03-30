@@ -4,13 +4,14 @@ import json
 import sys
 from pathlib import Path
 
-# Constants to avoid "Magic Value" lints
+# TODO: Pass thresholds as arguments
 MIN_SUCCESS_PCT = 80
 MIN_ACCEPTABLE_PCT = 50
+
 REQUIRED_ARGS_COUNT = 2
 
 
-def generate_report(json_path: str, output_path: str) -> None:
+def generate_report(json_path: Path | str, output_path: Path | str) -> None:
     """Parse LLVM coverage JSON and write a formatted Markdown table.
 
     Args:

@@ -1,11 +1,9 @@
-
 [lint]
 select = [
-    "ALL",
+  "ALL",
 ]
 ignore = [
-    "D203",    # In conflict with D211
-    "D213",    # In conflict with D212
-    "PERF203",
-    "T201",    # Ignore print
+  "D203",  # In conflict with D211
+  "D213",  # In conflict with D212
+  "T201",  # Ignore print
 ]
