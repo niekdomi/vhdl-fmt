@@ -100,24 +100,21 @@ jobs:
           # 1. Generate JSON data
           cargo llvm-cov --locked --workspace --json --output-path coverage.json
 
-          # 2. Extract Total Percentage
-          TOTAL_PCT=$(jq -r '.data[0].totals.lines.percent' coverage.json)
+          # 2. Extract Total Percentage (rounded to 2 decimals)
+          TOTAL_PCT=$(jq -r '(.data[0].totals.lines.percent * 100 | round) / 100' coverage.json)
 
-          # 3. Determine Color (Green > 80, Yellow > 50, else Red)
-          COLOR=$(echo "$TOTAL_PCT" | awk '{if ($1 >= 80) print "green"; else if ($1 >= 50) print "yellow"; else print "red"}')
+          # 3. Determine Color
+          COLOR=$(awk -v pct="$TOTAL_PCT" 'BEGIN {if (pct >= 80) print "green"; else if (pct >= 50) print "yellow"; else print "red"}')
 
           # 4. Build the Markdown file
           echo "### 📊 Code Coverage Summary" > coverage.md
-
-          # Add the dynamic badge from Shields.io
           echo "![Coverage](https://img.shields.io/badge/coverage-${TOTAL_PCT}%25-${COLOR})" >> coverage.md
           echo "" >> coverage.md
-
-          # 5. Build the Table
           echo "| Filename | Regions | Functions | Lines |" >> coverage.md
           echo "|:---|:---:|:---:|:---:|" >> coverage.md
 
-          jq -r '.data[0].files[] | "| \(.filename) | \( .summary.regions.percent | printf("%.2f%%") ) | \( .summary.functions.percent | printf("%.2f%%") ) | \( .summary.lines.percent | printf("%.2f%%") ) |"' coverage.json >> coverage.md
+          # 5. Fixed jq logic for the table rows
+          jq -r '.data[0].files[] | "| \(.filename) | \( (.summary.regions.percent * 100 | round) / 100 )% | \( (.summary.functions.percent * 100 | round) / 100 )% | \( (.summary.lines.percent * 100 | round) / 100 )% |"' coverage.json >> coverage.md
 
           # 6. Add Totals Row
           echo "| **TOTAL** | | | **${TOTAL_PCT}%** |" >> coverage.md
