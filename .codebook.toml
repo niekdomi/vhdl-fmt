@@ -1,37 +1,41 @@
 dictionaries = ["en_us"]
+
 words = [
-    "alignable",
-    "assocs",
-    "colour",
-    "downto",
-    "editorconfig",
-    "gitattributes",
-    "groupable",
-    "hardline",
-    "idents",
-    "inout",
-    "leftof",
-    "lits",
-    "nand",
-    "nthen",
-    "objs",
-    "punct",
-    "rightof",
-    "rol",
-    "ror",
-    "sev",
-    "sll",
-    "srl",
-    "stmts",
-    "succ",
-    "unformatted",
-    "vunit",
-    "vunits",
-    "xnor"
+  "alignable",
+  "assocs",
+  "colour",
+  "downto",
+  "editorconfig",
+  "gitattributes",
+  "groupable",
+  "hardline",
+  "idents",
+  "inout",
+  "leftof",
+  "lits",
+  "nand",
+  "nthen",
+  "objs",
+  "punct",
+  "rightof",
+  "rol",
+  "ror",
+  "sev",
+  "sll",
+  "srl",
+  "stmts",
+  "succ",
+  "unformatted",
+  "vunit",
+  "vunits",
+  "xnor"
 ]
-include_paths = [
-    "**/*.rs",
-    "**/*.md"
+
+ignore_paths = [
+  "tests/**/*.rs",
 ]
+
+include_paths = ["**/*.rs", "**/*.md"]
+
 use_global = false
 min_word_length = 0
