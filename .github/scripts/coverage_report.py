@@ -3,6 +3,7 @@
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 # TODO: Pass thresholds as arguments
 MIN_SUCCESS_PCT = 80
@@ -27,8 +28,8 @@ def generate_report(json_path: Path | str, output_path: Path | str) -> None:
     with path_in.open(encoding="utf-8") as f:
         data = json.load(f)["data"][0]
 
-    totals = data["totals"]
-    line_pct = totals["lines"]["percent"]
+    totals: dict[str, Any] = data["totals"]
+    line_pct: float = float(totals["lines"]["percent"])
 
     # Determine badge color
     if line_pct >= MIN_SUCCESS_PCT:
@@ -46,7 +47,7 @@ def generate_report(json_path: Path | str, output_path: Path | str) -> None:
     ]
 
     # Sort files by filename for consistent PR diffs
-    for file_data in sorted(data["files"], key=lambda x: x["filename"]):
+    for file_data in sorted(data["files"], key=lambda x: str(x["filename"])):
         filename = file_data["filename"]
         display_name = filename.split("src/", 1)[-1] if "src/" in filename else filename
 
