@@ -4,7 +4,7 @@ use vhdl_lang::ast::token_range::WithTokenSpan;
 use vhdl_lang::ast::{
     AliasDeclaration, ArrayIndex, Attribute, AttributeDeclaration, AttributeSpecification,
     ComponentDeclaration, Declaration, ElementDeclaration, EntityName, EnumerationLiteral,
-    FileDeclaration, LibraryClause, ModeViewDeclaration, ObjectClass, ObjectDeclaration,
+    FileDeclaration, LibraryClause, ModeViewDeclaration, ObjectDeclaration,
     PackageInstantiation, PhysicalTypeDeclaration, ProtectedTypeBody, ProtectedTypeDeclaration,
     ProtectedTypeDeclarativeItem, SubtypeIndication, TypeDeclaration, TypeDefinition, UseClause,
 };
@@ -27,24 +27,12 @@ impl<'a> Formatter<'a> {
     }
 
     fn try_group_declarations(&self, decls: &[WithTokenSpan<Declaration>], i: usize) -> usize {
-        if !matches!(decls[i].item, Declaration::Object(_)) {
-            return 0;
-        }
-        let mut j = i + 1;
-        while j < decls.len() {
-            if matches!(decls[j].item, Declaration::Object(_)) {
-                let prev_end = decls[j - 1].get_end_token();
-                let next_start = decls[j].get_start_token();
-                if !self.has_blank_before(prev_end, next_start)
-                    && !self.has_leading_comments_on(next_start)
-                {
-                    j += 1;
-                    continue;
-                }
-            }
-            break;
-        }
-        j - i
+        self.try_group(
+            decls,
+            i,
+            |d| matches!(d.item, Declaration::Object(_)),
+            |d| (d.get_start_token(), d.get_end_token()),
+        )
     }
 
     fn format_declaration_group(
@@ -61,7 +49,7 @@ impl<'a> Formatter<'a> {
     }
 
     pub fn format_declaration(&self, decl: &WithTokenSpan<Declaration>) -> Doc<'a> {
-        match &decl.item {
+        let doc = match &decl.item {
             Declaration::Object(obj) => self.format_object_declaration(obj),
             Declaration::File(file) => self.format_file_declaration(file),
             Declaration::Type(type_decl) => self.format_type_declaration(type_decl),
@@ -77,7 +65,8 @@ impl<'a> Formatter<'a> {
             Declaration::Package(pkg) => self.format_package_instantiation(pkg),
             Declaration::Configuration(config) => self.format_configuration_specification(config),
             Declaration::View(view) => self.format_view_declaration(view),
-        }
+        };
+        self.with_comments(decl, doc)
     }
 
     // -----------------------------------------------------------------------
@@ -85,14 +74,7 @@ impl<'a> Formatter<'a> {
     // -----------------------------------------------------------------------
 
     pub fn format_object_declaration(&self, obj: &ObjectDeclaration) -> Doc<'a> {
-        let class_kw = match obj.class {
-            ObjectClass::Signal => self.kw("signal"),
-            ObjectClass::Variable => self.kw("variable"),
-            ObjectClass::Constant => self.kw("constant"),
-            ObjectClass::SharedVariable => {
-                self.kw("shared").append(self.space()).append(self.kw("variable"))
-            }
-        };
+        let class_kw = self.object_class_kw(obj.class);
 
         let idents_doc = self.intersperse(
             obj.idents.iter().map(|id| self.ident(&id.tree.item.name_utf8())),
@@ -167,14 +149,7 @@ impl<'a> Formatter<'a> {
 
     /// Build the prefix part of an object declaration: `<class> <idents>`.
     fn format_obj_decl_prefix(&self, obj: &ObjectDeclaration) -> Doc<'a> {
-        let class_kw = match obj.class {
-            ObjectClass::Signal => self.kw("signal"),
-            ObjectClass::Variable => self.kw("variable"),
-            ObjectClass::Constant => self.kw("constant"),
-            ObjectClass::SharedVariable => {
-                self.kw("shared").append(self.space()).append(self.kw("variable"))
-            }
-        };
+        let class_kw = self.object_class_kw(obj.class);
         let idents_doc = self.intersperse(
             obj.idents.iter().map(|id| self.ident(&id.tree.item.name_utf8())),
             self.arena.text(", "),
@@ -232,6 +207,15 @@ impl<'a> Formatter<'a> {
             TypeDefinition::Incomplete(_) => {
                 self.kw("type").append(self.space()).append(name).append(self.punct(";"))
             }
+            TypeDefinition::Subtype(subtype) => self
+                .kw("subtype")
+                .append(self.space())
+                .append(name)
+                .append(self.space())
+                .append(self.kw("is"))
+                .append(self.space())
+                .append(self.format_subtype_indication(subtype))
+                .append(self.punct(";")),
             def => {
                 let def_doc = self.format_type_definition(def, &decl.ident.tree.item.name_utf8());
                 self.kw("type")
@@ -525,7 +509,7 @@ impl<'a> Formatter<'a> {
             .append(generics_doc)
             .append(ports_doc)
             .append(self.hardline())
-            .append(self.kw("end"))
+            .append(self.kw_tok("end",comp.end_token))
             .append(self.space())
             .append(self.kw("component"))
             .append(self.space())
@@ -701,14 +685,14 @@ impl<'a> Formatter<'a> {
     ) -> Doc<'a> {
         let spec = self.format_component_specification(&config.spec);
         let binding = self.format_binding_indication(&config.bind_ind);
-        let end_for = if config.end_token.is_some() {
+        let end_for = if let Some(end_tok) = config.end_token {
             self.hardline()
-                .append(self.kw("end"))
+                .append(self.kw_tok("end",end_tok))
                 .append(self.space())
                 .append(self.kw("for"))
                 .append(self.punct(";"))
         } else {
-            self.punct(";")
+            self.nil()
         };
 
         let vunit_docs = if config.vunit_bind_inds.is_empty() {
@@ -831,7 +815,7 @@ impl<'a> Formatter<'a> {
             .append(self.kw("is"))
             .append(body)
             .append(self.hardline())
-            .append(self.kw("end"))
+            .append(self.kw_tok("end",view.end_token))
             .append(self.space())
             .append(self.kw("view"))
             .append(self.space())

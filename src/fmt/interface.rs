@@ -78,13 +78,15 @@ impl<'a> Formatter<'a> {
                 item_doc
             };
 
-            // Add trailing comment(s).
+            // Add trailing comment(s): scan the full item span for internal
+            // comments, plus any comments between this item and the next.
+            let item_start = item.get_start_token();
             let item_end = item.get_end_token();
             let tc = if i < list.items.len() - 1 {
                 let next_start = list.items[i + 1].get_start_token();
-                self.trailing_comments_in_span(item_end, next_start)
+                self.trailing_comments_in_span(item_start, next_start)
             } else {
-                self.trailing_comment(item_end)
+                self.trailing_comments_in_span(item_start, item_end)
             };
 
             if i == 0 {
@@ -111,8 +113,6 @@ impl<'a> Formatter<'a> {
         &self,
         objs: &[&InterfaceObjectDeclaration],
     ) -> Vec<Doc<'a>> {
-        use vhdl_lang::ast::Mode;
-
         // Collect parts: (prefix, prefix_width, mode_kw, mode_kw_width, subtype_default_doc)
         let parts: Vec<_> = objs
             .iter()
@@ -122,15 +122,9 @@ impl<'a> Formatter<'a> {
 
                 match &obj.mode {
                     ModeIndication::Simple(simple) => {
-                        let mode_str = simple.mode.as_ref().map(|m| match m.item {
-                            Mode::In => "in",
-                            Mode::Out => "out",
-                            Mode::InOut => "inout",
-                            Mode::Buffer => "buffer",
-                            Mode::Linkage => "linkage",
-                        });
-                        let mode_kw: Option<Doc<'a>> = mode_str.map(|s| self.kw(s));
-                        let mode_kw_width = mode_str.map_or(0, str::len);
+                        let mode_s = simple.mode.as_ref().map(|m| Self::mode_str(m.item));
+                        let mode_kw: Option<Doc<'a>> = mode_s.map(|s| self.kw(s));
+                        let mode_kw_width = mode_s.map_or(0, str::len);
 
                         let subtype = self.format_subtype_indication(&simple.subtype_indication);
                         let default = if let Some(expr) = &simple.expression {
@@ -203,15 +197,7 @@ impl<'a> Formatter<'a> {
                 if Self::is_implicit_class(&obj.list_type, &simple.class) {
                     return None;
                 }
-                let class_kw: Doc<'a> = match simple.class {
-                    ObjectClass::Signal => self.kw("signal"),
-                    ObjectClass::Variable => self.kw("variable"),
-                    ObjectClass::Constant => self.kw("constant"),
-                    ObjectClass::SharedVariable => {
-                        self.kw("shared").append(self.space()).append(self.kw("variable"))
-                    }
-                };
-                Some(class_kw)
+                Some(self.object_class_kw(simple.class))
             }
             ModeIndication::View(_) => None,
         }
@@ -356,17 +342,10 @@ impl<'a> Formatter<'a> {
     }
 
     fn format_simple_mode_indication(&self, mode: &SimpleModeIndication) -> Doc<'a> {
-        use vhdl_lang::ast::Mode;
-        let mode_doc = mode.mode.as_ref().map(|m| {
-            let s = match m.item {
-                Mode::In => "in",
-                Mode::Out => "out",
-                Mode::InOut => "inout",
-                Mode::Buffer => "buffer",
-                Mode::Linkage => "linkage",
-            };
-            self.kw(s).append(self.space())
-        });
+        let mode_doc = mode
+            .mode
+            .as_ref()
+            .map(|m| self.kw(Self::mode_str(m.item)).append(self.space()));
         let subtype = self.format_subtype_indication(&mode.subtype_indication);
         let default = if let Some(expr) = &mode.expression {
             self.space()
@@ -408,17 +387,7 @@ impl<'a> Formatter<'a> {
             self.arena.text(", "), // DocAllocator in scope
         );
         let mode_doc = match &elem.mode {
-            ElementMode::Simple(m) => {
-                use vhdl_lang::ast::Mode;
-                let s = match m.item {
-                    Mode::In => "in",
-                    Mode::Out => "out",
-                    Mode::InOut => "inout",
-                    Mode::Buffer => "buffer",
-                    Mode::Linkage => "linkage",
-                };
-                self.kw(s)
-            }
+            ElementMode::Simple(m) => self.kw(Self::mode_str(m.item)),
             ElementMode::Record(name) => {
                 self.kw("view").append(self.space()).append(self.format_name(&name.item))
             }

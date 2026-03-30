@@ -48,21 +48,12 @@ impl<'a> Formatter<'a> {
         if assign_kind == SeqAssignKind::None {
             return 0;
         }
-        let mut j = i + 1;
-        while j < stmts.len() {
-            if self.seq_assignment_kind(&stmts[j]) == assign_kind {
-                let prev_end = stmts[j - 1].statement.get_end_token();
-                let next_start = stmts[j].statement.get_start_token();
-                if !self.has_blank_before(prev_end, next_start)
-                    && !self.has_leading_comments_on(next_start)
-                {
-                    j += 1;
-                    continue;
-                }
-            }
-            break;
-        }
-        j - i
+        self.try_group(
+            stmts,
+            i,
+            |s| self.seq_assignment_kind(s) == assign_kind,
+            |s| (s.statement.get_start_token(), s.statement.get_end_token()),
+        )
     }
 
     fn format_sequential_group(
@@ -162,7 +153,7 @@ impl<'a> Formatter<'a> {
         stmt: &WithTokenSpan<SequentialStatement>,
         label: Option<&str>,
     ) -> Doc<'a> {
-        match &stmt.item {
+        let doc = match &stmt.item {
             SequentialStatement::Wait(w) => self.format_wait_statement(w),
             SequentialStatement::Assert(a) => self
                 .kw("assert")
@@ -193,7 +184,8 @@ impl<'a> Formatter<'a> {
                 self.kw("return").append(expr_doc).append(self.punct(";"))
             }
             SequentialStatement::Null => self.kw("null").append(self.punct(";")),
-        }
+        };
+        self.with_comments(stmt, doc)
     }
 
     // -----------------------------------------------------------------------
@@ -691,7 +683,7 @@ impl<'a> Formatter<'a> {
             .append(self.kw("is"))
             .append(alts_doc)
             .append(self.hardline())
-            .append(self.kw("end"))
+            .append(self.kw_tok("end",stmt.end_token))
             .append(self.space())
             .append(self.kw("case"))
             .append(end_matching)
@@ -737,7 +729,7 @@ impl<'a> Formatter<'a> {
             .append(self.kw("loop"))
             .append(body)
             .append(self.hardline())
-            .append(self.kw("end"))
+            .append(self.kw_tok("end",stmt.end_token))
             .append(self.space())
             .append(self.kw("loop"))
             .append(end_label_doc)

@@ -37,24 +37,12 @@ impl<'a> Formatter<'a> {
     }
 
     fn try_group_concurrent(&self, stmts: &[LabeledConcurrentStatement], i: usize) -> usize {
-        if !self.is_alignable_concurrent_assignment(&stmts[i]) {
-            return 0;
-        }
-        let mut j = i + 1;
-        while j < stmts.len() {
-            if self.is_alignable_concurrent_assignment(&stmts[j]) {
-                let prev_end = stmts[j - 1].statement.get_end_token();
-                let next_start = stmts[j].statement.get_start_token();
-                if !self.has_blank_before(prev_end, next_start)
-                    && !self.has_leading_comments_on(next_start)
-                {
-                    j += 1;
-                    continue;
-                }
-            }
-            break;
-        }
-        j - i
+        self.try_group(
+            stmts,
+            i,
+            |s| self.is_alignable_concurrent_assignment(s),
+            |s| (s.statement.get_start_token(), s.statement.get_end_token()),
+        )
     }
 
     fn format_concurrent_group(
@@ -139,7 +127,7 @@ impl<'a> Formatter<'a> {
         stmt: &WithTokenSpan<ConcurrentStatement>,
         label: Option<&str>,
     ) -> Doc<'a> {
-        match &stmt.item {
+        let doc = match &stmt.item {
             ConcurrentStatement::ProcedureCall(call) => self.format_concurrent_procedure_call(call),
             ConcurrentStatement::Block(block) => self.format_block_statement(block, label),
             ConcurrentStatement::Process(process) => self.format_process_statement(process, label),
@@ -148,10 +136,11 @@ impl<'a> Formatter<'a> {
                 self.format_concurrent_signal_assignment(assignment)
             }
             ConcurrentStatement::Instance(inst) => self.format_instantiation_statement(inst),
-            ConcurrentStatement::ForGenerate(stmt) => self.format_for_generate(stmt, label),
-            ConcurrentStatement::IfGenerate(stmt) => self.format_if_generate(stmt, label),
-            ConcurrentStatement::CaseGenerate(stmt) => self.format_case_generate(stmt, label),
-        }
+            ConcurrentStatement::ForGenerate(s) => self.format_for_generate(s, label),
+            ConcurrentStatement::IfGenerate(s) => self.format_if_generate(s, label),
+            ConcurrentStatement::CaseGenerate(s) => self.format_case_generate(s, label),
+        };
+        self.with_comments(stmt, doc)
     }
 
     // -----------------------------------------------------------------------
@@ -254,10 +243,10 @@ impl<'a> Formatter<'a> {
             .append(port_map_doc)
             .append(decls_doc)
             .append(self.hardline())
-            .append(self.kw("begin"))
+            .append(self.kw_tok("begin", block.begin_token))
             .append(stmts_doc)
             .append(self.hardline())
-            .append(self.kw("end"))
+            .append(self.kw_tok("end", block.end_token))
             .append(self.space())
             .append(self.kw("block"))
             .append(end_label_doc)
@@ -315,10 +304,10 @@ impl<'a> Formatter<'a> {
             .append(is_doc)
             .append(decls_doc)
             .append(self.hardline())
-            .append(self.kw("begin"))
+            .append(self.kw_tok("begin", process.begin_token))
             .append(stmts_doc)
             .append(self.hardline())
-            .append(self.kw("end"))
+            .append(self.kw_tok("end", process.end_token))
             .append(self.space())
             .append(self.kw("process"))
             .append(end_label_doc)
@@ -513,7 +502,7 @@ impl<'a> Formatter<'a> {
             .append(self.kw("generate"))
             .append(body_doc)
             .append(self.hardline())
-            .append(self.kw("end"))
+            .append(self.kw_tok("end",stmt.end_token))
             .append(self.space())
             .append(self.kw("generate"))
             .append(end_label_doc)
@@ -628,7 +617,7 @@ impl<'a> Formatter<'a> {
             .append(self.kw("generate"))
             .append(alts_doc)
             .append(self.hardline())
-            .append(self.kw("end"))
+            .append(self.kw_tok("end",stmt.end_token))
             .append(self.space())
             .append(self.kw("generate"))
             .append(end_label_doc)
@@ -640,13 +629,13 @@ impl<'a> Formatter<'a> {
     // -----------------------------------------------------------------------
 
     fn format_generate_body(&self, body: &GenerateBody) -> Doc<'a> {
-        let decls_doc = if let Some((decls, _begin_token)) = &body.decl {
+        let decls_doc = if let Some((decls, begin_token)) = &body.decl {
             let inner = if decls.is_empty() {
                 self.nil()
             } else {
                 self.nest(self.hardline().append(self.format_declarations(decls)))
             };
-            inner.append(self.hardline()).append(self.kw("begin"))
+            inner.append(self.hardline()).append(self.kw_tok("begin", *begin_token))
         } else {
             self.nil()
         };
@@ -655,8 +644,8 @@ impl<'a> Formatter<'a> {
 
         // Optional inner `end [label] ;`
         // body.end_label is Option<TokenId> — no text available without token access.
-        let inner_end_doc = if body.end_token.is_some() {
-            self.hardline().append(self.kw("end")).append(self.punct(";"))
+        let inner_end_doc = if let Some(end_tok) = body.end_token {
+            self.hardline().append(self.kw_tok("end",end_tok)).append(self.punct(";"))
         } else {
             self.nil()
         };

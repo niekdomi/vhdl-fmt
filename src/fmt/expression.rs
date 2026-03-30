@@ -222,7 +222,11 @@ impl<'a> Formatter<'a> {
         constraint: &WithTokenSpan<SubtypeConstraint>,
     ) -> Doc<'a> {
         match &constraint.item {
-            SubtypeConstraint::Range(range) => self.space().append(self.format_range(range)),
+            SubtypeConstraint::Range(range) => self
+                .space()
+                .append(self.kw("range"))
+                .append(self.space())
+                .append(self.format_range(range)),
             SubtypeConstraint::Array(ranges, element) => {
                 let range_docs: Vec<Doc<'a>> =
                     ranges.iter().map(|r| self.format_discrete_range(&r.item)).collect();
@@ -282,7 +286,10 @@ impl<'a> Formatter<'a> {
                 let tm = self.format_name(&type_mark.item);
                 // constraint is Option<Range>, not Option<SubtypeConstraint>
                 if let Some(r) = constraint {
-                    tm.append(self.space()).append(self.format_range(r))
+                    tm.append(self.space())
+                        .append(self.kw("range"))
+                        .append(self.space())
+                        .append(self.format_range(r))
                 } else {
                     tm
                 }

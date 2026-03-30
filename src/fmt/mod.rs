@@ -7,9 +7,13 @@ pub mod name;
 pub mod sequential;
 pub mod subprogram;
 
+use std::cell::RefCell;
+use std::collections::BTreeSet;
+
 use crate::config::FormatConfig;
 use pretty::{Arena, DocAllocator, DocBuilder};
-use vhdl_lang::ast::{Designator, Operator, SubprogramDesignator};
+use vhdl_lang::HasTokenSpan;
+use vhdl_lang::ast::{Designator, Mode, ObjectClass, Operator, SubprogramDesignator};
 use vhdl_lang::{Token, TokenAccess, TokenId};
 
 /// Convenience type alias — we annotate with `()` (no colour/semantic annotations).
@@ -21,11 +25,17 @@ pub struct Formatter<'a> {
     /// Token list for the current design unit (from `DesignFile::design_units`).
     /// Empty slice when no token context is available.
     pub tokens: &'a [Token],
+    /// Tracks which tokens have already had their trailing comments emitted,
+    /// preventing duplication when parent and child nodes overlap in token spans.
+    /// Stored as pointer offsets into the tokens slice.
+    pub emitted_trailing: RefCell<BTreeSet<usize>>,
+    /// Tracks which tokens have already had their leading comments emitted.
+    pub emitted_leading: RefCell<BTreeSet<usize>>,
 }
 
 impl<'a> Formatter<'a> {
     /// Create a formatter with a token slice for a specific design unit.
-    pub const fn with_tokens(
+    pub fn with_tokens(
         arena: &'a Arena<'a>,
         config: &'a FormatConfig,
         tokens: &'a [Token],
@@ -34,7 +44,16 @@ impl<'a> Formatter<'a> {
             arena,
             config,
             tokens,
+            emitted_trailing: RefCell::new(BTreeSet::new()),
+            emitted_leading: RefCell::new(BTreeSet::new()),
         }
+    }
+
+    /// Convert a token reference to its index in the tokens slice.
+    fn token_index(&self, token: &Token) -> usize {
+        let base = self.tokens.as_ptr() as usize;
+        let ptr = std::ptr::from_ref::<Token>(token) as usize;
+        (ptr - base) / std::mem::size_of::<Token>()
     }
 
     // -----------------------------------------------------------------------
@@ -54,6 +73,16 @@ impl<'a> Formatter<'a> {
     /// Emit a fixed punctuation string exactly as given (no casing transform).
     pub fn punct(&self, s: &'static str) -> Doc<'a> {
         self.arena.text(s)
+    }
+
+    /// Emit a keyword preceded by any leading comments and followed by any
+    /// trailing comment attached to the given token. Use this instead of
+    /// `self.kw(s)` for structural keywords (`begin`, `end`, `is`, etc.)
+    /// so that adjacent comments are preserved automatically.
+    pub fn kw_tok(&self, s: &str, token: TokenId) -> Doc<'a> {
+        self.leading_comments(token)
+            .append(self.kw(s))
+            .append(self.trailing_comment(token))
     }
 
     // -----------------------------------------------------------------------
@@ -133,6 +162,33 @@ impl<'a> Formatter<'a> {
     }
 
     // -----------------------------------------------------------------------
+    // VHDL keyword helpers
+    // -----------------------------------------------------------------------
+
+    /// Format an `ObjectClass` as its keyword(s).
+    pub fn object_class_kw(&self, class: ObjectClass) -> Doc<'a> {
+        match class {
+            ObjectClass::Signal => self.kw("signal"),
+            ObjectClass::Variable => self.kw("variable"),
+            ObjectClass::Constant => self.kw("constant"),
+            ObjectClass::SharedVariable => {
+                self.kw("shared").append(self.space()).append(self.kw("variable"))
+            }
+        }
+    }
+
+    /// Format a `Mode` as its keyword string.
+    pub const fn mode_str(mode: Mode) -> &'static str {
+        match mode {
+            Mode::In => "in",
+            Mode::Out => "out",
+            Mode::InOut => "inout",
+            Mode::Buffer => "buffer",
+            Mode::Linkage => "linkage",
+        }
+    }
+
+    // -----------------------------------------------------------------------
     // Comment + blank-line trivia helpers
     // -----------------------------------------------------------------------
 
@@ -148,6 +204,10 @@ impl<'a> Formatter<'a> {
         let Some(token) = self.tokens.get_token(id) else {
             return self.nil();
         };
+        let idx = self.token_index(token);
+        if !self.emitted_leading.borrow_mut().insert(idx) {
+            return self.nil(); // already emitted
+        }
         let Some(comments) = token.comments.as_ref().filter(|c| !c.leading.is_empty()) else {
             return self.nil();
         };
@@ -235,6 +295,10 @@ impl<'a> Formatter<'a> {
         let Some(token) = self.tokens.get_token(id) else {
             return self.nil();
         };
+        let idx = self.token_index(token);
+        if !self.emitted_trailing.borrow_mut().insert(idx) {
+            return self.nil(); // already emitted
+        }
         match &token.comments {
             Some(c) => match &c.trailing {
                 Some(comment) => {
@@ -257,7 +321,12 @@ impl<'a> Formatter<'a> {
         }
         let slice = self.tokens.get_token_slice(start_id, end_id);
         let mut doc = self.nil();
+        let mut emitted = self.emitted_trailing.borrow_mut();
         for token in slice {
+            let idx = self.token_index(token);
+            if !emitted.insert(idx) {
+                continue; // already emitted
+            }
             if let Some(comments) = &token.comments
                 && let Some(comment) = &comments.trailing
             {
@@ -266,6 +335,25 @@ impl<'a> Formatter<'a> {
             }
         }
         doc
+    }
+
+    /// Wrap a formatted node's doc with trailing comments from its full token
+    /// span. Scans all tokens in the span for trailing comments and appends them.
+    /// Already-emitted comments (from sub-node formatting) are skipped.
+    pub fn with_trailing_comments<T: HasTokenSpan>(&self, node: &T, doc: Doc<'a>) -> Doc<'a> {
+        if self.tokens.is_empty() {
+            return doc;
+        }
+        let start = node.get_start_token();
+        let end = node.get_end_token();
+        doc.append(self.trailing_comments_in_span(start, end))
+    }
+
+    /// Wrap a node's formatted doc with trailing comments from its full token
+    /// span. Already-emitted comments are skipped automatically.
+    /// Leading comments are handled by `kw_tok()` and `format_item_list()`.
+    pub fn with_comments<T: HasTokenSpan>(&self, node: &T, doc: Doc<'a>) -> Doc<'a> {
+        self.with_trailing_comments(node, doc)
     }
 
     /// Measure the flat (single-line) width of a document.
@@ -278,6 +366,42 @@ impl<'a> Formatter<'a> {
     // -----------------------------------------------------------------------
     // Generic trivia-aware list formatting
     // -----------------------------------------------------------------------
+
+    /// Scan forward from index `i` to find how many consecutive items are
+    /// groupable (no blank lines or leading comments between them).
+    ///
+    /// * `is_groupable` — returns `true` when an item qualifies for the group.
+    /// * `get_tokens` — extract `(start_token, end_token)` from an item.
+    ///
+    /// Returns 0 when `items[i]` is not groupable; otherwise returns the
+    /// group length (≥ 1).
+    #[allow(clippy::impl_trait_in_params, reason = "same style as format_item_list")]
+    pub fn try_group<T>(
+        &self,
+        items: &[T],
+        i: usize,
+        is_groupable: impl Fn(&T) -> bool,
+        get_tokens: impl Fn(&T) -> (TokenId, TokenId),
+    ) -> usize {
+        if !is_groupable(&items[i]) {
+            return 0;
+        }
+        let mut j = i + 1;
+        while j < items.len() {
+            if is_groupable(&items[j]) {
+                let (_, prev_end) = get_tokens(&items[j - 1]);
+                let (next_start, _) = get_tokens(&items[j]);
+                if !self.has_blank_before(prev_end, next_start)
+                    && !self.has_leading_comments_on(next_start)
+                {
+                    j += 1;
+                    continue;
+                }
+            }
+            break;
+        }
+        j - i
+    }
 
     /// Format a list of items with trivia (comments, blank lines) and optional
     /// alignment grouping.  This extracts the boilerplate shared by

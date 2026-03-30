@@ -3,11 +3,6 @@ name = "vhdl-fmt"
 version = "0.1.0"
 edition = "2024"
 
-[lints.rust]
-warnings = "deny"
-let_underscore_drop = "deny"
-ambiguous_negative_literals = "deny"
-
 [dependencies]
 clap = { version = "4.5.60", features = ["derive"] }
 pretty = "0.12.5"
@@ -16,17 +11,7 @@ serde = { version = "1.0", features = ["derive"] }
 toml = "1.0.6"
 vhdl_lang = "0.86.0"
 
-[profile.release]
-opt-level = 3
-lto = "fat"
-codegen-units = 1
-panic = "abort"
-strip = "symbols"
-
 [lints.clippy]
-pedantic = { level = "deny", priority = -1 }
-nursery = { level = "deny", priority = -1 }
-option_if_let_else = "allow"
 allow_attributes_without_reason = "deny"
 assertions_on_result_states = "deny"
 clone_on_ref_ptr = "deny"
@@ -46,8 +31,11 @@ mem_forget = "deny"
 module_name_repetitions = "deny"
 multiple_inherent_impl = "deny"
 non_zero_suggestions = "deny"
+nursery = { level = "deny", priority = -1 }
+option_if_let_else = "allow"
 panic_in_result_fn = "deny"
 partial_pub_fields = "deny"
+pedantic = { level = "deny", priority = -1 }
 precedence_bits = "deny"
 rc_buffer = "deny"
 redundant_test_prefix = "deny"
@@ -64,3 +52,15 @@ tests_outside_test_module = "deny"
 unneeded_field_pattern = "deny"
 unseparated_literal_suffix = "deny"
 unused_result_ok = "deny"
+
+[lints.rust]
+ambiguous_negative_literals = "deny"
+let_underscore_drop = "deny"
+warnings = "deny"
+
+[profile.release]
+opt-level = 3
+strip = "symbols"
+lto = "fat"
+panic = "abort"
+codegen-units = 1

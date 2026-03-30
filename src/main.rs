@@ -1,18 +1,14 @@
-mod config;
-mod fmt;
-
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use clap::{Arg, ArgAction, Command};
-use pretty::Arena;
 use rayon::prelude::*;
-use vhdl_lang::{VHDLParser, VHDLStandard};
+use vhdl_lang::VHDLStandard;
 
-use config::FormatConfig;
-use fmt::Formatter;
+use vhdl_fmt::config::FormatConfig;
+use vhdl_fmt::{format_source, verify_formatting};
 
 fn main() {
     let matches = Command::new("vhdl-fmt")
@@ -45,13 +41,39 @@ fn main() {
                 .help("Path to a vhdl-fmt.toml configuration file")
                 .value_name("path"),
         )
+        .arg(
+            Arg::new("yolo")
+                .long("yolo")
+                .short('y')
+                .help("Skip verification (parse, idempotency, and comment checks)")
+                .action(ArgAction::SetTrue),
+        )
+        .arg(
+            Arg::new("standard")
+                .long("standard")
+                .short('s')
+                .help("VHDL standard to use for parsing (93, 08, 19)")
+                .value_name("std")
+                .default_value("08"),
+        )
         .get_matches();
 
     let config = load_config(matches.get_one::<String>("location").map(Path::new));
 
+    let standard = match matches.get_one::<String>("standard").unwrap().as_str() {
+        "93" | "1993" => VHDLStandard::VHDL1993,
+        "08" | "2008" => VHDLStandard::VHDL2008,
+        "19" | "2019" => VHDLStandard::VHDL2019,
+        other => {
+            eprintln!("error: unknown VHDL standard '{other}' (use 93, 08, or 19)");
+            process::exit(1);
+        }
+    };
+
     let args: Vec<&String> = matches.get_many("files").unwrap().collect();
     let write = matches.get_flag("write");
     let check = matches.get_flag("check");
+    let yolo = matches.get_flag("yolo");
 
     let files = resolve_paths(&args);
     if files.is_empty() {
@@ -73,13 +95,29 @@ fn main() {
                     return;
                 }
             };
-            let formatted = match format_source(&source, &config) {
+            let formatted = match format_source(&source, &config, standard) {
                 Ok(s) => s,
                 Err(e) => {
                     eprintln!("error: could not parse {}: {}", path.display(), e);
                     had_error.store(true, Ordering::Relaxed);
                     return;
                 }
+            };
+            let formatted = if write && !yolo {
+                match verify_formatting(&source, &formatted, &config, standard) {
+                    Ok(stable) => stable,
+                    Err(e) => {
+                        eprintln!(
+                            "error: verification failed for {}: {}",
+                            path.display(),
+                            e
+                        );
+                        had_error.store(true, Ordering::Relaxed);
+                        return;
+                    }
+                }
+            } else {
+                formatted
             };
             if source == formatted {
                 return;
@@ -106,7 +144,7 @@ fn main() {
                     process::exit(1);
                 }
             };
-            let formatted = match format_source(&source, &config) {
+            let formatted = match format_source(&source, &config, standard) {
                 Ok(s) => s,
                 Err(e) => {
                     eprintln!("error: could not parse {}: {}", path.display(), e);
@@ -202,45 +240,3 @@ fn load_config(location: Option<&Path>) -> FormatConfig {
     FormatConfig::default()
 }
 
-// ---------------------------------------------------------------------------
-// Core formatting entry point
-// ---------------------------------------------------------------------------
-
-pub fn format_source(source: &str, config: &FormatConfig) -> Result<String, String> {
-    let parser = VHDLParser::new(VHDLStandard::default());
-    let vhdl_source = vhdl_lang::Source::inline(Path::new("<stdin>"), source);
-    let mut diagnostics = Vec::new();
-    let design_file = parser.parse_design_source(&vhdl_source, &mut diagnostics);
-
-    // Surface parse errors as a combined error string.
-    if !diagnostics.is_empty() {
-        let errors: Vec<String> = diagnostics.iter().map(|d| d.message.clone()).collect();
-        return Err(errors.join("\n"));
-    }
-
-    let arena = Arena::new();
-
-    // Format each design unit with its own token slice (which carries comments).
-    // We need to accumulate into a String directly because Doc borrows arena
-    // and we can't collect Vec<Doc<'_>> with different lifetimes cleanly.
-    let mut output = String::new();
-    for (i, (tokens, unit)) in design_file.design_units.iter().enumerate() {
-        if i > 0 {
-            output.push('\n'); // blank line between design units
-        }
-        let formatter = Formatter::with_tokens(&arena, config, tokens.as_slice());
-        let doc = formatter.format_design_unit(unit);
-        doc.render_fmt(config.line_length, &mut output).map_err(|e| e.to_string())?;
-        output.push('\n');
-    }
-
-    // Ensure a single trailing newline (deduplicate multiple trailing newlines).
-    while output.ends_with("\n\n") {
-        output.pop();
-    }
-    if !output.ends_with('\n') {
-        output.push('\n');
-    }
-
-    Ok(output)
-}

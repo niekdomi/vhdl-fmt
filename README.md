@@ -26,7 +26,7 @@ vhdl-fmt file.vhd
 ### Command-Line Options
 
 | Flag                | Alias       | Description                                                                                                |
-| :------------------ | :---------- | :--------------------------------------------------------------------------------------------------------- |
+| ------------------- | ----------- | ---------------------------------------------------------------------------------------------------------- |
 | `--write`           | `-w`        | Overwrite the input file(s) with the formatted output.                                                     |
 | `--check`           | `-c`        | Verify whether the input file(s) are correctly formatted. Exits with a non-zero status if any file is not. |
 | `--location <path>` | `-l <path>` | Specify a custom configuration file location.                                                              |

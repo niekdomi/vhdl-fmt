@@ -13,10 +13,14 @@ impl<'a> Formatter<'a> {
     // -----------------------------------------------------------------------
 
     pub fn format_design_unit(&self, unit: &AnyDesignUnit) -> Doc<'a> {
-        match unit {
+        let start = unit.get_start_token();
+        let leading = self.leading_comments(start);
+        let doc = match unit {
             AnyDesignUnit::Primary(p) => self.format_primary_unit(p),
             AnyDesignUnit::Secondary(s) => self.format_secondary_unit(s),
-        }
+        };
+        let doc = self.with_trailing_comments(unit, doc);
+        leading.append(doc)
     }
 
     fn format_primary_unit(&self, unit: &AnyPrimaryUnit) -> Doc<'a> {
@@ -44,19 +48,14 @@ impl<'a> Formatter<'a> {
         if clause.is_empty() {
             return self.nil();
         }
-        let mut doc = self.nil();
-        for (i, item) in clause.iter().enumerate() {
-            let item_doc = self.format_context_item(item);
-            if i == 0 {
-                let trivia = self.leading_comments(item.get_start_token());
-                doc = doc.append(trivia).append(item_doc);
-            } else {
-                let prev = &clause[i - 1];
-                let trivia = self.node_trivia(prev.get_end_token(), item.get_start_token());
-                doc = doc.append(self.hardline()).append(trivia).append(item_doc);
-            }
-        }
-        doc.append(self.hardline())
+        let body = self.format_item_list(
+            clause,
+            |item| (item.get_start_token(), item.get_end_token()),
+            |_, _, _| 0, // no alignment grouping
+            |_, _, _, _| unreachable!(),
+            Self::format_context_item,
+        );
+        body.append(self.hardline())
     }
 
     fn format_context_item(&self, item: &ContextItem) -> Doc<'a> {
@@ -112,17 +111,18 @@ impl<'a> Formatter<'a> {
 
         let begin_stmts_doc = if entity.statements.is_empty() {
             self.nil()
+        } else if let Some(begin_tok) = entity.begin_token {
+            self.hardline()
+                .append(self.kw_tok("begin", begin_tok))
+                .append(self.format_concurrent_statements(&entity.statements))
         } else {
             self.hardline()
                 .append(self.kw("begin"))
                 .append(self.format_concurrent_statements(&entity.statements))
         };
 
-        // Leading comments on the `end` keyword.
-        let end_leading = self.leading_comments(entity.end_token);
         let end_trailing = self.trailing_comment(entity.get_end_token());
 
-        // Always emit `end entity <name>`
         context_doc
             .append(self.kw("entity"))
             .append(self.space())
@@ -134,8 +134,7 @@ impl<'a> Formatter<'a> {
             .append(decls_doc)
             .append(begin_stmts_doc)
             .append(self.hardline())
-            .append(end_leading)
-            .append(self.kw("end"))
+            .append(self.kw_tok("end",entity.end_token))
             .append(self.space())
             .append(self.kw("entity"))
             .append(self.space())
@@ -163,13 +162,8 @@ impl<'a> Formatter<'a> {
 
         let stmts_doc = self.format_concurrent_statements(&arch.statements);
 
-        // Leading comments on the `end` keyword (e.g. separator lines).
-        let end_leading = self.leading_comments(arch.end_token);
-
-        // Trailing comment after the closing `;`.
         let end_trailing = self.trailing_comment(arch.get_end_token());
 
-        // Always emit `end architecture <name>`
         context_doc
             .append(self.kw("architecture"))
             .append(self.space())
@@ -182,11 +176,10 @@ impl<'a> Formatter<'a> {
             .append(self.kw("is"))
             .append(decls_doc)
             .append(self.hardline())
-            .append(self.kw("begin"))
+            .append(self.kw_tok("begin", arch.begin_token))
             .append(stmts_doc)
             .append(self.hardline())
-            .append(end_leading)
-            .append(self.kw("end"))
+            .append(self.kw_tok("end", arch.end_token))
             .append(self.space())
             .append(self.kw("architecture"))
             .append(self.space())
@@ -220,6 +213,8 @@ impl<'a> Formatter<'a> {
             self.nest(self.hardline().append(self.format_declarations(&pkg.decl)))
         };
 
+        let end_trailing = self.trailing_comment(pkg.get_end_token());
+
         context_doc
             .append(self.kw("package"))
             .append(self.space())
@@ -229,12 +224,13 @@ impl<'a> Formatter<'a> {
             .append(generics_doc)
             .append(decls_doc)
             .append(self.hardline())
-            .append(self.kw("end"))
+            .append(self.kw_tok("end",pkg.end_token))
             .append(self.space())
             .append(self.kw("package"))
             .append(self.space())
             .append(name)
             .append(self.punct(";"))
+            .append(end_trailing)
     }
 
     // -----------------------------------------------------------------------
@@ -251,6 +247,8 @@ impl<'a> Formatter<'a> {
             self.nest(self.hardline().append(self.format_declarations(&body.decl)))
         };
 
+        let end_trailing = self.trailing_comment(body.get_end_token());
+
         context_doc
             .append(self.kw("package"))
             .append(self.space())
@@ -261,7 +259,7 @@ impl<'a> Formatter<'a> {
             .append(self.kw("is"))
             .append(decls_doc)
             .append(self.hardline())
-            .append(self.kw("end"))
+            .append(self.kw_tok("end",body.end_token))
             .append(self.space())
             .append(self.kw("package"))
             .append(self.space())
@@ -269,6 +267,7 @@ impl<'a> Formatter<'a> {
             .append(self.space())
             .append(name)
             .append(self.punct(";"))
+            .append(end_trailing)
     }
 
     // -----------------------------------------------------------------------
@@ -294,7 +293,7 @@ impl<'a> Formatter<'a> {
             .append(self.kw("is"))
             .append(body_doc)
             .append(self.hardline())
-            .append(self.kw("end"))
+            .append(self.kw_tok("end",ctx.end_token))
             .append(self.space())
             .append(self.kw("context"))
             .append(self.space())
@@ -354,7 +353,7 @@ impl<'a> Formatter<'a> {
             .append(vunit_docs)
             .append(self.nest(self.hardline().append(block_config_doc)))
             .append(self.hardline())
-            .append(self.kw("end"))
+            .append(self.kw_tok("end",config.end_token))
             .append(self.space())
             .append(self.kw("configuration"))
             .append(self.space())
