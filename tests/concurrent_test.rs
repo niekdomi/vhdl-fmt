@@ -195,7 +195,9 @@ end architecture rtl;"#,
 #[test]
 fn if_generate_with_elsif() {
     assert_format(
-        &wrap("gen : if sel = \"00\" generate y <= a; elsif sel = \"01\" generate y <= b; else generate y <= '0'; end generate gen;"),
+        &wrap(
+            "gen : if sel = \"00\" generate y <= a; elsif sel = \"01\" generate y <= b; else generate y <= '0'; end generate gen;",
+        ),
         r#"architecture rtl of e is
 begin
     gen: if sel = "00" generate
@@ -212,7 +214,9 @@ end architecture rtl;"#,
 #[test]
 fn case_generate() {
     assert_format(
-        &wrap("gen : case sel generate when \"00\" => y <= a; when others => y <= '0'; end generate gen;"),
+        &wrap(
+            "gen : case sel generate when \"00\" => y <= a; when others => y <= '0'; end generate gen;",
+        ),
         r#"architecture rtl of e is
 begin
     gen: case sel generate
@@ -357,7 +361,9 @@ end architecture rtl;"#,
 #[test]
 fn process_with_sensitivity_comment() {
     assert_format(
-        &wrap("-- proc leading\nprocess(clk) -- proc comment\nbegin -- begin comment\nnull; -- null comment\nend process; -- end comment"),
+        &wrap(
+            "-- proc leading\nprocess(clk) -- proc comment\nbegin -- begin comment\nnull; -- null comment\nend process; -- end comment",
+        ),
         r#"architecture rtl of e is
 begin
     -- proc leading
@@ -372,7 +378,9 @@ end architecture rtl;"#,
 #[test]
 fn for_generate_with_comments() {
     assert_format(
-        &wrap("-- gen leading\ngen : for i in 0 to 3 generate -- gen comment\ny <= a; -- stmt comment\nend generate gen; -- end comment"),
+        &wrap(
+            "-- gen leading\ngen : for i in 0 to 3 generate -- gen comment\ny <= a; -- stmt comment\nend generate gen; -- end comment",
+        ),
         r#"architecture rtl of e is
 begin
     -- gen leading

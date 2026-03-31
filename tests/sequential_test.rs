@@ -470,7 +470,9 @@ end architecture rtl;"#,
 #[test]
 fn case_with_comments() {
     assert_format(
-        &wrap("-- case leading\ncase sel is -- case comment\nwhen \"00\" => v := 0; -- stmt comment\nwhen others => v := 1;\nend case; -- end comment"),
+        &wrap(
+            "-- case leading\ncase sel is -- case comment\nwhen \"00\" => v := 0; -- stmt comment\nwhen others => v := 1;\nend case; -- end comment",
+        ),
         r#"architecture rtl of e is
 begin
     process
@@ -488,7 +490,9 @@ end architecture rtl;"#,
 #[test]
 fn while_loop_with_comments() {
     assert_format(
-        &wrap("-- loop leading\nwhile running loop -- loop comment\nnull; -- body comment\nend loop; -- end comment"),
+        &wrap(
+            "-- loop leading\nwhile running loop -- loop comment\nnull; -- body comment\nend loop; -- end comment",
+        ),
         r#"architecture rtl of e is
 begin
     process
@@ -505,7 +509,9 @@ end architecture rtl;"#,
 #[test]
 fn if_then_elsif_with_comments() {
     assert_format(
-        &wrap("if a then -- a comment\nv := 1;\nelsif b then -- b comment\nv := 2;\nelse -- else comment\nv := 0;\nend if; -- end comment"),
+        &wrap(
+            "if a then -- a comment\nv := 1;\nelsif b then -- b comment\nv := 2;\nelse -- else comment\nv := 0;\nend if; -- end comment",
+        ),
         r#"architecture rtl of e is
 begin
     process

@@ -232,7 +232,9 @@ end package p;"#,
 #[test]
 fn aligned_signal_group() {
     assert_format(
-        &wrap("signal clk : std_logic;\nsignal data : std_logic_vector(7 downto 0);\nsignal valid : std_logic;"),
+        &wrap(
+            "signal clk : std_logic;\nsignal data : std_logic_vector(7 downto 0);\nsignal valid : std_logic;",
+        ),
         r#"package p is
     signal clk   : std_logic;
     signal data  : std_logic_vector(7 downto 0);
@@ -308,7 +310,9 @@ end package p;"#,
 #[test]
 fn protected_type_declaration() {
     assert_format(
-        &wrap("type counter is protected procedure increment; function get return integer; end protected counter;"),
+        &wrap(
+            "type counter is protected procedure increment; function get return integer; end protected counter;",
+        ),
         r#"package p is
     type counter is protected
         procedure increment;
@@ -371,7 +375,9 @@ end architecture a;"#,
 #[test]
 fn record_type_with_comments() {
     assert_format(
-        &wrap("-- rec leading\ntype rec is record -- rec comment\na : integer; -- a comment\nb : bit; -- b comment\nend record; -- end comment"),
+        &wrap(
+            "-- rec leading\ntype rec is record -- rec comment\na : integer; -- a comment\nb : bit; -- b comment\nend record; -- end comment",
+        ),
         r#"package p is
     -- rec leading
     type rec is record
