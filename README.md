@@ -86,7 +86,9 @@ then
 end if;
 ```
 
-**Input**
+---
+
+**Input:**
 
 ```vhdl
 output_value <= input_operand_left + input_operand_right + accumulator_value + pipeline_offset + correction_term + rounding_bias;
