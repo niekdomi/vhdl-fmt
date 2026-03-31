@@ -41,7 +41,6 @@ def generate_report(json_path: Path | str, output_path: Path | str) -> None:
 
     lines = [
         f"![Code Coverage](https://img.shields.io/badge/Code%20Coverage-{line_pct:.0f}%25-{color}?style=flat)",
-        "",
         "| File | Line Coverage | Function Coverage | Region Coverage | Status |",
         "|:---|:---|:---|:---|:---:|",
     ]
