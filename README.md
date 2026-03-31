@@ -3,7 +3,7 @@
 > A fast, modern, and opinionated VHDL code formatter designed to improve readability and enforce consistency across your projects.
 
 > [!INFO]
-> Update: I am currently rewriting the project in Rust. While the new version
+> I am currently rewriting the project in Rust. While the new version
 > is significantly improved in nearly every metric, I am still having some troubles with the
 > comment handling. If you're interested in testing the latest progress, you
 > can build from the [rewrite-in-rust](https://github.com/niekdomi/vhdl-fmt/tree/rewrite-in-rust) branch.
