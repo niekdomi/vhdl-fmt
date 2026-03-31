@@ -9,9 +9,9 @@ fn wrap(expr: &str) -> String {
     )
 }
 
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 // Names (designator, selected, slice, call/indexed)
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 
 #[test]
 fn selected_name() {
@@ -27,9 +27,9 @@ end architecture rtl;"#,
     );
 }
 
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 // Association lists (port map / generic map / call arguments)
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 
 #[test]
 fn function_call_with_args() {
@@ -45,9 +45,9 @@ end architecture rtl;"#,
     );
 }
 
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 // Indexed names
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 
 #[test]
 fn indexed_name() {
@@ -63,9 +63,9 @@ end architecture rtl;"#,
     );
 }
 
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 // Sliced names
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 
 #[test]
 fn sliced_name() {
@@ -76,6 +76,76 @@ begin
     process
     begin
         v := vec(7 downto 0);
+    end process;
+end architecture rtl;"#,
+    );
+}
+
+//===----------------------------------------------------------------------===//
+// Selected-all names
+//===----------------------------------------------------------------------===//
+
+#[test]
+fn selected_all_name() {
+    assert_format(
+        "package p is use work.pkg.all; end p;",
+        r#"package p is
+    use work.pkg.all;
+end package p;"#,
+    );
+}
+
+//===----------------------------------------------------------------------===//
+// Attribute names
+//===----------------------------------------------------------------------===//
+
+#[test]
+fn attribute_event() {
+    assert_format(
+        &wrap("clk'event"),
+        r#"architecture rtl of e is
+begin
+    process
+    begin
+        v := clk'event;
+    end process;
+end architecture rtl;"#,
+    );
+}
+
+#[test]
+fn attribute_length() {
+    assert_format(
+        &wrap("arr'length"),
+        r#"architecture rtl of e is
+begin
+    process
+    begin
+        v := arr'length;
+    end process;
+end architecture rtl;"#,
+    );
+}
+
+#[test]
+fn attribute_range() {
+    assert_format(
+        "package p is subtype r is integer range arr'range; end p;",
+        r#"package p is
+    subtype r is integer range arr'range;
+end package p;"#,
+    );
+}
+
+#[test]
+fn attribute_with_expression() {
+    assert_format(
+        &wrap("arr'left(1)"),
+        r#"architecture rtl of e is
+begin
+    process
+    begin
+        v := arr'left(1);
     end process;
 end architecture rtl;"#,
     );

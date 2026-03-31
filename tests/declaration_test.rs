@@ -12,9 +12,9 @@ end package p;"#,
     )
 }
 
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 // Object declarations (signal, variable, constant, shared variable)
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 
 #[test]
 fn signal_declaration() {
@@ -26,9 +26,9 @@ end package p;"#,
     );
 }
 
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 // File declarations
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 
 #[test]
 fn file_declaration() {
@@ -51,9 +51,9 @@ end package p;"#,
     );
 }
 
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 // Type declarations
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 
 #[test]
 fn enumeration_type() {
@@ -98,9 +98,9 @@ end package p;"#,
     );
 }
 
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 // Component declarations
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 
 #[test]
 fn component_declaration_empty() {
@@ -113,9 +113,9 @@ end package p;"#,
     );
 }
 
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 // Attribute declarations and specifications
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 
 #[test]
 fn attribute_declaration() {
@@ -127,9 +127,9 @@ end package p;"#,
     );
 }
 
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 // Alias declarations
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 
 #[test]
 fn alias_simple() {
@@ -141,9 +141,9 @@ end package p;"#,
     );
 }
 
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 // Use / library / context-reference clauses
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 
 #[test]
 fn use_clause() {
@@ -155,9 +155,9 @@ end package p;"#,
     );
 }
 
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 // Package instantiation (as a declaration)
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 
 #[test]
 fn package_instantiation() {
@@ -169,9 +169,9 @@ end package p;"#,
     );
 }
 
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 // Configuration specification
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 
 #[test]
 fn configuration_specification() {
@@ -187,9 +187,9 @@ end architecture a;"#,
     );
 }
 
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 // View (mode view) declarations
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 
 #[test]
 fn view_declaration() {
@@ -197,6 +197,212 @@ fn view_declaration() {
         &wrap("type simple_t is (a, b, c);"),
         r#"package p is
     type simple_t is (a, b, c);
+end package p;"#,
+    );
+}
+
+//===----------------------------------------------------------------------===//
+// Multiple identifiers in one declaration
+//===----------------------------------------------------------------------===//
+
+#[test]
+fn multiple_signal_identifiers() {
+    assert_format(
+        &wrap("signal a, b, c : std_logic;"),
+        r#"package p is
+    signal a, b, c : std_logic;
+end package p;"#,
+    );
+}
+
+#[test]
+fn multiple_constant_identifiers() {
+    assert_format(
+        &wrap("constant W, H : integer := 8;"),
+        r#"package p is
+    constant W, H : integer := 8;
+end package p;"#,
+    );
+}
+
+//===----------------------------------------------------------------------===//
+// Aligned object declaration groups
+//===----------------------------------------------------------------------===//
+
+#[test]
+fn aligned_signal_group() {
+    assert_format(
+        &wrap("signal clk : std_logic;\nsignal data : std_logic_vector(7 downto 0);\nsignal valid : std_logic;"),
+        r#"package p is
+    signal clk   : std_logic;
+    signal data  : std_logic_vector(7 downto 0);
+    signal valid : std_logic;
+end package p;"#,
+    );
+}
+
+//===----------------------------------------------------------------------===//
+// Incomplete type declarations
+//===----------------------------------------------------------------------===//
+
+#[test]
+fn incomplete_type_declaration() {
+    assert_format(
+        &wrap("type t;"),
+        r#"package p is
+    type t;
+end package p;"#,
+    );
+}
+
+//===----------------------------------------------------------------------===//
+// Access type declarations
+//===----------------------------------------------------------------------===//
+
+#[test]
+fn access_type() {
+    assert_format(
+        &wrap("type ptr is access integer;"),
+        r#"package p is
+    type ptr is access integer;
+end package p;"#,
+    );
+}
+
+//===----------------------------------------------------------------------===//
+// File type definitions
+//===----------------------------------------------------------------------===//
+
+#[test]
+fn file_type_definition() {
+    assert_format(
+        &wrap("type text_file is file of character;"),
+        r#"package p is
+    type text_file is file of character;
+end package p;"#,
+    );
+}
+
+//===----------------------------------------------------------------------===//
+// Physical type declarations
+//===----------------------------------------------------------------------===//
+
+#[test]
+fn physical_type() {
+    assert_format(
+        &wrap("type time_t is range 0 to integer'high units fs; ps = 1000 fs; end units;"),
+        r#"package p is
+    type time_t is range 0 to integer'high
+    units
+            fs;
+            ps = 1000 fs;
+    end units;
+end package p;"#,
+    );
+}
+
+//===----------------------------------------------------------------------===//
+// Protected type declarations and bodies
+//===----------------------------------------------------------------------===//
+
+#[test]
+fn protected_type_declaration() {
+    assert_format(
+        &wrap("type counter is protected procedure increment; function get return integer; end protected counter;"),
+        r#"package p is
+    type counter is protected
+        procedure increment;
+        pure function get return integer;
+    end protected counter;
+end package p;"#,
+    );
+}
+
+#[test]
+fn protected_type_body() {
+    assert_format(
+        r#"package body p is type counter is protected body variable v : integer := 0; procedure increment is begin v := v + 1; end increment; end protected body counter; end p;"#,
+        r#"package body p is
+    type counter is protected body
+        variable v : integer := 0;
+        procedure increment is
+        begin
+            v := v + 1;
+        end procedure increment;
+    end protected body counter;
+end package body p;"#,
+    );
+}
+
+//===----------------------------------------------------------------------===//
+// Attribute specifications
+//===----------------------------------------------------------------------===//
+
+#[test]
+fn attribute_specification_all() {
+    assert_format(
+        r#"architecture a of e is attribute keep : boolean; attribute keep of all : signal is true; begin end a;"#,
+        r#"architecture a of e is
+    attribute keep: boolean;
+    attribute keep of all: signal is true;
+begin
+
+end architecture a;"#,
+    );
+}
+
+#[test]
+fn attribute_specification_others() {
+    assert_format(
+        r#"architecture a of e is attribute keep : boolean; attribute keep of others : signal is false; begin end a;"#,
+        r#"architecture a of e is
+    attribute keep: boolean;
+    attribute keep of others: signal is false;
+begin
+
+end architecture a;"#,
+    );
+}
+
+//===----------------------------------------------------------------------===//
+// Comment handling in declarations
+//===----------------------------------------------------------------------===//
+
+#[test]
+fn record_type_with_comments() {
+    assert_format(
+        &wrap("-- rec leading\ntype rec is record -- rec comment\na : integer; -- a comment\nb : bit; -- b comment\nend record; -- end comment"),
+        r#"package p is
+    -- rec leading
+    type rec is record
+        a : integer;
+        b : bit;
+    end record rec; -- rec comment -- a comment -- b comment -- end comment
+end package p;"#,
+    );
+}
+
+#[test]
+fn multiple_declarations_with_blank_line() {
+    assert_format(
+        &wrap("signal a : std_logic;\n\nsignal b : std_logic;"),
+        r#"package p is
+    signal a : std_logic;
+
+    signal b : std_logic;
+end package p;"#,
+    );
+}
+
+#[test]
+fn declarations_with_leading_comments() {
+    assert_format(
+        &wrap("-- first group\nsignal clk : std_logic;\n-- second group\nsignal data : integer;"),
+        r#"package p is
+    -- first group
+    signal clk : std_logic;
+    -- second group
+    signal data : integer;
 end package p;"#,
     );
 }

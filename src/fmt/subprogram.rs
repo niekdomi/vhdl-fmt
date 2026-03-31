@@ -9,18 +9,18 @@ use vhdl_lang::ast::{
 use crate::fmt::{Doc, Formatter};
 
 impl<'a> Formatter<'a> {
-    // -----------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Subprogram declarations  (procedure foo; / function foo return bar;)
-    // -----------------------------------------------------------------------
+    // -------------------------------------------------------------------------
 
     pub fn format_subprogram_declaration(&self, decl: &SubprogramDeclaration) -> Doc<'a> {
         self.format_subprogram_specification(&decl.specification)
             .append(self.punct(";"))
     }
 
-    // -----------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Subprogram specifications
-    // -----------------------------------------------------------------------
+    // -------------------------------------------------------------------------
 
     pub fn format_subprogram_specification(&self, spec: &SubprogramSpecification) -> Doc<'a> {
         match spec {
@@ -84,9 +84,9 @@ impl<'a> Formatter<'a> {
             .append(return_doc)
     }
 
-    // -----------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Subprogram header  (generic clause + optional generic map)
-    // -----------------------------------------------------------------------
+    // -------------------------------------------------------------------------
 
     fn format_subprogram_header(&self, header: &SubprogramHeader) -> Doc<'a> {
         let generic_list_doc = self.nest(
@@ -105,9 +105,9 @@ impl<'a> Formatter<'a> {
         generic_list_doc.append(map_doc)
     }
 
-    // -----------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Subprogram body
-    // -----------------------------------------------------------------------
+    // -------------------------------------------------------------------------
 
     pub fn format_subprogram_body(&self, body: &SubprogramBody) -> Doc<'a> {
         let spec_doc = self.format_subprogram_specification(&body.specification);
@@ -154,9 +154,9 @@ impl<'a> Formatter<'a> {
             .append(self.punct(";"))
     }
 
-    // -----------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Signatures  [type_mark, ... return type_mark]
-    // -----------------------------------------------------------------------
+    // -------------------------------------------------------------------------
 
     pub fn format_signature(&self, sig: &WithTokenSpan<Signature>) -> Doc<'a> {
         match &sig.item {
@@ -183,9 +183,9 @@ impl<'a> Formatter<'a> {
         }
     }
 
-    // -----------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Subprogram instantiation
-    // -----------------------------------------------------------------------
+    // -------------------------------------------------------------------------
 
     pub fn format_subprogram_instantiation(&self, inst: &SubprogramInstantiation) -> Doc<'a> {
         let kind_kw = match inst.kind {
