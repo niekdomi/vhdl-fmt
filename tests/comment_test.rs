@@ -177,20 +177,20 @@ fn comment_between_process_statements() {
 begin
     process
     begin
-        -- first assignment
-        a <= '1';
-        -- second assignment
-        b <= '0';
+        -- first leading
+        a <= '1'; -- first trailing
+        -- second leading
+        b <= '0'; -- second trailing
     end process;
 end rtl;"#,
         r#"architecture rtl of e is
 begin
     process
     begin
-        -- first assignment
-        a <= '1';
-        -- second assignment
-        b <= '0';
+        -- first leading
+        a <= '1'; -- first trailing
+        -- second leading
+        b <= '0'; -- second trailing
     end process;
 end architecture rtl;"#,
     );
@@ -341,8 +341,7 @@ fn block_comment_after_semicolon_becomes_leading_of_next() {
 signal s : std_logic; /* trailing block comment */
 end p;"#,
         r#"package p is
-    signal s : std_logic;
-/* trailing block comment */
+    signal s : std_logic; /* trailing block comment */
 end package p;"#,
     );
 }
@@ -355,8 +354,7 @@ fn block_comment_after_is_becomes_leading_of_end() {
     assert_format(
         r#"entity e is /* is comment */
 end e;"#,
-        r#"entity e is
-/* is comment */
+        r#"entity e is /* is comment */
 end entity e;"#,
     );
 }
@@ -434,6 +432,104 @@ end entity e;
 architecture rtl of e is
 begin
 
+end architecture rtl;"#,
+    );
+}
+
+//===----------------------------------------------------------------------===//
+// Trailing comments in port maps / generic maps
+//===----------------------------------------------------------------------===//
+
+#[test]
+fn trailing_comment_in_port_map() {
+    assert_format(
+        r#"architecture rtl of e is
+begin
+    inst : entity work.foo
+        port map (
+            a => sig_a, -- port a
+            b => sig_b, -- port b
+            c => sig_c
+        );
+end rtl;"#,
+        r#"architecture rtl of e is
+begin
+    inst: entity work.foo
+        port map (
+            a => sig_a, -- port a
+            b => sig_b, -- port b
+            c => sig_c
+        );
+end architecture rtl;"#,
+    );
+}
+
+#[test]
+fn trailing_comment_on_last_port_map_item() {
+    assert_format(
+        r#"architecture rtl of e is
+begin
+    inst : entity work.foo
+        port map (
+            a => sig_a, -- port a
+            b => sig_b  -- port b
+        );
+end rtl;"#,
+        r#"architecture rtl of e is
+begin
+    inst: entity work.foo
+        port map (
+            a => sig_a, -- port a
+            b => sig_b -- port b
+        );
+end architecture rtl;"#,
+    );
+}
+
+#[test]
+fn trailing_comment_in_generic_map() {
+    assert_format(
+        r#"architecture rtl of e is
+begin
+    inst : entity work.foo
+        generic map (
+            G1 => 1, -- generic 1
+            G2 => 2  -- generic 2
+        )
+        port map (
+            a => sig_a
+        );
+end rtl;"#,
+        r#"architecture rtl of e is
+begin
+    inst: entity work.foo
+        generic map (
+            G1 => 1, -- generic 1
+            G2 => 2 -- generic 2
+        )
+        port map (a => sig_a);
+end architecture rtl;"#,
+    );
+}
+
+#[test]
+fn trailing_comment_in_function_call() {
+    assert_format(
+        r#"architecture rtl of e is
+begin
+    result <= func(
+        x, -- arg x
+        y, -- arg y
+        z
+    );
+end rtl;"#,
+        r#"architecture rtl of e is
+begin
+    result <= func(
+                  x, -- arg x
+                  y, -- arg y
+                  z
+              );
 end architecture rtl;"#,
     );
 }
