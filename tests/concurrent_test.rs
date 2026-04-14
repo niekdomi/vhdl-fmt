@@ -367,10 +367,10 @@ fn process_with_sensitivity_comment() {
         r#"architecture rtl of e is
 begin
     -- proc leading
-    process(clk)
+    process(clk) -- proc comment
     begin -- begin comment
         null; -- null comment
-    end process; -- proc comment -- end comment
+    end process; -- end comment
 end architecture rtl;"#,
     )
 }
@@ -384,9 +384,9 @@ fn for_generate_with_comments() {
         r#"architecture rtl of e is
 begin
     -- gen leading
-    gen: for i in 0 to 3 generate
+    gen: for i in 0 to 3 generate -- gen comment
         y <= a; -- stmt comment
-    end generate gen; -- gen comment -- end comment
+    end generate gen; -- end comment
 end architecture rtl;"#,
     )
 }

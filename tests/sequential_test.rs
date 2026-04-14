@@ -134,11 +134,11 @@ begin
     process
     begin
         -- leading comment
-        if cond then
+        if cond then -- then comment
             v := 1; -- assignment comment
-        else
+        else -- else comment
             v := 0; -- else assignment
-        end if; -- then comment -- else comment -- end comment
+        end if; -- end comment
     end process;
 end architecture rtl;"#,
     );
@@ -478,10 +478,10 @@ begin
     process
     begin
         -- case leading
-        case sel is
+        case sel is -- case comment
             when "00"   => v := 0; -- stmt comment
             when others => v := 1;
-        end case; -- case comment -- end comment
+        end case; -- end comment
     end process;
 end architecture rtl;"#,
     );
@@ -498,9 +498,9 @@ begin
     process
     begin
         -- loop leading
-        while running loop
+        while running loop -- loop comment
             null; -- body comment
-        end loop; -- loop comment -- end comment
+        end loop; -- end comment
     end process;
 end architecture rtl;"#,
     );
@@ -516,13 +516,13 @@ fn if_then_elsif_with_comments() {
 begin
     process
     begin
-        if a then
+        if a then -- a comment
             v := 1;
-        elsif b then
+        elsif b then -- b comment
             v := 2;
-        else
+        else -- else comment
             v := 0;
-        end if; -- a comment -- b comment -- else comment -- end comment
+        end if; -- end comment
     end process;
 end architecture rtl;"#,
     );

@@ -108,10 +108,10 @@ variable b : out integer -- b comment
         ),
         r#"package p is
     -- proc leading
-    procedure proc (
+    procedure proc ( -- param start
         signal a   : in  std_logic; -- a comment
         variable b : out integer -- b comment
-    ); -- param start -- end param
+    ); -- end param
 end package p;"#,
     );
 }
@@ -141,10 +141,10 @@ b : real := 1.0 -- b comment
         ),
         r#"package p is
     -- func leading
-    pure function func (
+    pure function func ( -- param start
         constant a : integer; -- a comment
         constant b : real := 1 -- b comment
-    ) return boolean; -- param start -- return comment
+    ) return boolean; -- return comment
 end package p;"#,
     );
 }

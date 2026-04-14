@@ -113,12 +113,12 @@ null; -- null comment
 end proc; -- end proc
 end p; -- end body"#,
         r#"-- proc body leading
-package body p is
-    procedure proc is
+package body p is -- body comment
+    procedure proc is -- proc comment
     begin -- begin comment
         null; -- null comment
-    end procedure proc; -- proc comment -- end proc
-end package body p; -- end body -- body comment"#,
+    end procedure proc; -- end proc
+end package body p; -- end body"#,
     );
 }
 

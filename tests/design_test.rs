@@ -51,12 +51,12 @@ entity foo is -- entity comment
 port (a : in std_logic; b : out std_logic); -- port comment
 end foo; -- end comment"#,
         r#"-- leading comment
-entity foo is
+entity foo is -- entity comment
     port (
         a : in  std_logic;
         b : out std_logic
-    );
-end entity foo; -- end comment -- entity comment -- port comment"#,
+    ); -- port comment
+end entity foo; -- end comment"#,
     );
 }
 
@@ -96,11 +96,11 @@ signal s : std_logic; -- signal comment
 begin -- begin comment
 end rtl; -- end comment"#,
         r#"-- arch leading
-architecture rtl of foo is
+architecture rtl of foo is -- arch comment
     signal s : std_logic; -- signal comment
 begin -- begin comment
 
-end architecture rtl; -- end comment -- arch comment"#,
+end architecture rtl; -- end comment"#,
     );
 }
 
@@ -135,9 +135,9 @@ package pkg is -- package comment
 constant c : integer := 42; -- const comment
 end pkg; -- end comment"#,
         r#"-- package leading
-package pkg is
+package pkg is -- package comment
     constant c : integer := 42; -- const comment
-end package pkg; -- end comment -- package comment"#,
+end package pkg; -- end comment"#,
     );
 }
 
@@ -176,12 +176,12 @@ function f return integer is -- func comment
 begin return 1; end f; -- end func
 end pkg; -- end body"#,
         r#"-- body leading
-package body pkg is
+package body pkg is -- body comment
     pure function f return integer is
     begin
         return 1;
     end function f; -- func comment -- end func
-end package body pkg; -- end body -- body comment"#,
+end package body pkg; -- end body"#,
     );
 }
 
@@ -209,10 +209,10 @@ library ieee; -- lib comment
 use ieee.std_logic_1164.all; -- use comment
 end ctx; -- end comment"#,
         r#"-- context leading
-context ctx is
-    library ieee;
-    use ieee.std_logic_1164.all;
-end context ctx; -- context comment -- lib comment -- use comment -- end comment"#,
+context ctx is -- context comment
+    library ieee; -- lib comment
+    use ieee.std_logic_1164.all; -- use comment
+end context ctx; -- end comment"#,
     );
 }
 
@@ -255,12 +255,12 @@ for inst : comp use entity work.comp; end for; -- inner end
 end for; -- outer end
 end cfg; -- end config"#,
         r#"-- config leading
-configuration cfg of ent is
-    for rtl
+configuration cfg of ent is -- config comment
+    for rtl -- for comment
         for inst: comp
             use entity work.comp;
-        end for;
-    end for;
-end configuration cfg; -- config comment -- for comment -- inner end -- outer end -- end config"#,
+        end for; -- inner end
+    end for; -- outer end
+end configuration cfg; -- end config"#,
     );
 }

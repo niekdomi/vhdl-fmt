@@ -380,10 +380,10 @@ fn record_type_with_comments() {
         ),
         r#"package p is
     -- rec leading
-    type rec is record
-        a : integer;
-        b : bit;
-    end record rec; -- rec comment -- a comment -- b comment -- end comment
+    type rec is record -- rec comment
+        a : integer; -- a comment
+        b : bit; -- b comment
+    end record rec; -- end comment
 end package p;"#,
     );
 }
