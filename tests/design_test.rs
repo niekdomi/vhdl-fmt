@@ -177,10 +177,10 @@ begin return 1; end f; -- end func
 end pkg; -- end body"#,
         r#"-- body leading
 package body pkg is -- body comment
-    pure function f return integer is
+    pure function f return integer is -- func comment
     begin
         return 1;
-    end function f; -- func comment -- end func
+    end function f; -- end func
 end package body pkg; -- end body"#,
     );
 }

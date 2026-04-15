@@ -2,7 +2,7 @@ mod common;
 
 use common::assert_format;
 
-// TODO: Is this even the desired behavior?
+// FIXME: Must not force a name
 fn wrap(expr: &str) -> String {
     format!(
         "architecture rtl of e is begin process begin v := {expr}; end process; end rtl;",

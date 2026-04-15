@@ -1,5 +1,4 @@
 mod common;
-
 use common::assert_format;
 
 //===----------------------------------------------------------------------===//
@@ -131,25 +130,25 @@ end package p;"#,
 //===----------------------------------------------------------------------===//
 
 #[test]
-fn comment_on_entity_is_moves_to_end() {
+fn comment_on_entity_is_stays_inline() {
     assert_format(
         r#"entity e is -- entity comment
 end e;"#,
-        r#"entity e is
-end entity e; -- entity comment"#,
+        r#"entity e is -- entity comment
+end entity e;"#,
     );
 }
 
 #[test]
-fn comment_on_arch_is_moves_to_end() {
+fn comment_on_arch_is_stays_inline() {
     assert_format(
         r#"architecture rtl of e is -- arch comment
 begin
 end rtl;"#,
-        r#"architecture rtl of e is
+        r#"architecture rtl of e is -- arch comment
 begin
 
-end architecture rtl; -- arch comment"#,
+end architecture rtl;"#,
     );
 }
 
@@ -208,10 +207,10 @@ begin
 end rtl;"#,
         r#"architecture rtl of e is
 begin
-    process(clk)
+    process(clk) -- clk comment
     begin
         null;
-    end process; -- clk comment
+    end process;
 end architecture rtl;"#,
     );
 }
@@ -330,10 +329,6 @@ end package p;"#,
     );
 }
 
-/// Block comments are attached as *leading* comments of the *following* token
-/// (unlike `--` line comments, which trail the *preceding* token on the same line).
-/// This means `/* … */` after a semicolon lands before the next declaration, not
-/// on the same line as the declaration it follows.
 #[test]
 fn block_comment_after_semicolon_becomes_leading_of_next() {
     assert_format(
@@ -346,9 +341,6 @@ end package p;"#,
     );
 }
 
-/// Same token-attachment rule: `/* … */` after `is` on the entity header line
-/// becomes a leading comment of the following `end` token rather than a trailing
-/// comment of `is`.
 #[test]
 fn block_comment_after_is_becomes_leading_of_end() {
     assert_format(
@@ -531,5 +523,157 @@ begin
                   z
               );
 end architecture rtl;"#,
+    );
+}
+
+//===----------------------------------------------------------------------===//
+// Blank line between context clause and unit keyword
+//===----------------------------------------------------------------------===//
+
+#[test]
+fn blank_line_between_context_and_entity_preserved() {
+    assert_format(
+        r#"library ieee;
+use ieee.std_logic_1164.all;
+
+entity e is
+end e;"#,
+        r#"library ieee;
+use ieee.std_logic_1164.all;
+
+entity e is
+end entity e;"#,
+    );
+}
+
+#[test]
+fn no_blank_line_between_context_and_entity_not_added() {
+    assert_format(
+        r#"library ieee;
+use ieee.std_logic_1164.all;
+entity e is
+end e;"#,
+        r#"library ieee;
+use ieee.std_logic_1164.all;
+entity e is
+end entity e;"#,
+    );
+}
+
+#[test]
+fn blank_line_between_context_and_architecture_preserved() {
+    assert_format(
+        r#"library ieee;
+use ieee.std_logic_1164.all;
+
+architecture rtl of e is
+begin
+end rtl;"#,
+        r#"library ieee;
+use ieee.std_logic_1164.all;
+
+architecture rtl of e is
+begin
+
+end architecture rtl;"#,
+    );
+}
+
+//===----------------------------------------------------------------------===//
+// Trailing comment on if/elsif then keyword
+//===----------------------------------------------------------------------===//
+
+#[test]
+fn trailing_comment_on_elsif_then_preserved() {
+    assert_format(
+        r#"architecture rtl of e is
+begin
+    process
+    begin
+        if a then -- first
+            null;
+        elsif b then -- second
+            null;
+        end if;
+    end process;
+end rtl;"#,
+        r#"architecture rtl of e is
+begin
+    process
+    begin
+        if a then -- first
+            null;
+        elsif b then -- second
+            null;
+        end if;
+    end process;
+end architecture rtl;"#,
+    );
+}
+
+//===----------------------------------------------------------------------===//
+// EOF comments
+//===----------------------------------------------------------------------===//
+
+#[test]
+fn comment_at_eof_preserved() {
+    assert_format(
+        "entity e is\nend e;\n-- eof comment",
+        "entity e is\nend entity e;\n-- eof comment",
+    );
+}
+
+#[test]
+fn multiple_comments_at_eof_preserved() {
+    assert_format(
+        r#"entity e is
+end e;
+-- first eof
+-- second eof"#,
+        r#"entity e is
+end entity e;
+-- first eof
+-- second eof"#,
+    );
+}
+
+//===----------------------------------------------------------------------===//
+// Trailing comment does not count toward line length
+//===----------------------------------------------------------------------===//
+
+#[test]
+fn trailing_comment_does_not_cause_code_wrap_when_code_fits() {
+    assert_format(
+        r#"entity e is
+port (
+    my_output_port : out std_logic_vector(DATA_BUS - 1 downto 0); -- this is the output data bus port here
+    other : in std_logic
+);
+end e;"#,
+        r#"entity e is
+    port (
+        my_output_port : out std_logic_vector(DATA_BUS - 1 downto 0); -- this is the output data bus port here
+        other          : in  std_logic
+    );
+end entity e;"#,
+    );
+}
+
+#[test]
+fn code_that_exceeds_line_length_wraps_even_with_comment() {
+    assert_format(
+        r#"entity e is
+port (
+    very_long_output_port_name_here_extra : out std_logic_vector(SOME_VERY_LONG_CONSTANT_WIDTH - 1 downto 0); -- comment
+    other : in std_logic
+);
+end e;"#,
+        r#"entity e is
+    port (
+        very_long_output_port_name_here_extra : out std_logic_vector(SOME_VERY_LONG_CONSTANT_WIDTH -
+                                                                     1 downto 0); -- comment
+        other                                 : in  std_logic
+    );
+end entity e;"#,
     );
 }
