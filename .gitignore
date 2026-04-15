@@ -1,23 +1,7 @@
 # ---------------------------
 # Build artifacts
 # ---------------------------
-build/
-CMakeCache.txt
-CMakeFiles/
-.cache/
-CMakeUserPresets.json
-.venv/
-venv/
-
-# Compiled objects and binaries
-*.o
-*.obj
-*.exe
-
-# ---------------------------
-# Test output
-# ---------------------------
-*.log
+target
 
 # ---------------------------
 # Editor
@@ -25,8 +9,3 @@ venv/
 .vscode/
 .idea/
 .zed/
-
-# ---------------------------
-# Benchmark output
-# ---------------------------
-tests/benchmarks/.results

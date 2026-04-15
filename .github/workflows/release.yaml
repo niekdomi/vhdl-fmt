@@ -10,45 +10,113 @@ permissions:
   pull-requests: read
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/niekdomi/vhdl-fmt/vhdlfmt-ci:latest
-    env:
-      CONAN_HOME: /root/.conan2
+  build:
+    name: Build — ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            binary: vhdl-fmt
+            asset: vhdl-fmt-linux-x86_64.tar.gz
+
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+            binary: vhdl-fmt
+            asset: vhdl-fmt-linux-arm64.tar.gz
+
+          - target: x86_64-apple-darwin
+            os: macos-26-intel
+            binary: vhdl-fmt
+            asset: vhdl-fmt-macos-x86_64.tar.gz
+
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            binary: vhdl-fmt
+            asset: vhdl-fmt-macos-arm64.tar.gz
+
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            binary: vhdl-fmt.exe
+            asset: vhdl-fmt-windows-x86_64.zip
+
+          - target: aarch64-pc-windows-msvc
+            os: windows-11-arm
+            binary: vhdl-fmt.exe
+            asset: vhdl-fmt-windows-arm64.zip
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Cache Conan packages
-        uses: actions/cache@v4
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          path: /github/home/.conan2
-          key: conan-${{ runner.os }}-${{ hashFiles('conanfile.txt') }}-v1
-          restore-keys: |
-            conan-${{ runner.os }}-v1
-            conan-${{ runner.os }}-
+          targets: ${{ matrix.target }}
 
-      - name: Create and Publish Release
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}-release
+          shared-key: ${{ matrix.target }}
+
+      - name: Build binary
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Stage binary
+        shell: bash
+        run: cp target/${{ matrix.target }}/release/${{ matrix.binary }} ${{ matrix.binary }}
+
+      - name: Archive binary (Unix)
+        if: ${{ !contains(matrix.asset, '.zip') }}
+        run: tar -czf ${{ matrix.asset }} ${{ matrix.binary }}
+
+      - name: Archive binary (Windows)
+        if: ${{ contains(matrix.asset, '.zip') }}
+        run: Compress-Archive -Path ${{ matrix.binary }} -DestinationPath ${{ matrix.asset }}
+        shell: pwsh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
+          overwrite: true
+
+  create-release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create and publish release
         uses: release-drafter/release-drafter@v6
         id: release-drafter
         with:
           config-name: release-drafter.yaml
           publish: true
           latest: true
+          tag: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Release Binary
-        run: |
-          source venv/bin/activate
-          make BUILD_TYPE=Release
-
-      - name: Upload Binary to Release
+      - name: Upload binaries to release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.release-drafter.outputs.tag_name }}
-          files: build/Release/bin/vhdl_formatter
+          files: artifacts/*
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
